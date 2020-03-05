@@ -1,4 +1,5 @@
 import * as connext from "@connext/client";
+import { ConnextStore, FileStorage } from "@connext/store";
 import { IConnextClient } from "@connext/types";
 
 import fastify from "fastify";
@@ -30,9 +31,17 @@ app.get("/info", (req, res) => {
 });
 
 app.post("/connect", async (req, res) => {
-  const { network, ethProviderUrl, nodeUrl, mnemonic } = req.body;
+  const { network, mnemonic } = req.body;
   try {
-    client = await connext.connect(network, { ethProviderUrl, nodeUrl, mnemonic });
+    const baseUrl = connext.utils.isMainnet(network)
+      ? "indra.connext.network/api"
+      : connext.utils.isRinkeby(network)
+      ? "rinkeby.indra.connext.network/api"
+      : null;
+    const ethProviderUrl = req.body.ethProviderUrl || `https://${baseUrl}/ethprovider`;
+    const nodeUrl = req.body.nodeUrl || `nats://${baseUrl}/messaging`;
+    const store = new ConnextStore(new FileStorage());
+    client = await connext.connect({ ethProviderUrl, nodeUrl, mnemonic, store });
     const config = { ...EMPTY_CHANNEL_PROVIDER_CONFIG, ...client.channelProvider.config };
     res.status(200).send({
       connected: true,
