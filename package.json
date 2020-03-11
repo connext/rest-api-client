@@ -13,9 +13,10 @@
   },
   "homepage": "https://github.com/ConnextProject/rest-api-client#readme",
   "scripts": {
-    "dev": "babel-node --extensions '.ts' src/index.ts",
-    "build": "babel ./src --extensions '.ts' --out-dir ./build",
-    "test": "mocha --require ./babel-polyfill.js test/**/*.spec.ts",
+    "clean": "rm -rf ./build",
+    "pre-build": "npm run clean",
+    "build:cjs": "./node_modules/.bin/tsc -p tsconfig.cjs.json",
+    "build": "npm run pre-build && npm run build:cjs",
     "lint": "eslint -c './.eslintrc' --fix './src/**/*.ts'",
     "start": "node ./build"
   },

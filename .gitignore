@@ -45,3 +45,4 @@ build
 
 .DS_Store
 connext-store
+*.tsbuildinfo 
