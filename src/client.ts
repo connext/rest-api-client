@@ -9,7 +9,7 @@ import {
 
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
 
-let client: IConnextClient;
+let _client: IConnextClient;
 
 interface InitOptions extends ClientOptions {
   network?: string;
@@ -29,16 +29,16 @@ export async function init(opts?: Partial<InitOptions>): Promise<Partial<Channel
   const ethProviderUrl = opts?.ethProviderUrl || `https://${baseUrl}/ethprovider`;
   const nodeUrl = opts?.nodeUrl || `nats://${baseUrl}/messaging`;
   const store = new ConnextStore(new FileStorage());
-  client = await connext.connect({ ethProviderUrl, nodeUrl, mnemonic, store });
-  const config = { ...EMPTY_CHANNEL_PROVIDER_CONFIG, ...client.channelProvider.config };
+  _client = await connext.connect({ ethProviderUrl, nodeUrl, mnemonic, store });
+  const config = { ...EMPTY_CHANNEL_PROVIDER_CONFIG, ..._client.channelProvider.config };
   return config;
 }
 
 export async function get(): Promise<IConnextClient> {
-  if (!client) {
+  if (!_client) {
     await init();
   }
-  return client;
+  return _client;
 }
 
 export async function transfer(opts: TransferParameters) {
@@ -52,6 +52,7 @@ export async function transfer(opts: TransferParameters) {
 }
 
 export async function balance(assetId: string) {
+  const client = await get();
   const freeBalance = await client.getFreeBalance(assetId);
   return freeBalance[client.multisigAddress].toString();
 }
