@@ -33,6 +33,14 @@ app.post("/transfer", async (req, res) => {
   }
 });
 
+app.get("/balance", async (req, res) => {
+  try {
+    res.status(200).send(await client.balance(req.body.assetId));
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
+
 const [host, port] = config.host.split(":");
 app.listen(+port, host, (err, address) => {
   if (err) throw err;

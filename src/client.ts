@@ -42,7 +42,16 @@ export async function get(): Promise<IConnextClient> {
 }
 
 export async function transfer(opts: TransferParameters) {
+  if (!opts.assetId) {
+    throw new Error("Cannot transfer without assetId defined");
+  }
   const client = await get();
+  await client.requestCollateral(opts.assetId);
   const response = await client.transfer(opts);
   return response;
+}
+
+export async function balance(assetId: string) {
+  const freeBalance = await client.getFreeBalance(assetId);
+  return freeBalance[client.multisigAddress].toString();
 }
