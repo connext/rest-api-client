@@ -7,6 +7,7 @@ import {
   HashLockTransferParameters,
 } from "@connext/types";
 
+import config from "./config";
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
 
 let _client: IConnextClient;
@@ -20,18 +21,16 @@ export async function init(opts?: Partial<InitOptions>): Promise<Partial<Channel
   if (!mnemonic) {
     throw new Error("Cannot init Connext client without mnemonic");
   }
-  const network = opts?.network || "rinkeby";
-  const baseUrl = connext.utils.isMainnet(network)
-    ? "indra.connext.network/api"
-    : connext.utils.isRinkeby(network)
-    ? "rinkeby.indra.connext.network/api"
-    : null;
-  const ethProviderUrl = opts?.ethProviderUrl || `https://${baseUrl}/ethprovider`;
-  const nodeUrl = opts?.nodeUrl || `nats://${baseUrl}/messaging`;
+  const network = opts?.network || config.network;
+  const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
+  const nodeUrl = opts?.nodeUrl || config.ethProviderUrl;
   const store = new ConnextStore(new FileStorage());
-  _client = await connext.connect({ ethProviderUrl, nodeUrl, mnemonic, store });
-  const config = { ...EMPTY_CHANNEL_PROVIDER_CONFIG, ..._client.channelProvider.config };
-  return config;
+  _client = await connext.connect(network, { ethProviderUrl, nodeUrl, mnemonic, store });
+  const channelProviderConfig = {
+    ...EMPTY_CHANNEL_PROVIDER_CONFIG,
+    ..._client.channelProvider.config,
+  };
+  return channelProviderConfig;
 }
 
 export async function get(): Promise<IConnextClient> {

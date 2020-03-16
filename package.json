@@ -13,12 +13,13 @@
   },
   "homepage": "https://github.com/ConnextProject/rest-api-client#readme",
   "scripts": {
-    "clean": "rm -rf ./build",
-    "pre-build": "npm run clean",
-    "build:cjs": "./node_modules/.bin/tsc -p tsconfig.cjs.json",
-    "build": "npm run pre-build && npm run build:cjs",
-    "lint": "eslint -c './.eslintrc' --fix './src/**/*.ts'",
-    "start": "node ./build"
+    "clean:build": "rm -rf ./build",
+    "clean:store": "rm -rf ./connext-store",
+    "clean:all": "npm run clean:build && npm run clean:store",
+    "compile": "tsc -p tsconfig.json",
+    "build": "npm run clean:build && npm run compile",
+    "start": "node ./build",
+    "lint": "eslint -c './.eslintrc' --fix './src/**/*.ts'"
   },
   "dependencies": {
     "@connext/client": "5.2.1",
