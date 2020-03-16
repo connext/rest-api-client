@@ -80,6 +80,6 @@ export default class ClientManager {
   async balance(assetId: string) {
     const client = await this.getClient();
     const freeBalance = await client.getFreeBalance(assetId);
-    return freeBalance[client.multisigAddress].toString();
+    return { freeBalance: freeBalance[client.multisigAddress].toString() };
   }
 }
