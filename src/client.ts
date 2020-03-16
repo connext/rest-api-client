@@ -4,7 +4,7 @@ import {
   IConnextClient,
   ClientOptions,
   ChannelProviderConfig,
-  TransferParameters,
+  HashLockTransferParameters,
 } from "@connext/types";
 
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
@@ -41,13 +41,18 @@ export async function get(): Promise<IConnextClient> {
   return _client;
 }
 
-export async function transfer(opts: TransferParameters) {
+export async function hashLockTransfer(opts: HashLockTransferParameters) {
   if (!opts.assetId) {
     throw new Error("Cannot transfer without assetId defined");
   }
   const client = await get();
-  await client.requestCollateral(opts.assetId);
-  const response = await client.transfer(opts);
+  const response = await client.conditionalTransfer({
+    amount: opts.amount,
+    conditionType: "HASHLOCK_TRANSFER",
+    preImage: opts.preImage,
+    assetId: opts.assetId,
+    meta: opts.meta,
+  } as HashLockTransferParameters);
   return response;
 }
 
