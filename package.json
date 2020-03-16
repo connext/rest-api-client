@@ -18,7 +18,7 @@
     "clean:all": "npm run clean:build && npm run clean:store",
     "compile": "tsc -p tsconfig.json",
     "build": "npm run clean:build && npm run compile",
-    "start": "node ./build",
+    "start": "npm run build && node ./build",
     "lint": "eslint -c './.eslintrc' --fix './src/**/*.ts'"
   },
   "dependencies": {

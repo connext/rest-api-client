@@ -3,9 +3,11 @@ import Helmet from "fastify-helmet";
 
 import config from "./config";
 
-import * as client from "./client";
+import ClientManager from "./client";
 
 const app = fastify({ logger: config.debug });
+
+const clientManager = new ClientManager();
 
 app.register(Helmet);
 
@@ -19,7 +21,20 @@ app.get("/hello", (req, res) => {
 
 app.post("/connect", async (req, res) => {
   try {
-    res.status(200).send(await client.init(req.body));
+    await clientManager.initClient(req.body);
+    res.status(200).send(clientManager.config);
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
+
+app.post("/mnemonic", async (req, res) => {
+  try {
+    if (!req.body.mnemonic || typeof req.body.mnemonic !== "string") {
+      throw new Error("Invalid or missing mnemonic");
+    }
+    clientManager.mnemonic = req.body.mnemonic;
+    res.status(200).send({ success: true });
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
@@ -27,7 +42,7 @@ app.post("/connect", async (req, res) => {
 
 app.post("/hashlock-transfer", async (req, res) => {
   try {
-    res.status(200).send(await client.hashLockTransfer(req.body));
+    res.status(200).send(await clientManager.hashLockTransfer(req.body));
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
@@ -35,7 +50,7 @@ app.post("/hashlock-transfer", async (req, res) => {
 
 app.get("/balance", async (req, res) => {
   try {
-    res.status(200).send(await client.balance(req.body.assetId));
+    res.status(200).send(await clientManager.balance(req.body.assetId));
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
