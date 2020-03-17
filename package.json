@@ -28,6 +28,7 @@
     "axios": "^0.18.0",
     "babel-polyfill": "^6.26.0",
     "core-js": "^3.6.4",
+    "dotenv": "^8.0.0",
     "fastify": "^1.13.4",
     "fastify-helmet": "^3.0.0"
   },

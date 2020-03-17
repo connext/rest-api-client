@@ -39,7 +39,7 @@ app.get("/config", async (req, res) => {
   res.status(200).send(config);
 });
 
-app.get("hashlock-status/:hash", async (req, res) => {
+app.get("/hashlock-status/:hash", async (req, res) => {
   try {
     requireParam(req.params, "hash");
     res.status(200).send(await clientManager.hashLockStatus(req.params.hash));

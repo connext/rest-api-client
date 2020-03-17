@@ -1,3 +1,7 @@
+import dotenv from "dotenv";
+
+dotenv.config();
+
 const env = process.env.NODE_ENV || "development";
 const debug = env !== "production";
 const port = process.env.PORT || (debug ? 5040 : 5000);
