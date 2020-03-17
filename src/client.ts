@@ -5,10 +5,12 @@ import {
   ClientOptions,
   ChannelProviderConfig,
   HashLockTransferParameters,
+  ResolveHashLockTransferParameters,
 } from "@connext/types";
 
 import config from "./config";
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
+import { requireBodyParam } from "./utilities";
 
 interface InitOptions extends ClientOptions {
   network?: string;
@@ -74,6 +76,15 @@ export default class ClientManager {
       assetId: opts.assetId,
       meta: opts.meta,
     } as HashLockTransferParameters);
+    return response;
+  }
+
+  async resolveHashLock(preImage: string) {
+    const client = await this.getClient();
+    const response = await client.resolveCondition({
+      conditionType: "HASHLOCK_TRANSFER",
+      preImage,
+    } as ResolveHashLockTransferParameters);
     return response;
   }
 

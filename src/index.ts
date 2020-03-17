@@ -4,6 +4,7 @@ import Helmet from "fastify-helmet";
 import config from "./config";
 
 import ClientManager from "./client";
+import { requireBodyParam } from "./utilities";
 
 const app = fastify({ logger: config.debug });
 
@@ -37,6 +38,9 @@ app.get("/config", async (req, res) => {
 
 app.post("/connect", async (req, res) => {
   try {
+    if (!clientManager.mnemonic) {
+      requireBodyParam(req.body, "mnemonic", "string");
+    }
     await clientManager.initClient(req.body);
     res.status(200).send(clientManager.config);
   } catch (error) {
@@ -46,9 +50,7 @@ app.post("/connect", async (req, res) => {
 
 app.post("/mnemonic", async (req, res) => {
   try {
-    if (!req.body.mnemonic || typeof req.body.mnemonic !== "string") {
-      throw new Error("Invalid or missing mnemonic");
-    }
+    requireBodyParam(req.body, "mnemonic", "string");
     clientManager.mnemonic = req.body.mnemonic;
     res.status(200).send({ success: true });
   } catch (error) {
@@ -59,6 +61,15 @@ app.post("/mnemonic", async (req, res) => {
 app.post("/hashlock-transfer", async (req, res) => {
   try {
     res.status(200).send(await clientManager.hashLockTransfer(req.body));
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
+
+app.post("/resolve-hashlock", async (req, res) => {
+  try {
+    requireBodyParam(req.body, "preImage", "string");
+    res.status(200).send(await clientManager.resolveHashLock(req.body.preImage));
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
