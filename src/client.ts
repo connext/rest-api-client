@@ -10,7 +10,6 @@ import {
 
 import config from "./config";
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
-import { requireBodyParam } from "./utilities";
 
 interface InitOptions extends ClientOptions {
   network?: string;
@@ -86,6 +85,10 @@ export default class ClientManager {
       preImage,
     } as ResolveHashLockTransferParameters);
     return response;
+  }
+
+  async hashLockStatus(hash: string) {
+    return { success: true };
   }
 
   async balance(assetId: string) {

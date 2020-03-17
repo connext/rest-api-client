@@ -1,5 +1,5 @@
-export function requireBodyParam(body: any, param: string, type: string) {
-  if (!body[param] || typeof body[param] !== type) {
+export function requireParam(obj: any, param: string, type = "string") {
+  if (!obj[param] || typeof obj[param] !== type) {
     throw new Error(`Invalid or missing ${param}`);
   }
 }

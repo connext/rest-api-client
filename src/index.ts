@@ -4,13 +4,15 @@ import Helmet from "fastify-helmet";
 import config from "./config";
 
 import ClientManager from "./client";
-import { requireBodyParam } from "./utilities";
+import { requireParam } from "./utilities";
 
 const app = fastify({ logger: config.debug });
 
 const clientManager = new ClientManager();
 
 app.register(Helmet);
+
+// -- GET ---------------------------------------------------------------- //
 
 app.get("/health", (_, res) => {
   res.status(204).send();
@@ -20,9 +22,10 @@ app.get("/hello", (req, res) => {
   res.status(200).send(`Hello World, this is Connext client`);
 });
 
-app.get("/balance", async (req, res) => {
+app.get("/balance/:assetId", async (req, res) => {
   try {
-    res.status(200).send(await clientManager.balance(req.body.assetId));
+    requireParam(req.params, "assetId");
+    res.status(200).send(await clientManager.balance(req.params.assetId));
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
@@ -36,10 +39,21 @@ app.get("/config", async (req, res) => {
   res.status(200).send(config);
 });
 
+app.get("hashlock-status/:hash", async (req, res) => {
+  try {
+    requireParam(req.params, "hash");
+    res.status(200).send(await clientManager.hashLockStatus(req.params.hash));
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
+
+// -- POST ---------------------------------------------------------------- //
+
 app.post("/connect", async (req, res) => {
   try {
     if (!clientManager.mnemonic) {
-      requireBodyParam(req.body, "mnemonic", "string");
+      requireParam(req.body, "mnemonic");
     }
     await clientManager.initClient(req.body);
     res.status(200).send(clientManager.config);
@@ -50,7 +64,7 @@ app.post("/connect", async (req, res) => {
 
 app.post("/mnemonic", async (req, res) => {
   try {
-    requireBodyParam(req.body, "mnemonic", "string");
+    requireParam(req.body, "mnemonic");
     clientManager.mnemonic = req.body.mnemonic;
     res.status(200).send({ success: true });
   } catch (error) {
@@ -66,9 +80,9 @@ app.post("/hashlock-transfer", async (req, res) => {
   }
 });
 
-app.post("/resolve-hashlock", async (req, res) => {
+app.post("/hashlock-resolve", async (req, res) => {
   try {
-    requireBodyParam(req.body, "preImage", "string");
+    requireParam(req.body, "preImage");
     res.status(200).send(await clientManager.resolveHashLock(req.body.preImage));
   } catch (error) {
     res.status(500).send({ message: error.message });
