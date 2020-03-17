@@ -14,7 +14,7 @@ app.register(Helmet);
 
 // -- GET ---------------------------------------------------------------- //
 
-app.get("/health", (_, res) => {
+app.get("/health", (req, res) => {
   res.status(204).send();
 });
 
