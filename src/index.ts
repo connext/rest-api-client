@@ -4,11 +4,11 @@ import Helmet from "fastify-helmet";
 import config from "./config";
 
 import ClientManager from "./client";
-import { requireParam } from "./utilities";
+import { requireParam, getMnemonic } from "./utilities";
 
 const app = fastify({ logger: config.debug });
 
-const clientManager = new ClientManager();
+let clientManager: ClientManager;
 
 app.register(Helmet);
 
@@ -65,7 +65,7 @@ app.post("/connect", async (req, res) => {
 app.post("/mnemonic", async (req, res) => {
   try {
     requireParam(req.body, "mnemonic");
-    clientManager.mnemonic = req.body.mnemonic;
+    clientManager.setMnemonic(req.body.mnemonic);
     res.status(200).send({ success: true });
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -86,6 +86,14 @@ app.post("/hashlock-resolve", async (req, res) => {
     res.status(200).send(await clientManager.resolveHashLock(req.body.preImage));
   } catch (error) {
     res.status(500).send({ message: error.message });
+  }
+});
+
+app.ready(async () => {
+  const mnemonic = await getMnemonic(config.storeDir);
+  clientManager = new ClientManager(mnemonic);
+  if (mnemonic) {
+    await clientManager.initClient();
   }
 });
 

@@ -10,6 +10,7 @@ import {
 
 import config from "./config";
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
+import { saveMnemonic } from "./utilities";
 
 interface InitOptions extends ClientOptions {
   network?: string;
@@ -18,6 +19,10 @@ interface InitOptions extends ClientOptions {
 export default class ClientManager {
   private _client: IConnextClient | undefined;
   private _mnemonic: string | undefined;
+
+  constructor(mnemonic?: string) {
+    this._mnemonic = mnemonic;
+  }
 
   get config(): Partial<ChannelProviderConfig> {
     return {
@@ -39,10 +44,11 @@ export default class ClientManager {
     if (!mnemonic) {
       throw new Error("Cannot init Connext client without mnemonic");
     }
+    this.setMnemonic(mnemonic);
     const network = opts?.network || config.network;
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
     const nodeUrl = opts?.nodeUrl || config.ethProviderUrl;
-    const store = new ConnextStore(new FileStorage());
+    const store = new ConnextStore(new FileStorage({ fileDir: config.storeDir }));
     const clientOpts: any = { mnemonic, store };
     if (ethProviderUrl) {
       clientOpts.ethProviderUrl = ethProviderUrl;
@@ -95,5 +101,10 @@ export default class ClientManager {
     const client = await this.getClient();
     const freeBalance = await client.getFreeBalance(assetId);
     return { freeBalance: freeBalance[client.multisigAddress].toString() };
+  }
+
+  async setMnemonic(mnemonic: string) {
+    await saveMnemonic(mnemonic, config.storeDir);
+    this._mnemonic = mnemonic;
   }
 }

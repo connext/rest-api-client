@@ -11,6 +11,7 @@ const network = process.env.CONNEXT_NETWORK || `rinkeby`;
 const ethProviderUrl = process.env.CONNEXT_ETH_PROVIDER_URL || undefined;
 const nodeUrl = process.env.CONNEXT_NODE_URL || undefined;
 const mnemonic = process.env.CONNEXT_MNEMONIC || "";
+const storeDir = process.env.CONNEXT_STORE_DIR || "./connext-store";
 
 export default {
   env: env,
@@ -21,4 +22,5 @@ export default {
   ethProviderUrl,
   nodeUrl,
   mnemonic,
+  storeDir,
 };

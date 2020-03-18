@@ -7,3 +7,5 @@ export const EMPTY_CHANNEL_PROVIDER_CONFIG = {
   signerAddress: undefined,
   userPublicIdentifier: undefined,
 };
+
+export const CONNEXT_WALLET_FILE_NAME = "CONNEXT_WALLET.json";
