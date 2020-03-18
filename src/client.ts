@@ -6,6 +6,7 @@ import {
   ChannelProviderConfig,
   HashLockTransferParameters,
   ResolveHashLockTransferParameters,
+  DepositParameters,
 } from "@connext/types";
 
 import config from "./config";
@@ -106,5 +107,11 @@ export default class ClientManager {
   async setMnemonic(mnemonic: string) {
     await saveMnemonic(mnemonic, config.storeDir);
     this._mnemonic = mnemonic;
+  }
+
+  async deposit(params: DepositParameters<string>) {
+    const client = await this.getClient();
+    const response = await client.deposit(params);
+    return response;
   }
 }

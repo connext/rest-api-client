@@ -89,6 +89,16 @@ app.post("/hashlock-resolve", async (req, res) => {
   }
 });
 
+app.post("/deposit", async (req, res) => {
+  try {
+    requireParam(req.body, "amount");
+    requireParam(req.body, "assetId");
+    res.status(200).send(await clientManager.deposit(req.body));
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
+
 app.ready(async () => {
   const mnemonic = await getMnemonic(config.storeDir);
   clientManager = new ClientManager(mnemonic);
