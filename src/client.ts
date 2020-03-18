@@ -47,7 +47,7 @@ export default class ClientManager {
     this.setMnemonic(mnemonic);
     const network = opts?.network || config.network;
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
-    const nodeUrl = opts?.nodeUrl || config.ethProviderUrl;
+    const nodeUrl = opts?.nodeUrl || config.nodeUrl;
     const store = new ConnextStore(new FileStorage({ fileDir: config.storeDir }));
     const clientOpts: any = { mnemonic, store };
     if (ethProviderUrl) {
