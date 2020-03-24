@@ -39,10 +39,10 @@ app.get("/config", async (req, res) => {
   res.status(200).send(config);
 });
 
-app.get("/hashlock-status/:hash", async (req, res) => {
+app.get("/hashlock-status/:lockHash", async (req, res) => {
   try {
-    requireParam(req.params, "hash");
-    res.status(200).send(await clientManager.hashLockStatus(req.params.hash));
+    requireParam(req.params, "lockHash");
+    res.status(200).send(await clientManager.hashLockStatus(req.params.lockHash));
   } catch (error) {
     res.status(500).send({ message: error.message });
   }
@@ -82,8 +82,8 @@ app.post("/hashlock-transfer", async (req, res) => {
 
 app.post("/hashlock-resolve", async (req, res) => {
   try {
-    requireParam(req.body, "preImage");
-    res.status(200).send(await clientManager.resolveHashLock(req.body.preImage));
+    requireParam(req.body, "lockHash");
+    res.status(200).send(await clientManager.resolveHashLock(req.body.lockHash));
   } catch (error) {
     res.status(500).send({ message: error.message });
   }

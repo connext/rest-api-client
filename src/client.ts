@@ -7,6 +7,7 @@ import {
   HashLockTransferParameters,
   ResolveHashLockTransferParameters,
   DepositParameters,
+  FILESTORAGE,
 } from "@connext/types";
 
 import config from "./config";
@@ -49,7 +50,7 @@ export default class ClientManager {
     const network = opts?.network || config.network;
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
     const nodeUrl = opts?.nodeUrl || config.nodeUrl;
-    const store = new ConnextStore(new FileStorage({ fileDir: config.storeDir }));
+    const store = new ConnextStore(FILESTORAGE, { fileDir: config.storeDir });
     const clientOpts: any = { mnemonic, store };
     if (ethProviderUrl) {
       clientOpts.ethProviderUrl = ethProviderUrl;
@@ -78,7 +79,7 @@ export default class ClientManager {
     const response = await client.conditionalTransfer({
       amount: opts.amount,
       conditionType: "HASHLOCK_TRANSFER",
-      preImage: opts.preImage,
+      lockHash: opts.lockHash,
       assetId: opts.assetId,
       meta: opts.meta,
     } as HashLockTransferParameters);
@@ -94,8 +95,10 @@ export default class ClientManager {
     return response;
   }
 
-  async hashLockStatus(hash: string) {
-    return { success: true };
+  async hashLockStatus(lockhash: string) {
+    const client = await this.getClient();
+    const response = await client.getHashLockTransfer(lockhash);
+    return response;
   }
 
   async balance(assetId: string) {
@@ -112,6 +115,6 @@ export default class ClientManager {
   async deposit(params: DepositParameters<string>) {
     const client = await this.getClient();
     const response = await client.deposit(params);
-    return response;
+    return { freeBalance: response.freeBalance[client.multisigAddress].toString() };
   }
 }
