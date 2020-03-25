@@ -10,25 +10,25 @@ import {
 } from "@connext/store";
 import { CONNEXT_WALLET_FILE_NAME } from "./constants";
 
-export function requireParam(obj: any, param: string, type = "string") {
+export async function requireParam(obj: any, param: string, type = "string") {
   if (!obj[param] || typeof obj[param] !== type) {
     throw new Error(`Invalid or missing ${param}`);
   }
 }
 
-export function getMnemonicFilePath(fileDir: string) {
+export async function getMnemonicFilePath(fileDir: string) {
   return path.join(fileDir, CONNEXT_WALLET_FILE_NAME);
 }
 
 export async function saveMnemonic(mnemonic: string, fileDir: string): Promise<void> {
   await createDirectory(fileDir);
-  const filePath = getMnemonicFilePath(fileDir);
+  const filePath = await getMnemonicFilePath(fileDir);
   const data = safeJsonStringify({ mnemonic });
   await fsWrite(filePath, data);
 }
 
 export async function getMnemonic(fileDir: string): Promise<string | undefined> {
-  const filePath = getMnemonicFilePath(fileDir);
+  const filePath = await getMnemonicFilePath(fileDir);
   if ((await checkFile(filePath)) === FILE_DOESNT_EXIST) {
     return undefined;
   }

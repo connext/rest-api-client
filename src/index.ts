@@ -24,7 +24,7 @@ app.get("/hello", (req, res) => {
 
 app.get("/balance/:assetId", async (req, res) => {
   try {
-    requireParam(req.params, "assetId");
+    await requireParam(req.params, "assetId");
     res.status(200).send(await clientManager.balance(req.params.assetId));
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -41,7 +41,7 @@ app.get("/config", async (req, res) => {
 
 app.get("/hashlock-status/:lockHash", async (req, res) => {
   try {
-    requireParam(req.params, "lockHash");
+    await requireParam(req.params, "lockHash");
     res.status(200).send(await clientManager.hashLockStatus(req.params.lockHash));
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -53,7 +53,7 @@ app.get("/hashlock-status/:lockHash", async (req, res) => {
 app.post("/connect", async (req, res) => {
   try {
     if (!clientManager.mnemonic) {
-      requireParam(req.body, "mnemonic");
+      await requireParam(req.body, "mnemonic");
     }
     await clientManager.initClient(req.body);
     res.status(200).send(clientManager.config);
@@ -64,7 +64,7 @@ app.post("/connect", async (req, res) => {
 
 app.post("/mnemonic", async (req, res) => {
   try {
-    requireParam(req.body, "mnemonic");
+    await requireParam(req.body, "mnemonic");
     clientManager.setMnemonic(req.body.mnemonic);
     res.status(200).send({ success: true });
   } catch (error) {
@@ -82,7 +82,7 @@ app.post("/hashlock-transfer", async (req, res) => {
 
 app.post("/hashlock-resolve", async (req, res) => {
   try {
-    requireParam(req.body, "lockHash");
+    await requireParam(req.body, "lockHash");
     res.status(200).send(await clientManager.resolveHashLock(req.body.lockHash));
   } catch (error) {
     res.status(500).send({ message: error.message });
@@ -91,8 +91,8 @@ app.post("/hashlock-resolve", async (req, res) => {
 
 app.post("/deposit", async (req, res) => {
   try {
-    requireParam(req.body, "amount");
-    requireParam(req.body, "assetId");
+    await requireParam(req.body, "amount");
+    await requireParam(req.body, "assetId");
     res.status(200).send(await clientManager.deposit(req.body));
   } catch (error) {
     res.status(500).send({ message: error.message });
