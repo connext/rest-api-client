@@ -1,5 +1,5 @@
 import * as connext from "@connext/client";
-import { ConnextStore, FileStorage } from "@connext/store";
+import { ConnextStore } from "@connext/store";
 import {
   IConnextClient,
   ClientOptions,
@@ -82,6 +82,7 @@ export default class ClientManager {
       lockHash: opts.lockHash,
       assetId: opts.assetId,
       meta: opts.meta,
+      timelock: opts.timelock,
     } as HashLockTransferParameters);
     return response;
   }
@@ -98,7 +99,8 @@ export default class ClientManager {
   async hashLockStatus(lockhash: string) {
     const client = await this.getClient();
     const response = await client.getHashLockTransfer(lockhash);
-    return response;
+    // @ts-ignore
+    return { status: response.status };
   }
 
   async balance(assetId: string) {
