@@ -87,7 +87,7 @@ export default class ClientManager {
     return response;
   }
 
-  async resolveHashLock(preImage: string) {
+  async hashLockResolve(preImage: string) {
     const client = await this.getClient();
     const response = await client.resolveCondition({
       conditionType: "HASHLOCK_TRANSFER",
