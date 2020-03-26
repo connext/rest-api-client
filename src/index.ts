@@ -6,7 +6,9 @@ import config from "./config";
 import ClientManager from "./client";
 import { requireParam, getMnemonic } from "./utilities";
 
-const app = fastify({ logger: config.debug });
+const app = fastify({
+  logger: { prettyPrint: config.debug ? { forceColor: true } : undefined },
+});
 
 let clientManager: ClientManager;
 
@@ -110,6 +112,5 @@ app.ready(async () => {
 const [host, port] = config.host.split(":");
 app.listen(+port, host, (err, address) => {
   if (err) throw err;
-  console.log(`Server listening on ${address}`);
   app.log.info(`Server listening on ${address}`);
 });
