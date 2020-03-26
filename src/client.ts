@@ -96,11 +96,13 @@ export default class ClientManager {
     return response;
   }
 
-  async hashLockStatus(lockhash: string) {
+  async hashLockStatus(lockHash: string) {
     const client = await this.getClient();
-    const response = await client.getHashLockTransfer(lockhash);
-    // @ts-ignore
-    return { status: response.status };
+    const response = await client.getHashLockTransfer(lockHash);
+    if (!response) {
+      throw new Error(`No HashLock Transfer found for lockHash: ${lockHash}`);
+    }
+    return response;
   }
 
   async balance(assetId: string) {
