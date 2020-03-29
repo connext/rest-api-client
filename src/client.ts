@@ -107,7 +107,7 @@ export default class ClientManager {
   async balance(assetId: string) {
     const client = await this.getClient();
     const freeBalance = await client.getFreeBalance(assetId);
-    return { freeBalance: freeBalance[client.multisigAddress].toString() };
+    return { freeBalance: freeBalance[client.freeBalanceAddress].toString() };
   }
 
   async setMnemonic(mnemonic: string) {
@@ -115,9 +115,9 @@ export default class ClientManager {
     this._mnemonic = mnemonic;
   }
 
-  async deposit(params: DepositParameters<string>) {
+  async deposit(params: DepositParameters) {
     const client = await this.getClient();
     const response = await client.deposit(params);
-    return { freeBalance: response.freeBalance[client.multisigAddress].toString() };
+    return { freeBalance: response.freeBalance[client.freeBalanceAddress].toString() };
   }
 }
