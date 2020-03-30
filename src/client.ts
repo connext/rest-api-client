@@ -14,7 +14,7 @@ import {
 
 import config from "./config";
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
-import { saveMnemonic, saveSubscriptions } from "./utilities";
+import { storeMnemonic, storeSubscriptions, storeInitOptions } from "./utilities";
 import {
   EventSubscriptionParams,
   InitClientManagerOptions,
@@ -25,7 +25,7 @@ import {
 export default class ClientManager {
   private _client: IConnextClient | undefined;
   private _logger: any;
-  private _mnemonic: string | undefined;
+  private _mnemonic: string;
   private _subscriptions: EventSubscription[] = [];
 
   constructor(opts: InitClientManagerOptions) {
@@ -70,6 +70,13 @@ export default class ClientManager {
     }
     const client = await connext.connect(network, clientOpts);
     this._client = client;
+    await storeInitOptions(
+      {
+        network,
+        ...clientOpts,
+      },
+      config.storeDir,
+    );
     this._logger.info("Client initialized successfully");
     return client;
   }
@@ -125,7 +132,7 @@ export default class ClientManager {
   }
 
   public async setMnemonic(mnemonic: string) {
-    await saveMnemonic(mnemonic, config.storeDir);
+    await storeMnemonic(mnemonic, config.storeDir);
     this._mnemonic = mnemonic;
     this._logger.info("Mnemonic set successfully");
   }
@@ -158,7 +165,7 @@ export default class ClientManager {
 
   private async persistSubscriptions(subscriptions: EventSubscription[]) {
     this._subscriptions = subscriptions;
-    await saveSubscriptions(subscriptions, config.storeDir);
+    await storeSubscriptions(subscriptions, config.storeDir);
   }
 
   private async addSubscription(subscription: EventSubscription) {

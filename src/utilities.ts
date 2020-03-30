@@ -9,8 +9,12 @@ import {
   FILE_DOESNT_EXIST,
 } from "@connext/store";
 
-import { CONNEXT_WALLET_FILE_NAME, CONNEXT_SUBSCRIPTIONS_FILE_NAME } from "./constants";
-import { EventSubscription } from "./types";
+import {
+  CONNEXT_WALLET_FILE_NAME,
+  CONNEXT_SUBSCRIPTIONS_FILE_NAME,
+  CONNEXT_INIT_OPTIONS_FILE_NAME,
+} from "./constants";
+import { EventSubscription, InitOptions } from "./types";
 
 export async function requireParam(obj: any, param: string, type = "string") {
   if (!obj[param] || typeof obj[param] !== type) {
@@ -18,12 +22,12 @@ export async function requireParam(obj: any, param: string, type = "string") {
   }
 }
 
-export async function saveFile(data: any, fileDir: string, fileName: string): Promise<void> {
+export async function storeFile(data: any, fileDir: string, fileName: string): Promise<void> {
   await createDirectory(fileDir);
   await fsWrite(path.join(fileDir, fileName), safeJsonStringify(data));
 }
 
-export async function getFile(fileDir: string, fileName: string): Promise<any> {
+export async function fetchFile(fileDir: string, fileName: string): Promise<any> {
   const filePath = path.join(fileDir, fileName);
   if ((await checkFile(filePath)) === FILE_DOESNT_EXIST) {
     return undefined;
@@ -32,29 +36,44 @@ export async function getFile(fileDir: string, fileName: string): Promise<any> {
   return safeJsonParse(data);
 }
 
-export async function saveMnemonic(mnemonic: string, fileDir: string): Promise<void> {
-  await saveFile({ mnemonic }, fileDir, CONNEXT_WALLET_FILE_NAME);
+export async function storeMnemonic(mnemonic: string, fileDir: string): Promise<void> {
+  await storeFile({ mnemonic }, fileDir, CONNEXT_WALLET_FILE_NAME);
 }
 
-export async function getMnemonic(fileDir: string): Promise<string | undefined> {
-  const result = await getFile(fileDir, CONNEXT_WALLET_FILE_NAME);
+export async function fetchMnemonic(fileDir: string): Promise<string | undefined> {
+  const result = await fetchFile(fileDir, CONNEXT_WALLET_FILE_NAME);
   if (typeof result !== "object" || !result.mnemonic) {
     return undefined;
   }
   return result.mnemonic;
 }
 
-export async function saveSubscriptions(
+export async function storeSubscriptions(
   subscriptions: EventSubscription[],
   fileDir: string,
 ): Promise<void> {
-  await saveFile(subscriptions, fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
+  await storeFile(subscriptions, fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
 }
 
-export async function getSubscriptions(fileDir: string): Promise<EventSubscription[] | undefined> {
-  const result = await getFile(fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
+export async function fetchSubscriptions(fileDir: string): Promise<EventSubscription[]> {
+  const result = await fetchFile(fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
   if (Array.isArray(result)) {
-    return undefined;
+    return result;
+  }
+  return [];
+}
+
+export async function storeInitOptions(
+  initOptions: Partial<InitOptions>,
+  fileDir: string,
+): Promise<void> {
+  await storeFile(initOptions, fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
+}
+
+export async function fetchInitOptions(fileDir: string): Promise<Partial<InitOptions>> {
+  const result = await fetchFile(fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
+  if (typeof result !== "object" || !result) {
+    return {};
   }
   return result;
 }
