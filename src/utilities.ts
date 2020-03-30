@@ -55,12 +55,14 @@ export async function storeSubscriptions(
   await storeFile(subscriptions, fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
 }
 
-export async function fetchSubscriptions(fileDir: string): Promise<EventSubscription[]> {
+export async function fetchSubscriptions(
+  fileDir: string,
+): Promise<EventSubscription[] | undefined> {
   const result = await fetchFile(fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
-  if (Array.isArray(result)) {
-    return result;
+  if (!Array.isArray(result)) {
+    return undefined;
   }
-  return [];
+  return result;
 }
 
 export async function storeInitOptions(
@@ -70,10 +72,21 @@ export async function storeInitOptions(
   await storeFile(initOptions, fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
 }
 
-export async function fetchInitOptions(fileDir: string): Promise<Partial<InitOptions>> {
+export async function fetchInitOptions(fileDir: string): Promise<Partial<InitOptions> | undefined> {
   const result = await fetchFile(fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
   if (typeof result !== "object" || !result) {
-    return {};
+    return undefined;
   }
   return result;
+}
+
+export async function fetchAll(fileDir: string) {
+  const mnemonic = await fetchMnemonic(fileDir);
+  const subscriptions = await fetchSubscriptions(fileDir);
+  const initOptions = await fetchInitOptions(fileDir);
+  return {
+    mnemonic,
+    subscriptions,
+    initOptions,
+  };
 }

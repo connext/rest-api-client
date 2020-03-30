@@ -4,7 +4,7 @@ import Helmet from "fastify-helmet";
 import config from "./config";
 
 import ClientManager from "./client";
-import { requireParam, fetchMnemonic, fetchSubscriptions, fetchInitOptions } from "./utilities";
+import { requireParam, fetchAll } from "./utilities";
 
 const app = fastify({
   logger: { prettyPrint: config.debug ? { forceColor: true } : undefined },
@@ -134,11 +134,9 @@ app.delete("/subscribe/:id", async (req, res) => {
 // -- INIT ---------------------------------------------------------------- //
 
 app.ready(async () => {
-  const mnemonic = (await fetchMnemonic(config.storeDir)) || config.mnemonic;
-  const subscriptions = await fetchSubscriptions(config.storeDir);
+  const { mnemonic, subscriptions, initOptions } = await fetchAll(config.storeDir);
   clientManager = new ClientManager({ mnemonic, subscriptions, logger: app.log });
-  if (mnemonic.trim()) {
-    const initOptions = await fetchInitOptions(config.storeDir);
+  if (initOptions && Object.keys(initOptions).length) {
     await clientManager.initClient(initOptions);
   }
 });

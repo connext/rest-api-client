@@ -25,7 +25,7 @@ import {
 export default class ClientManager {
   private _client: IConnextClient | undefined;
   private _logger: any;
-  private _mnemonic: string;
+  private _mnemonic: string | undefined;
   private _subscriptions: EventSubscription[] = [];
 
   constructor(opts: InitClientManagerOptions) {
@@ -225,7 +225,7 @@ export default class ClientManager {
   }
 
   private async initSubscriptions(subscriptions?: EventSubscription[]) {
-    if (subscriptions) {
+    if (subscriptions && subscriptions.length) {
       const client = await this.getClient();
       subscriptions.forEach(subscription => this.subscribeOnClient(client, subscription));
     }
