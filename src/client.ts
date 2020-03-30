@@ -143,12 +143,12 @@ export default class ClientManager {
     return { freeBalance: response.freeBalance[client.freeBalanceAddress].toString() };
   }
 
-  public async subscribe(params: EventSubscriptionParams): Promise<string> {
+  public async subscribe(params: EventSubscriptionParams): Promise<{ id: string }> {
     const subscription = this.formatSubscription(params);
     await this.addSubscription(subscription);
     const client = await this.getClient();
     this.subscribeOnClient(client, subscription);
-    return subscription.id;
+    return { id: subscription.id };
   }
 
   public async unsubscribe(id: string) {
@@ -197,7 +197,10 @@ export default class ClientManager {
       subscriptions.map(async subscription => {
         const { webhook } = subscription.params;
         try {
-          await axios.post(webhook, data);
+          await axios.post(webhook, {
+            id: subscription.id,
+            data,
+          });
           this._logger.info(`Successfully pushed event ${event} to webhook: ${webhook}`);
         } catch (error) {
           this._logger.error(error);
