@@ -30,7 +30,8 @@
     "core-js": "^3.6.4",
     "dotenv": "^8.0.0",
     "fastify": "^1.13.4",
-    "fastify-helmet": "^3.0.0"
+    "fastify-helmet": "^3.0.0",
+    "uuid": "^7.0.2"
   },
   "devDependencies": {
     "@babel/cli": "^7.1.2",

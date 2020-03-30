@@ -1,4 +1,5 @@
 import axios from "axios";
+import { v4 as uuid } from "uuid";
 import * as connext from "@connext/client";
 import { ConnextStore } from "@connext/store";
 import {
@@ -14,13 +15,18 @@ import {
 import config from "./config";
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
 import { saveMnemonic, saveSubscriptions } from "./utilities";
-import { EventSubscriptionParams, InitClientManagerOptions, InitOptions } from "./types";
+import {
+  EventSubscriptionParams,
+  InitClientManagerOptions,
+  InitOptions,
+  EventSubscription,
+} from "./types";
 
 export default class ClientManager {
   private _client: IConnextClient | undefined;
   private _logger: any;
   private _mnemonic: string | undefined;
-  private _subscriptions: EventSubscriptionParams[] = [];
+  private _subscriptions: EventSubscription[] = [];
 
   constructor(opts: InitClientManagerOptions) {
     this._logger = opts.logger;
@@ -130,41 +136,85 @@ export default class ClientManager {
     return { freeBalance: response.freeBalance[client.freeBalanceAddress].toString() };
   }
 
-  public async subscribe(subscription: EventSubscriptionParams) {
-    await this.updateSubscriptions(subscription);
+  public async subscribe(params: EventSubscriptionParams): Promise<string> {
+    const subscription = this.formatSubscription(params);
+    await this.addSubscription(subscription);
     const client = await this.getClient();
     this.subscribeOnClient(client, subscription);
+    return subscription.id;
+  }
+
+  public async unsubscribe(id: string) {
+    const client = await this.getClient();
+    this.unsubscribeOnClient(client, id);
+    await this.removeSubscription(id);
   }
 
   // -- PRIVATE ---------------------------------------------------------------- //
 
-  private async updateSubscriptions(subscription) {
-    const subscriptions = this._subscriptions;
-    subscriptions.push(subscription);
+  private formatSubscription(params: EventSubscriptionParams): EventSubscription {
+    return { id: uuid(), params };
+  }
+
+  private async persistSubscriptions(subscriptions: EventSubscription[]) {
     this._subscriptions = subscriptions;
     await saveSubscriptions(subscriptions, config.storeDir);
   }
 
-  private getSubscription(event: string) {
-    const matches = this._subscriptions.filter(x => x.event === event);
+  private async addSubscription(subscription: EventSubscription) {
+    const subscriptions = this._subscriptions;
+    subscriptions.push(subscription);
+    await this.persistSubscriptions(subscriptions);
+  }
+
+  private async removeSubscription(id: string) {
+    const subscriptions = this._subscriptions.filter(x => x.id !== id);
+    await this.persistSubscriptions(subscriptions);
+  }
+
+  private getSubscriptionById(id: string) {
+    const matches = this._subscriptions.filter(x => x.id === id);
     if (matches && matches.length) {
       return matches[0];
     }
     return null;
   }
 
+  private getSubscriptionsByEvent(event: string) {
+    return this._subscriptions.filter(x => x.params.event === event);
+  }
+
   private async onSubscription(event: string, data: any) {
-    const subscription = this.getSubscription(event);
+    const subscriptions = this.getSubscriptionsByEvent(event);
+    await Promise.all(
+      subscriptions.map(async subscription => {
+        const { webhook } = subscription.params;
+        try {
+          await axios.post(webhook, data);
+          this._logger.info(`Successfully pushed event ${event} to webhook: ${webhook}`);
+        } catch (error) {
+          this._logger.error(error);
+        }
+      }),
+    );
+  }
+
+  private subscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
+    client.on(subscription.params.event as any, data =>
+      this.onSubscription(subscription.params.event, data),
+    );
+  }
+
+  private unsubscribeOnClient(client: IConnextClient, id: string) {
+    const subscription = this.getSubscriptionById(id);
     if (subscription) {
-      await axios.post(subscription.webhook, data);
+      client.removeListener(subscription.params.event as any, data =>
+        this.onSubscription(subscription.params.event, data),
+      );
     }
   }
 
-  private subscribeOnClient(client: IConnextClient, subscription: EventSubscriptionParams) {
-    client.on(subscription.event as any, data => this.onSubscription(subscription.event, data));
-  }
-
-  private async initSubscriptions(subscriptions?: EventSubscriptionParams[]) {
+  private async initSubscriptions(subscriptions?: EventSubscription[]) {
     if (subscriptions) {
       const client = await this.getClient();
       subscriptions.forEach(subscription => this.subscribeOnClient(client, subscription));

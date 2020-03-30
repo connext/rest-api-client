@@ -10,7 +10,7 @@ import {
 } from "@connext/store";
 
 import { CONNEXT_WALLET_FILE_NAME, CONNEXT_SUBSCRIPTIONS_FILE_NAME } from "./constants";
-import { EventSubscriptionParams } from "./types";
+import { EventSubscription } from "./types";
 
 export async function requireParam(obj: any, param: string, type = "string") {
   if (!obj[param] || typeof obj[param] !== type) {
@@ -45,15 +45,13 @@ export async function getMnemonic(fileDir: string): Promise<string | undefined> 
 }
 
 export async function saveSubscriptions(
-  subscriptions: EventSubscriptionParams[],
+  subscriptions: EventSubscription[],
   fileDir: string,
 ): Promise<void> {
   await saveFile(subscriptions, fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
 }
 
-export async function getSubscriptions(
-  fileDir: string,
-): Promise<EventSubscriptionParams[] | undefined> {
+export async function getSubscriptions(fileDir: string): Promise<EventSubscription[] | undefined> {
   const result = await getFile(fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
   if (Array.isArray(result)) {
     return undefined;

@@ -5,6 +5,11 @@ export type EventSubscriptionParams = {
   webhook: string;
 };
 
+export type EventSubscription = {
+  id: string;
+  params: EventSubscriptionParams;
+};
+
 export interface InitOptions extends ClientOptions {
   network?: string;
 }
@@ -12,5 +17,5 @@ export interface InitOptions extends ClientOptions {
 export interface InitClientManagerOptions {
   logger: any;
   mnemonic?: string;
-  subscriptions?: EventSubscriptionParams[];
+  subscriptions?: EventSubscription[];
 }

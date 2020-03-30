@@ -119,6 +119,20 @@ app.post("/subscribe", async (req, res) => {
   }
 });
 
+// -- DELETE ---------------------------------------------------------------- //
+
+app.delete("/subscribe/:id", async (req, res) => {
+  try {
+    await requireParam(req.params, "id");
+    res.status(200).send(await clientManager.unsubscribe(req.params.id));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
+// -- INIT ---------------------------------------------------------------- //
+
 app.ready(async () => {
   const mnemonic = await getMnemonic(config.storeDir);
   const subscriptions = await getSubscriptions(config.storeDir);
