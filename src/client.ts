@@ -7,6 +7,8 @@ import {
   HashLockTransferParameters,
   ResolveHashLockTransferParameters,
   DepositParameters,
+  ConditionalTransferResponse,
+  ResolveConditionResponse,
 } from "@connext/types";
 
 import config from "./config";
@@ -70,7 +72,7 @@ export default class ClientManager {
     return client;
   }
 
-  async hashLockTransfer(opts: HashLockTransferParameters) {
+  async hashLockTransfer(opts: HashLockTransferParameters): Promise<ConditionalTransferResponse> {
     if (!opts.assetId) {
       throw new Error("Cannot transfer without assetId defined");
     }
@@ -86,7 +88,7 @@ export default class ClientManager {
     return response;
   }
 
-  async hashLockResolve(preImage: string) {
+  async hashLockResolve(preImage: string): Promise<ResolveConditionResponse> {
     const client = await this.getClient();
     const response = await client.resolveCondition({
       conditionType: "HashLockTransfer",
