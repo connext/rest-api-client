@@ -18,10 +18,12 @@ import { EventSubscriptionParams, InitClientManagerOptions, InitOptions } from "
 
 export default class ClientManager {
   private _client: IConnextClient | undefined;
+  private _logger: any;
   private _mnemonic: string | undefined;
   private _subscriptions: EventSubscriptionParams[] = [];
 
   constructor(opts: InitClientManagerOptions) {
+    this._logger = opts.logger;
     this._mnemonic = opts.mnemonic;
     this.initSubscriptions(opts.subscriptions);
   }
@@ -62,6 +64,7 @@ export default class ClientManager {
     }
     const client = await connext.connect(network, clientOpts);
     this._client = client;
+    this._logger.info("Client initialized successfully");
     return client;
   }
 
@@ -118,6 +121,7 @@ export default class ClientManager {
   public async setMnemonic(mnemonic: string) {
     await saveMnemonic(mnemonic, config.storeDir);
     this._mnemonic = mnemonic;
+    this._logger.info("Mnemonic set successfully");
   }
 
   public async deposit(params: DepositParameters) {

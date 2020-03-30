@@ -29,6 +29,7 @@ app.get("/balance/:assetId", async (req, res) => {
     await requireParam(req.params, "assetId");
     res.status(200).send(await clientManager.balance(req.params.assetId));
   } catch (error) {
+    app.log.error(error);
     res.status(500).send({ message: error.message });
   }
 });
@@ -46,6 +47,7 @@ app.get("/hashlock-status/:lockHash", async (req, res) => {
     await requireParam(req.params, "lockHash");
     res.status(200).send(await clientManager.hashLockStatus(req.params.lockHash));
   } catch (error) {
+    app.log.error(error);
     res.status(500).send({ message: error.message });
   }
 });
@@ -60,6 +62,7 @@ app.post("/connect", async (req, res) => {
     await clientManager.initClient(req.body);
     res.status(200).send(clientManager.config);
   } catch (error) {
+    app.log.error(error);
     res.status(500).send({ message: error.message });
   }
 });
@@ -70,6 +73,7 @@ app.post("/mnemonic", async (req, res) => {
     clientManager.setMnemonic(req.body.mnemonic);
     res.status(200).send({ success: true });
   } catch (error) {
+    app.log.error(error);
     res.status(500).send({ message: error.message });
   }
 });
@@ -78,6 +82,7 @@ app.post("/hashlock-transfer", async (req, res) => {
   try {
     res.status(200).send(await clientManager.hashLockTransfer(req.body));
   } catch (error) {
+    app.log.error(error);
     res.status(500).send({ message: error.message });
   }
 });
@@ -87,6 +92,7 @@ app.post("/hashlock-resolve", async (req, res) => {
     await requireParam(req.body, "lockHash");
     res.status(200).send(await clientManager.hashLockResolve(req.body.lockHash));
   } catch (error) {
+    app.log.error(error);
     res.status(500).send({ message: error.message });
   }
 });
@@ -97,6 +103,7 @@ app.post("/deposit", async (req, res) => {
     await requireParam(req.body, "assetId");
     res.status(200).send(await clientManager.deposit(req.body));
   } catch (error) {
+    app.log.error(error);
     res.status(500).send({ message: error.message });
   }
 });
@@ -107,6 +114,7 @@ app.post("/subscribe", async (req, res) => {
     await requireParam(req.body, "webhook");
     res.status(200).send(await clientManager.subscribe(req.body));
   } catch (error) {
+    app.log.error(error);
     res.status(500).send({ message: error.message });
   }
 });
@@ -114,7 +122,7 @@ app.post("/subscribe", async (req, res) => {
 app.ready(async () => {
   const mnemonic = await getMnemonic(config.storeDir);
   const subscriptions = await getSubscriptions(config.storeDir);
-  clientManager = new ClientManager({ mnemonic, subscriptions });
+  clientManager = new ClientManager({ mnemonic, subscriptions, logger: app.log });
   if (mnemonic) {
     await clientManager.initClient();
   }
