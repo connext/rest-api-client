@@ -4,7 +4,7 @@ import Helmet from "fastify-helmet";
 import config from "./config";
 
 import ClientManager from "./client";
-import { requireParam, getMnemonic } from "./utilities";
+import { requireParam, getMnemonic, getSubscriptions } from "./utilities";
 
 const app = fastify({
   logger: { prettyPrint: config.debug ? { forceColor: true } : undefined },
@@ -101,9 +101,20 @@ app.post("/deposit", async (req, res) => {
   }
 });
 
+app.post("/subscribe", async (req, res) => {
+  try {
+    await requireParam(req.body, "event");
+    await requireParam(req.body, "webhook");
+    res.status(200).send(await clientManager.subscribe(req.body));
+  } catch (error) {
+    res.status(500).send({ message: error.message });
+  }
+});
+
 app.ready(async () => {
   const mnemonic = await getMnemonic(config.storeDir);
-  clientManager = new ClientManager(mnemonic);
+  const subscriptions = await getSubscriptions(config.storeDir);
+  clientManager = new ClientManager({ mnemonic, subscriptions });
   if (mnemonic) {
     await clientManager.initClient();
   }
