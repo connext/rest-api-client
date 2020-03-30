@@ -1,10 +1,8 @@
-import { EventEmitter } from "events";
 import axios from "axios";
 import * as connext from "@connext/client";
 import { ConnextStore } from "@connext/store";
 import {
   IConnextClient,
-  ClientOptions,
   ChannelProviderConfig,
   HashLockTransferParameters,
   ResolveHashLockTransferParameters,
@@ -16,24 +14,14 @@ import {
 import config from "./config";
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
 import { saveMnemonic, saveSubscriptions } from "./utilities";
-import { EventSubscriptionParams } from "./types";
+import { EventSubscriptionParams, InitClientManagerOptions, InitOptions } from "./types";
 
-interface InitOptions extends ClientOptions {
-  network?: string;
-}
-
-interface InitClientManagerOptions {
-  mnemonic?: string;
-  subscriptions?: EventSubscriptionParams[];
-}
-
-export default class ClientManager extends EventEmitter {
+export default class ClientManager {
   private _client: IConnextClient | undefined;
   private _mnemonic: string | undefined;
   private _subscriptions: EventSubscriptionParams[] = [];
 
   constructor(opts: InitClientManagerOptions) {
-    super();
     this._mnemonic = opts.mnemonic;
     this.initSubscriptions(opts.subscriptions);
   }
