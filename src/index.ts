@@ -91,6 +91,7 @@ app.post("/mnemonic", async (req, res) => {
 
 app.post("/hashlock-transfer", async (req, res) => {
   try {
+    await requireParam(req.body, "amount");
     await requireParam(req.body, "assetId");
     await requireParam(req.body, "lockHash");
     await requireParam(req.body, "timelock");

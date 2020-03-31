@@ -165,7 +165,7 @@ export default class ClientManager {
   private async initSubscriptions(subscriptions?: EventSubscription[]) {
     if (subscriptions && subscriptions.length) {
       const client = await this.getClient();
-      this._subscriber.batchSubscribe(client, subscriptions);
+      this._subscriber.batchResubscribe(client, subscriptions);
     }
   }
 }
