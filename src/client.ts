@@ -34,13 +34,6 @@ export default class ClientManager {
     this.initSubscriptions(opts.subscriptions);
   }
 
-  get config(): Partial<ChannelProviderConfig> {
-    return {
-      ...EMPTY_CHANNEL_PROVIDER_CONFIG,
-      ...this._client?.channelProvider.config,
-    };
-  }
-
   get mnemonic(): string {
     return this._mnemonic || config.mnemonic;
   }
@@ -90,11 +83,20 @@ export default class ClientManager {
   }
 
   public async getConfig(): Promise<Partial<ChannelProviderConfig>> {
-    const config = this.config;
+    const client = await this.getClient();
+    const config = {
+      ...EMPTY_CHANNEL_PROVIDER_CONFIG,
+      ...client.channelProvider.config,
+    };
     if (!config.multisigAddress) {
       throw new Error("Connext Client Not Yet Initialized");
     }
     return config;
+  }
+
+  public async getAppInstanceDetails(appInstanceId: string) {
+    const client = await this.getClient();
+    return client.getAppInstanceDetails(appInstanceId);
   }
 
   public async hashLockTransfer(

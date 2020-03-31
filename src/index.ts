@@ -53,6 +53,16 @@ app.get("/hashlock-status/:lockHash", async (req, res) => {
   }
 });
 
+app.get("/appinstance-details/:appInstanceId", async (req, res) => {
+  try {
+    await requireParam(req.params, "appInstanceId");
+    res.status(200).send(await clientManager.getAppInstanceDetails(req.params.appInstanceId));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
 // -- POST ---------------------------------------------------------------- //
 
 app.post("/connect", async (req, res) => {
