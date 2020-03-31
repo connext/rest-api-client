@@ -89,6 +89,14 @@ export default class ClientManager {
     return client;
   }
 
+  public async getConfig(): Promise<Partial<ChannelProviderConfig>> {
+    const config = this.config;
+    if (!config.multisigAddress) {
+      throw new Error("Connext Client Not Yet Initialized");
+    }
+    return config;
+  }
+
   public async hashLockTransfer(
     opts: HashLockTransferParameters,
   ): Promise<ConditionalTransferResponse> {

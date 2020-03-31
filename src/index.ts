@@ -35,11 +35,12 @@ app.get("/balance/:assetId", async (req, res) => {
 });
 
 app.get("/config", async (req, res) => {
-  const config = clientManager.config;
-  if (!config.multisigAddress) {
-    res.status(500).send({ message: "Connext Client Not Yet Initialized" });
+  try {
+    res.status(200).send(await clientManager.getConfig());
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
   }
-  res.status(200).send(config);
 });
 
 app.get("/hashlock-status/:lockHash", async (req, res) => {
