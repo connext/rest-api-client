@@ -91,6 +91,10 @@ app.post("/mnemonic", async (req, res) => {
 
 app.post("/hashlock-transfer", async (req, res) => {
   try {
+    await requireParam(req.body, "assetId");
+    await requireParam(req.body, "lockHash");
+    await requireParam(req.body, "timelock");
+    await requireParam(req.body, "recipient");
     res.status(200).send(await clientManager.hashLockTransfer(req.body));
   } catch (error) {
     app.log.error(error);
