@@ -3,7 +3,6 @@ import { ClientOptions } from "@connext/types";
 export type EventSubscriptionParams = {
   event: string;
   webhook: string;
-  filters:
 };
 
 export type EventSubscription = {
