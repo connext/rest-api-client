@@ -100,18 +100,16 @@ export default class ClientManager {
   public async hashLockTransfer(
     opts: HashLockTransferParameters,
   ): Promise<ConditionalTransferResponse> {
-    if (!opts.assetId) {
-      throw new Error("Cannot transfer without assetId defined");
-    }
     const client = await this.getClient();
     const response = await client.conditionalTransfer({
       amount: opts.amount,
+      recipient: opts.recipient,
       conditionType: "HashLockTransfer",
       lockHash: opts.lockHash,
       assetId: opts.assetId,
       meta: opts.meta,
       timelock: opts.timelock,
-    } as HashLockTransferParameters);
+    });
     return response;
   }
 
