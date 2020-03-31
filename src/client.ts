@@ -155,6 +155,7 @@ export default class ClientManager {
     const client = await this.getClient();
     this.unsubscribeOnClient(client, id);
     await this.removeSubscription(id);
+    return { success: true };
   }
 
   // -- PRIVATE ---------------------------------------------------------------- //
