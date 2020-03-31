@@ -71,7 +71,7 @@ app.post("/connect", async (req, res) => {
       await requireParam(req.body, "mnemonic");
     }
     await clientManager.initClient(req.body);
-    res.status(200).send(clientManager.config);
+    res.status(200).send(await clientManager.getConfig());
   } catch (error) {
     app.log.error(error);
     res.status(500).send({ message: error.message });

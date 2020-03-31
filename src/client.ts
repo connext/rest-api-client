@@ -1,5 +1,3 @@
-import axios from "axios";
-import { v4 as uuid } from "uuid";
 import * as connext from "@connext/client";
 import { ConnextStore } from "@connext/store";
 import {
@@ -14,23 +12,25 @@ import {
 
 import config from "./config";
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
-import { storeMnemonic, storeSubscriptions, storeInitOptions } from "./utilities";
+import { storeMnemonic, storeInitOptions } from "./utilities";
 import {
   EventSubscriptionParams,
   InitClientManagerOptions,
   InitOptions,
   EventSubscription,
 } from "./types";
+import Subscriber from "./subscriber";
 
 export default class ClientManager {
   private _client: IConnextClient | undefined;
   private _logger: any;
   private _mnemonic: string | undefined;
-  private _subscriptions: EventSubscription[] = [];
+  private _subscriber: Subscriber;
 
   constructor(opts: InitClientManagerOptions) {
     this._logger = opts.logger;
     this._mnemonic = opts.mnemonic;
+    this._subscriber = new Subscriber(opts.logger);
     this.initSubscriptions(opts.subscriptions);
   }
 
@@ -41,8 +41,6 @@ export default class ClientManager {
   set mnemonic(value: string) {
     this._mnemonic = value;
   }
-
-  // -- PUBLIC ---------------------------------------------------------------- //
 
   public async initClient(opts?: Partial<InitOptions>): Promise<IConnextClient> {
     const mnemonic = opts?.mnemonic || this.mnemonic;
@@ -70,6 +68,7 @@ export default class ClientManager {
       },
       config.storeDir,
     );
+    this._logger.info("Client initialized successfully");
     this._logger.info("Client initialized successfully");
     return client;
   }
@@ -152,91 +151,21 @@ export default class ClientManager {
   }
 
   public async subscribe(params: EventSubscriptionParams): Promise<{ id: string }> {
-    const subscription = this.formatSubscription(params);
-    await this.addSubscription(subscription);
     const client = await this.getClient();
-    this.subscribeOnClient(client, subscription);
+    const subscription = await this._subscriber.subscribe(client, params);
     return { id: subscription.id };
   }
 
   public async unsubscribe(id: string) {
     const client = await this.getClient();
-    this.unsubscribeOnClient(client, id);
-    await this.removeSubscription(id);
+    await this._subscriber.unsubscribe(client, id);
     return { success: true };
-  }
-
-  // -- PRIVATE ---------------------------------------------------------------- //
-
-  private formatSubscription(params: EventSubscriptionParams): EventSubscription {
-    return { id: uuid(), params };
-  }
-
-  private async persistSubscriptions(subscriptions: EventSubscription[]) {
-    this._subscriptions = subscriptions;
-    await storeSubscriptions(subscriptions, config.storeDir);
-  }
-
-  private async addSubscription(subscription: EventSubscription) {
-    const subscriptions = this._subscriptions;
-    subscriptions.push(subscription);
-    await this.persistSubscriptions(subscriptions);
-  }
-
-  private async removeSubscription(id: string) {
-    const subscriptions = this._subscriptions.filter(x => x.id !== id);
-    await this.persistSubscriptions(subscriptions);
-  }
-
-  private getSubscriptionById(id: string) {
-    const matches = this._subscriptions.filter(x => x.id === id);
-    if (matches && matches.length) {
-      return matches[0];
-    }
-    return null;
-  }
-
-  private getSubscriptionsByEvent(event: string) {
-    return this._subscriptions.filter(x => x.params.event === event);
-  }
-
-  private async onSubscription(event: string, data: any) {
-    const subscriptions = this.getSubscriptionsByEvent(event);
-    await Promise.all(
-      subscriptions.map(async subscription => {
-        const { webhook } = subscription.params;
-        try {
-          await axios.post(webhook, {
-            id: subscription.id,
-            data,
-          });
-          this._logger.info(`Successfully pushed event ${event} to webhook: ${webhook}`);
-        } catch (error) {
-          this._logger.error(error);
-        }
-      }),
-    );
-  }
-
-  private subscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
-    client.on(subscription.params.event as any, data =>
-      this.onSubscription(subscription.params.event, data),
-    );
-  }
-
-  private unsubscribeOnClient(client: IConnextClient, id: string) {
-    const subscription = this.getSubscriptionById(id);
-    if (subscription) {
-      client.removeListener(subscription.params.event as any, data =>
-        this.onSubscription(subscription.params.event, data),
-      );
-    }
   }
 
   private async initSubscriptions(subscriptions?: EventSubscription[]) {
     if (subscriptions && subscriptions.length) {
       const client = await this.getClient();
-      subscriptions.forEach(subscription => this.subscribeOnClient(client, subscription));
+      this._subscriber.batchSubscribe(client, subscriptions);
     }
   }
 }

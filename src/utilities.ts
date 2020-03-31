@@ -13,6 +13,7 @@ import {
   CONNEXT_WALLET_FILE_NAME,
   CONNEXT_SUBSCRIPTIONS_FILE_NAME,
   CONNEXT_INIT_OPTIONS_FILE_NAME,
+  SUBSCRIPTION_MESSAGING_PREFIX,
 } from "./constants";
 import { EventSubscription, InitOptions } from "./types";
 
@@ -89,4 +90,8 @@ export async function fetchAll(fileDir: string) {
     subscriptions,
     initOptions,
   };
+}
+
+export function isMessagingSubscription(subscription: EventSubscription) {
+  return subscription.params.event.startsWith(SUBSCRIPTION_MESSAGING_PREFIX);
 }
