@@ -111,7 +111,8 @@ export default class ClientManager {
       meta: opts.meta,
       timelock: opts.timelock,
     });
-    return response;
+    const appDetails = await client.getAppInstanceDetails((response as any).appId);
+    return { ...response, ...appDetails };
   }
 
   public async hashLockResolve(preImage: string): Promise<ResolveConditionResponse> {
@@ -120,7 +121,8 @@ export default class ClientManager {
       conditionType: "HashLockTransfer",
       preImage,
     } as ResolveHashLockTransferParameters);
-    return response;
+    const appDetails = await client.getAppInstanceDetails(response.appId);
+    return { ...response, ...appDetails };
   }
 
   public async hashLockStatus(lockHash: string) {
