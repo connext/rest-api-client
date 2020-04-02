@@ -44,8 +44,8 @@ export default class Subscriber {
       let data = res;
       if (res.subject) {
         const subjectParams = res.subject.split(".");
-        if (subjectParams[4] === "app-instance") {
-          const appDetails = await client.getAppInstanceDetails(subjectParams[5]);
+        if (subjectParams[3] === "app-instance") {
+          const appDetails = await client.getAppInstanceDetails(subjectParams[4]);
           data = { ...res, ...appDetails };
         }
       }
