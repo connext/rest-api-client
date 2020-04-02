@@ -82,7 +82,7 @@ export default class Subscriber {
 
   private formatMessagingSubject(client: IConnextClient, event: string) {
     switch (event) {
-      case "MESSAGING_APP_INSTANCE_INSTALL":
+      case "MESSAGE_APP_INSTANCE_INSTALL":
         return `${client.publicIdentifier}.channel.${client.multisigAddress}.app-instance.*.install`;
       default:
         throw new Error(`Unknown Messaging Event: ${event}`);
