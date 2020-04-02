@@ -111,7 +111,10 @@ export default class ClientManager {
       meta: opts.meta,
       timelock: opts.timelock,
     });
-    const appDetails = await client.getAppInstanceDetails((response as any).appId);
+    // TODO: To be removed once https://github.com/ConnextProject/indra/pull/953 is merged
+    // @ts-ignore
+    const appId = response.transferAppInstanceId || response.appId;
+    const appDetails = await client.getAppInstanceDetails(appId);
     return { ...response, ...appDetails };
   }
 
