@@ -40,7 +40,15 @@ export default class Subscriber {
 
   private subscribeOnMessaging(client: IConnextClient, subscription: EventSubscription) {
     const subject = this.formatMessagingSubject(client, subscription.params.event);
-    client.messaging.subscribe(subject, data => {
+    client.messaging.subscribe(subject, async (res: any) => {
+      let data = res;
+      if (res.subject) {
+        const subjectParams = res.subject.split(".");
+        if (subjectParams[4] === "app-instance") {
+          const appDetails = await client.getAppInstanceDetails(subjectParams[5]);
+          data = { ...res, ...appDetails };
+        }
+      }
       this.onSubscription(subscription.params.event, data);
     });
   }
