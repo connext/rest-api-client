@@ -40,8 +40,8 @@ export default class Subscriber {
 
   private subscribeOnMessaging(client: IConnextClient, subscription: EventSubscription) {
     const subject = this.formatMessagingSubject(client, subscription.params.event);
-    client.messaging.subscribe(subject, (...args) => {
-      console.log("subscription form the subject", args);
+    client.messaging.subscribe(subject, data => {
+      this.onSubscription(subscription.params.event, data);
     });
   }
 
