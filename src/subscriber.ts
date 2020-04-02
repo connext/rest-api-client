@@ -1,6 +1,6 @@
 import axios from "axios";
 import { v4 as uuid } from "uuid";
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, deBigNumberifyJson } from "@connext/types";
 
 import { isMessagingSubscription, storeSubscriptions } from "./utilities";
 import { EventSubscription, EventSubscriptionParams } from "./types";
@@ -137,7 +137,7 @@ export default class Subscriber {
         try {
           await axios.post(webhook, {
             id: subscription.id,
-            data,
+            data: deBigNumberifyJson(data),
           });
           this._logger.info(`Successfully pushed event ${event} to webhook: ${webhook}`);
         } catch (error) {

@@ -8,6 +8,7 @@ import {
   DepositParameters,
   ConditionalTransferResponse,
   ResolveConditionResponse,
+  deBigNumberifyJson,
 } from "@connext/types";
 
 import config from "./config";
@@ -95,7 +96,9 @@ export default class ClientManager {
 
   public async getAppInstanceDetails(appInstanceId: string) {
     const client = await this.getClient();
-    return client.getAppInstanceDetails(appInstanceId);
+    const response = client.getAppInstanceDetails(appInstanceId);
+    const data = deBigNumberifyJson(response);
+    return data;
   }
 
   public async hashLockTransfer(
@@ -115,7 +118,8 @@ export default class ClientManager {
     // @ts-ignore
     const appId = response.transferAppInstanceId || response.appId;
     const appDetails = await client.getAppInstanceDetails(appId);
-    return { ...response, ...appDetails };
+    const data = deBigNumberifyJson({ ...response, ...appDetails });
+    return data;
   }
 
   public async hashLockResolve(preImage: string): Promise<ResolveConditionResponse> {
@@ -125,7 +129,8 @@ export default class ClientManager {
       preImage,
     } as ResolveHashLockTransferParameters);
     const appDetails = await client.getAppInstanceDetails(response.appId);
-    return { ...response, ...appDetails };
+    const data = deBigNumberifyJson({ ...response, ...appDetails });
+    return data;
   }
 
   public async hashLockStatus(lockHash: string) {
@@ -134,7 +139,8 @@ export default class ClientManager {
     if (!response) {
       throw new Error(`No HashLock Transfer found for lockHash: ${lockHash}`);
     }
-    return response;
+    const data = deBigNumberifyJson(response);
+    return data;
   }
 
   public async balance(assetId: string) {
