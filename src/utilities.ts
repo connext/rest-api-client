@@ -68,21 +68,24 @@ export async function fetchMnemonic(): Promise<string | undefined> {
 
 export async function storeSubscriptions(subscriptions: EventSubscription[]): Promise<void> {
   assertPostgresStore();
-  await postgresStore.setItem(CONNEXT_SUBSCRIPTIONS_STORE_KEY, subscriptions);
+  await postgresStore.setItem(CONNEXT_SUBSCRIPTIONS_STORE_KEY, { subscriptions });
 }
 
 export async function fetchSubscriptions(): Promise<EventSubscription[] | undefined> {
   assertPostgresStore();
-  const result = await postgresStore.getItem(CONNEXT_SUBSCRIPTIONS_STORE_KEY);
-  if (!Array.isArray(result)) {
+  const result = await postgresStore.getItem<{ subscriptions: EventSubscription[] }>(
+    CONNEXT_SUBSCRIPTIONS_STORE_KEY,
+  );
+  if (typeof result !== "object" || !result?.subscriptions) {
     return undefined;
   }
-  return result;
+  if (!Array.isArray(result.subscriptions)) {
+    return undefined;
+  }
+  return result.subscriptions;
 }
 
-export async function storeInitOptions(
-  initOptions: Partial<InitOptions>,
-): Promise<void> {
+export async function storeInitOptions(initOptions: Partial<InitOptions>): Promise<void> {
   assertPostgresStore();
   await postgresStore.setItem(CONNEXT_INIT_OPTIONS_STORE_KEY, initOptions);
 }

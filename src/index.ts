@@ -4,7 +4,7 @@ import Helmet from "fastify-helmet";
 import config from "./config";
 
 import ClientManager from "./client";
-import { requireParam, fetchAll } from "./utilities";
+import { requireParam, fetchAll, initPostgresStore } from "./utilities";
 
 const app = fastify({
   logger: { prettyPrint: config.debug ? { forceColor: true } : undefined },
@@ -179,6 +179,7 @@ app.delete("/subscribe/all", async (req, res) => {
 // -- INIT ---------------------------------------------------------------- //
 
 app.ready(async () => {
+  await initPostgresStore();
   const { mnemonic, subscriptions, initOptions } = await fetchAll();
   clientManager = new ClientManager({ mnemonic, subscriptions, logger: app.log });
   if (initOptions && Object.keys(initOptions).length) {

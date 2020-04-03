@@ -9,12 +9,11 @@ import {
   ConditionalTransferResponse,
   ResolveConditionResponse,
   deBigNumberifyJson,
-  ClientOptions,
 } from "@connext/types";
 
 import config from "./config";
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
-import { storeMnemonic, storeInitOptions, initPostgresStore } from "./utilities";
+import { storeMnemonic, storeInitOptions, postgresStore } from "./utilities";
 import {
   EventSubscriptionParams,
   InitClientManagerOptions,
@@ -53,23 +52,11 @@ export default class ClientManager {
     const network = opts?.network || config.network;
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
     const nodeUrl = opts?.nodeUrl || config.nodeUrl;
-    const wrappedStore = await initPostgresStore();
-    const store = new ConnextStore("Postgres", { storage: wrappedStore });
-    const clientOpts: Partial<ClientOptions> = { mnemonic, store };
-    if (ethProviderUrl) {
-      clientOpts.ethProviderUrl = ethProviderUrl;
-    }
-    if (nodeUrl) {
-      clientOpts.nodeUrl = nodeUrl;
-    }
+    const store = new ConnextStore("Postgres", { storage: postgresStore });
+    const clientOpts = { mnemonic, store, ethProviderUrl, nodeUrl };
     const client = await connext.connect(network, clientOpts);
     this._client = client;
-    await storeInitOptions(
-      {
-        network,
-        ...clientOpts,
-      },
-    );
+    await storeInitOptions({ mnemonic, network, ethProviderUrl, nodeUrl });
     this._logger.info("Client initialized successfully");
     this._logger.info("Client initialized successfully");
     return client;
