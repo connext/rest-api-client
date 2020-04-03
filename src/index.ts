@@ -147,9 +147,9 @@ app.post("/subscribe/batch", async (req, res) => {
 
 // -- DELETE ---------------------------------------------------------------- //
 
-app.delete("/subscribe/:id", async (req, res) => {
+app.delete("/subscribe", async (req, res) => {
   try {
-    await requireParam(req.params, "id");
+    await requireParam(req.body, "id");
     res.status(200).send(await clientManager.unsubscribe(req.params.id));
   } catch (error) {
     app.log.error(error);
