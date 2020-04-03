@@ -147,27 +147,29 @@ export default class Subscriber {
     );
   }
 
-  public async clearAllSubscriptions(client: IConnextClient) {
-    const subscriptions = this._subscriptions;
-    this._subscriptions = [];
-    await storeSubscriptions(this._subscriptions, config.storeDir);
-    return Promise.all(
-      subscriptions.map(subscription => this.routeUnsubscribe(client, subscription)),
+  public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
+    await Promise.all(
+      this._subscriptions.map(subscription => this.routeUnsubscribe(client, subscription)),
     );
+    await this.persistSubscriptions([]);
   }
 
-  public async batchResubscribe(client: IConnextClient, subscriptions: EventSubscription[]) {
+  public async batchResubscribe(
+    client: IConnextClient,
+    subscriptions: EventSubscription[],
+  ): Promise<void> {
     this._subscriptions = [...this._subscriptions, ...subscriptions];
-    return Promise.all(
-      subscriptions.map(subscription => this.routeSubscribe(client, subscription)),
-    );
+    await Promise.all(subscriptions.map(subscription => this.routeSubscribe(client, subscription)));
   }
 
-  public async batchSubscribe(client: IConnextClient, paramsArr: EventSubscriptionParams[]) {
+  public async batchSubscribe(
+    client: IConnextClient,
+    paramsArr: EventSubscriptionParams[],
+  ): Promise<EventSubscription[]> {
     return Promise.all(paramsArr.map(params => this.subscribe(client, params)));
   }
 
-  public async batchUnsubscribe(client: IConnextClient, idsArr: string[]) {
-    return Promise.all(idsArr.map(id => this.unsubscribe(client, id)));
+  public async batchUnsubscribe(client: IConnextClient, idsArr: string[]): Promise<void> {
+    await Promise.all(idsArr.map(id => this.unsubscribe(client, id)));
   }
 }
