@@ -167,9 +167,27 @@ export default class ClientManager {
     return { id: subscription.id };
   }
 
+  public async subscribeBatch(paramsArr: EventSubscriptionParams[]): Promise<{ id: string }[]> {
+    const client = await this.getClient();
+    const subscriptions = await this._subscriber.batchSubscribe(client, paramsArr);
+    return subscriptions;
+  }
+
   public async unsubscribe(id: string) {
     const client = await this.getClient();
     await this._subscriber.unsubscribe(client, id);
+    return { success: true };
+  }
+
+  public async unsubcribeBatch(idsArr: string[]) {
+    const client = await this.getClient();
+    await this._subscriber.batchUnsubscribe(client, idsArr);
+    return { success: true };
+  }
+
+  public async unsubscribeAll() {
+    const client = await this.getClient();
+    await this._subscriber.clearAllSubscriptions(client);
     return { success: true };
   }
 

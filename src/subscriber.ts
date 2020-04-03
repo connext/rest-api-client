@@ -147,10 +147,27 @@ export default class Subscriber {
     );
   }
 
+  public async clearAllSubscriptions(client: IConnextClient) {
+    const subscriptions = this._subscriptions;
+    this._subscriptions = [];
+    await storeSubscriptions(this._subscriptions, config.storeDir);
+    return Promise.all(
+      subscriptions.map(subscription => this.routeUnsubscribe(client, subscription)),
+    );
+  }
+
   public async batchResubscribe(client: IConnextClient, subscriptions: EventSubscription[]) {
     this._subscriptions = [...this._subscriptions, ...subscriptions];
-    subscriptions.forEach(subscription => {
-      this.routeSubscribe(client, subscription);
-    });
+    return Promise.all(
+      subscriptions.map(subscription => this.routeSubscribe(client, subscription)),
+    );
+  }
+
+  public async batchSubscribe(client: IConnextClient, paramsArr: EventSubscriptionParams[]) {
+    return Promise.all(paramsArr.map(params => this.subscribe(client, params)));
+  }
+
+  public async batchUnsubscribe(client: IConnextClient, idsArr: string[]) {
+    return Promise.all(idsArr.map(id => this.unsubscribe(client, id)));
   }
 }

@@ -135,12 +135,41 @@ app.post("/subscribe", async (req, res) => {
   }
 });
 
+app.post("/subscribe/batch", async (req, res) => {
+  try {
+    await requireParam(req.body, "params", "array");
+    res.status(200).send(await clientManager.subscribeBatch(req.body.params));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
 // -- DELETE ---------------------------------------------------------------- //
 
 app.delete("/subscribe/:id", async (req, res) => {
   try {
     await requireParam(req.params, "id");
     res.status(200).send(await clientManager.unsubscribe(req.params.id));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
+app.delete("/subscribe/batch", async (req, res) => {
+  try {
+    await requireParam(req.body, "ids", "array");
+    res.status(200).send(await clientManager.unsubcribeBatch(req.body.ids));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
+app.delete("/subscribe/all", async (req, res) => {
+  try {
+    res.status(200).send(await clientManager.unsubscribeAll());
   } catch (error) {
     app.log.error(error);
     res.status(500).send({ message: error.message });

@@ -17,8 +17,19 @@ import {
 } from "./constants";
 import { EventSubscription, InitOptions } from "./types";
 
+export function verifyType(value: any, type: string) {
+  switch (type) {
+    case "array":
+      return Array.isArray(value);
+    case "buffer":
+      return Buffer.isBuffer(value);
+    default:
+      return typeof value === type;
+  }
+}
+
 export async function requireParam(obj: any, param: string, type = "string") {
-  if (!obj[param] || typeof obj[param] !== type) {
+  if (!obj[param] || !verifyType(obj[param], type)) {
     throw new Error(`Invalid or missing ${param}`);
   }
 }
