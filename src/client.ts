@@ -167,7 +167,9 @@ export default class ClientManager {
     return { id: subscription.id };
   }
 
-  public async subscribeBatch(paramsArr: EventSubscriptionParams[]): Promise<{ id: string }[]> {
+  public async subscribeBatch(
+    paramsArr: EventSubscriptionParams[],
+  ): Promise<{ subscriptions: EventSubscription[] }> {
     const client = await this.getClient();
     const subscriptions = await this._subscriber.batchSubscribe(client, paramsArr);
     return { subscriptions };
