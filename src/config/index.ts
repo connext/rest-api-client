@@ -13,6 +13,12 @@ const nodeUrl = process.env.CONNEXT_NODE_URL || undefined;
 const mnemonic = process.env.CONNEXT_MNEMONIC || "";
 const storeDir = process.env.CONNEXT_STORE_DIR || "./connext-store";
 
+const dbHost = process.env.POSTGRES_HOST;
+const dbPort = parseInt(process.env.POSTGRES_PORT || "5432");
+const dbUsername = process.env.POSTGRES_USERNAME;
+const dbPassword = process.env.POSTGRES_PASSWORD;
+const dbDatabase = process.env.POSTGRES_DATABASE;
+
 export default {
   env: env,
   debug: debug,
@@ -23,4 +29,9 @@ export default {
   nodeUrl,
   mnemonic,
   storeDir,
+  dbHost,
+  dbPort,
+  dbUsername,
+  dbPassword,
+  dbDatabase,
 };

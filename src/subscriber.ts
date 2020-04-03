@@ -101,7 +101,7 @@ export default class Subscriber {
 
   private async persistSubscriptions(subscriptions: EventSubscription[]) {
     this._subscriptions = subscriptions;
-    await storeSubscriptions(subscriptions, config.storeDir);
+    await storeSubscriptions(subscriptions);
   }
 
   private async addSubscription(subscription: EventSubscription) {
@@ -147,9 +147,12 @@ export default class Subscriber {
     );
   }
 
-  public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
-    await Promise.all(
-      this._subscriptions.map(subscription => this.routeUnsubscribe(client, subscription)),
+  public async clearAllSubscriptions(client: IConnextClient) {
+    const subscriptions = this._subscriptions;
+    this._subscriptions = [];
+    await storeSubscriptions(this._subscriptions);
+    return Promise.all(
+      subscriptions.map(subscription => this.routeUnsubscribe(client, subscription)),
     );
     await this.persistSubscriptions([]);
   }

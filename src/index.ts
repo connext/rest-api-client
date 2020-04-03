@@ -179,7 +179,7 @@ app.delete("/subscribe/all", async (req, res) => {
 // -- INIT ---------------------------------------------------------------- //
 
 app.ready(async () => {
-  const { mnemonic, subscriptions, initOptions } = await fetchAll(config.storeDir);
+  const { mnemonic, subscriptions, initOptions } = await fetchAll();
   clientManager = new ClientManager({ mnemonic, subscriptions, logger: app.log });
   if (initOptions && Object.keys(initOptions).length) {
     await clientManager.initClient(initOptions);

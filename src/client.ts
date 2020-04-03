@@ -9,11 +9,12 @@ import {
   ConditionalTransferResponse,
   ResolveConditionResponse,
   deBigNumberifyJson,
+  ClientOptions,
 } from "@connext/types";
 
 import config from "./config";
 import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
-import { storeMnemonic, storeInitOptions } from "./utilities";
+import { storeMnemonic, storeInitOptions, initPostgresStore } from "./utilities";
 import {
   EventSubscriptionParams,
   InitClientManagerOptions,
@@ -52,8 +53,9 @@ export default class ClientManager {
     const network = opts?.network || config.network;
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
     const nodeUrl = opts?.nodeUrl || config.nodeUrl;
-    const store = new ConnextStore("File", { fileDir: config.storeDir });
-    const clientOpts: any = { mnemonic, store };
+    const wrappedStore = await initPostgresStore();
+    const store = new ConnextStore("Postgres", { storage: wrappedStore });
+    const clientOpts: Partial<ClientOptions> = { mnemonic, store };
     if (ethProviderUrl) {
       clientOpts.ethProviderUrl = ethProviderUrl;
     }
@@ -67,7 +69,6 @@ export default class ClientManager {
         network,
         ...clientOpts,
       },
-      config.storeDir,
     );
     this._logger.info("Client initialized successfully");
     this._logger.info("Client initialized successfully");
@@ -150,7 +151,7 @@ export default class ClientManager {
   }
 
   public async setMnemonic(mnemonic: string) {
-    await storeMnemonic(mnemonic, config.storeDir);
+    await storeMnemonic(mnemonic);
     this._mnemonic = mnemonic;
     this._logger.info("Mnemonic set successfully");
   }

@@ -1,21 +1,18 @@
-import path from "path";
 import {
-  fsWrite,
-  fsRead,
-  safeJsonStringify,
-  safeJsonParse,
-  checkFile,
-  createDirectory,
-  FILE_DOESNT_EXIST,
+  WrappedPostgresStorage,
+  DEFAULT_STORE_PREFIX,
+  DEFAULT_STORE_SEPARATOR,
+  DEFAULT_DATABASE_STORAGE_TABLE_NAME,
 } from "@connext/store";
 
 import {
-  CONNEXT_WALLET_FILE_NAME,
-  CONNEXT_SUBSCRIPTIONS_FILE_NAME,
-  CONNEXT_INIT_OPTIONS_FILE_NAME,
+  CONNEXT_INIT_OPTIONS_STORE_KEY,
+  CONNEXT_SUBSCRIPTIONS_STORE_KEY,
   SUBSCRIPTION_MESSAGING_PREFIX,
+  CONNEXT_WALLET_STORE_KEY,
 } from "./constants";
 import { EventSubscription, InitOptions } from "./types";
+import config from "./config";
 
 export function verifyType(value: any, type: string) {
   switch (type) {
@@ -34,43 +31,49 @@ export async function requireParam(obj: any, param: string, type = "string") {
   }
 }
 
-export async function storeFile(data: any, fileDir: string, fileName: string): Promise<void> {
-  await createDirectory(fileDir);
-  await fsWrite(path.join(fileDir, fileName), safeJsonStringify(data));
+export let postgresStore: WrappedPostgresStorage;
+export async function initPostgresStore(): Promise<WrappedPostgresStorage> {
+  postgresStore = new WrappedPostgresStorage(
+    DEFAULT_STORE_PREFIX,
+    DEFAULT_STORE_SEPARATOR,
+    DEFAULT_DATABASE_STORAGE_TABLE_NAME,
+    undefined,
+    `postgres://${config.dbUsername}:${config.dbPassword}@${config.dbHost}:${config.dbPort}/${config.dbDatabase}`,
+  );
+  await postgresStore.sequelize.authenticate();
+  console.log("DB INITIALIZED");
+  await postgresStore.syncModels();
+  return postgresStore;
 }
 
-export async function fetchFile(fileDir: string, fileName: string): Promise<any> {
-  const filePath = path.join(fileDir, fileName);
-  if ((await checkFile(filePath)) === FILE_DOESNT_EXIST) {
-    return undefined;
+const assertPostgresStore = () => {
+  if (!postgresStore) {
+    throw new Error(`Store has not been initialized, use initPostgresStore first`);
   }
-  const data = await fsRead(filePath);
-  return safeJsonParse(data);
+};
+
+export async function storeMnemonic(mnemonic: string): Promise<void> {
+  assertPostgresStore();
+  await postgresStore.setItem(CONNEXT_WALLET_STORE_KEY, { mnemonic });
 }
 
-export async function storeMnemonic(mnemonic: string, fileDir: string): Promise<void> {
-  await storeFile({ mnemonic }, fileDir, CONNEXT_WALLET_FILE_NAME);
-}
-
-export async function fetchMnemonic(fileDir: string): Promise<string | undefined> {
-  const result = await fetchFile(fileDir, CONNEXT_WALLET_FILE_NAME);
-  if (typeof result !== "object" || !result.mnemonic) {
+export async function fetchMnemonic(): Promise<string | undefined> {
+  assertPostgresStore();
+  const result = await postgresStore.getItem<{ mnemonic: string }>(CONNEXT_WALLET_STORE_KEY);
+  if (typeof result !== "object" || !result?.mnemonic) {
     return undefined;
   }
   return result.mnemonic;
 }
 
-export async function storeSubscriptions(
-  subscriptions: EventSubscription[],
-  fileDir: string,
-): Promise<void> {
-  await storeFile(subscriptions, fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
+export async function storeSubscriptions(subscriptions: EventSubscription[]): Promise<void> {
+  assertPostgresStore();
+  await postgresStore.setItem(CONNEXT_SUBSCRIPTIONS_STORE_KEY, subscriptions);
 }
 
-export async function fetchSubscriptions(
-  fileDir: string,
-): Promise<EventSubscription[] | undefined> {
-  const result = await fetchFile(fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
+export async function fetchSubscriptions(): Promise<EventSubscription[] | undefined> {
+  assertPostgresStore();
+  const result = await postgresStore.getItem(CONNEXT_SUBSCRIPTIONS_STORE_KEY);
   if (!Array.isArray(result)) {
     return undefined;
   }
@@ -79,23 +82,24 @@ export async function fetchSubscriptions(
 
 export async function storeInitOptions(
   initOptions: Partial<InitOptions>,
-  fileDir: string,
 ): Promise<void> {
-  await storeFile(initOptions, fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
+  assertPostgresStore();
+  await postgresStore.setItem(CONNEXT_INIT_OPTIONS_STORE_KEY, initOptions);
 }
 
-export async function fetchInitOptions(fileDir: string): Promise<Partial<InitOptions> | undefined> {
-  const result = await fetchFile(fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
+export async function fetchInitOptions(): Promise<Partial<InitOptions> | undefined> {
+  assertPostgresStore();
+  const result = await postgresStore.getItem(CONNEXT_INIT_OPTIONS_STORE_KEY);
   if (typeof result !== "object" || !result) {
     return undefined;
   }
   return result;
 }
 
-export async function fetchAll(fileDir: string) {
-  const mnemonic = await fetchMnemonic(fileDir);
-  const subscriptions = await fetchSubscriptions(fileDir);
-  const initOptions = await fetchInitOptions(fileDir);
+export async function fetchAll() {
+  const mnemonic = await fetchMnemonic();
+  const subscriptions = await fetchSubscriptions();
+  const initOptions = await fetchInitOptions();
   return {
     mnemonic,
     subscriptions,
