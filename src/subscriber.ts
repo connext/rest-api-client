@@ -2,13 +2,14 @@ import axios from "axios";
 import { v4 as uuid } from "uuid";
 import { IConnextClient, deBigNumberifyJson } from "@connext/types";
 
-import { isMessagingSubscription, storeSubscriptions } from "./utilities";
+import { EMPTY_ARRAY } from "./constants";
+import { storeSubscriptions } from "./utilities";
 import { EventSubscription, EventSubscriptionParams } from "./types";
 import config from "./config";
 
 export default class Subscriber {
   private _logger: any;
-  private _subscriptions: EventSubscription[] = [];
+  private _subscriptions: EventSubscription[] = EMPTY_ARRAY;
 
   constructor(logger: any) {
     this._logger = logger;
@@ -20,16 +21,8 @@ export default class Subscriber {
     const subscription = this.formatSubscription(params);
 
     await this.addSubscription(subscription);
-    this.routeSubscribe(client, subscription);
+    await this.subscribeOnClient(client, subscription);
     return subscription;
-  }
-
-  private async routeSubscribe(client: IConnextClient, subscription: EventSubscription) {
-    if (isMessagingSubscription(subscription)) {
-      await this.subscribeOnMessaging(client, subscription);
-    } else {
-      await this.subscribeOnClient(client, subscription);
-    }
   }
 
   private async subscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
@@ -38,37 +31,14 @@ export default class Subscriber {
     );
   }
 
-  private async subscribeOnMessaging(client: IConnextClient, subscription: EventSubscription) {
-    const subject = this.formatMessagingSubject(client, subscription.params.event);
-    await client.messaging.subscribe(subject, async (res: any) => {
-      let data = res;
-      if (res.subject) {
-        const subjectParams = res.subject.split(".");
-        if (subjectParams[3] === "app-instance") {
-          const appDetails = await client.getAppInstanceDetails(subjectParams[4]);
-          data = { ...res, ...appDetails };
-        }
-      }
-      this.onSubscription(subscription.params.event, data);
-    });
-  }
-
   // -- UNSUBSCRIBE ---------------------------------------------------------------- //
 
   public async unsubscribe(client: IConnextClient, id: string) {
     const subscription = this.getSubscriptionById(id);
     if (subscription) {
-      this.routeUnsubscribe(client, subscription);
-    }
-    await this.removeSubscription(id);
-  }
-
-  private async routeUnsubscribe(client: IConnextClient, subscription: EventSubscription) {
-    if (isMessagingSubscription(subscription)) {
-      await this.unsubscribeOnMessaging(client, subscription);
-    } else {
       await this.unsubscribeOnClient(client, subscription);
     }
+    await this.removeSubscription(id);
   }
 
   private async unsubscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
@@ -77,24 +47,34 @@ export default class Subscriber {
     );
   }
 
-  private async unsubscribeOnMessaging(client: IConnextClient, subscription: EventSubscription) {
-    const subject = this.formatMessagingSubject(client, subscription.params.event);
-    await client.messaging.unsubscribe(subject);
+  // -- BATCH ---------------------------------------------------------------- //
+
+  public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
+    await Promise.all(
+      this._subscriptions.map(subscription => this.unsubscribeOnClient(client, subscription)),
+    );
+    await this.persistSubscriptions(EMPTY_ARRAY);
   }
 
-  // -- FORMAT ---------------------------------------------------------------- //
-
-  private formatSubscription(params: EventSubscriptionParams): EventSubscription {
-    return { id: uuid(), params };
+  public async batchResubscribe(
+    client: IConnextClient,
+    subscriptions: EventSubscription[],
+  ): Promise<void> {
+    this._subscriptions = [...this._subscriptions, ...subscriptions];
+    await Promise.all(
+      subscriptions.map(subscription => this.subscribeOnClient(client, subscription)),
+    );
   }
 
-  private formatMessagingSubject(client: IConnextClient, event: string) {
-    switch (event) {
-      case "MESSAGE_APP_INSTANCE_INSTALL":
-        return `${client.publicIdentifier}.channel.${client.multisigAddress}.app-instance.*.install`;
-      default:
-        throw new Error(`Unknown Messaging Event: ${event}`);
-    }
+  public async batchSubscribe(
+    client: IConnextClient,
+    paramsArr: EventSubscriptionParams[],
+  ): Promise<EventSubscription[]> {
+    return Promise.all(paramsArr.map(params => this.subscribe(client, params)));
+  }
+
+  public async batchUnsubscribe(client: IConnextClient, idsArr: string[]): Promise<void> {
+    await Promise.all(idsArr.map(id => this.unsubscribe(client, id)));
   }
 
   // -- STORE ---------------------------------------------------------------- //
@@ -147,29 +127,7 @@ export default class Subscriber {
     );
   }
 
-  public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
-    await Promise.all(
-      this._subscriptions.map(subscription => this.routeUnsubscribe(client, subscription)),
-    );
-    await this.persistSubscriptions([]);
-  }
-
-  public async batchResubscribe(
-    client: IConnextClient,
-    subscriptions: EventSubscription[],
-  ): Promise<void> {
-    this._subscriptions = [...this._subscriptions, ...subscriptions];
-    await Promise.all(subscriptions.map(subscription => this.routeSubscribe(client, subscription)));
-  }
-
-  public async batchSubscribe(
-    client: IConnextClient,
-    paramsArr: EventSubscriptionParams[],
-  ): Promise<EventSubscription[]> {
-    return Promise.all(paramsArr.map(params => this.subscribe(client, params)));
-  }
-
-  public async batchUnsubscribe(client: IConnextClient, idsArr: string[]): Promise<void> {
-    await Promise.all(idsArr.map(id => this.unsubscribe(client, id)));
+  private formatSubscription(params: EventSubscriptionParams): EventSubscription {
+    return { id: uuid(), params };
   }
 }

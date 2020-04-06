@@ -53,13 +53,7 @@ export default class ClientManager {
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
     const nodeUrl = opts?.nodeUrl || config.nodeUrl;
     const store = new ConnextStore("File", { fileDir: config.storeDir });
-    const clientOpts: any = { mnemonic, store };
-    if (ethProviderUrl) {
-      clientOpts.ethProviderUrl = ethProviderUrl;
-    }
-    if (nodeUrl) {
-      clientOpts.nodeUrl = nodeUrl;
-    }
+    const clientOpts: any = { mnemonic, store, ethProviderUrl, nodeUrl };
     const client = await connext.connect(network, clientOpts);
     this._client = client;
     await storeInitOptions(

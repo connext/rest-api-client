@@ -7,8 +7,7 @@ export const EMPTY_CHANNEL_PROVIDER_CONFIG = {
   signerAddress: undefined,
   userPublicIdentifier: undefined,
 };
-
-export const SUBSCRIPTION_MESSAGING_PREFIX = "MESSAGE_";
+export const EMPTY_ARRAY = [];
 
 export const CONNEXT_WALLET_FILE_NAME = "CONNEXT_WALLET.json";
 export const CONNEXT_INIT_OPTIONS_FILE_NAME = "CONNEXT_INIT_OPTIONS.json";
