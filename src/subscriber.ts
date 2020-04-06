@@ -24,23 +24,23 @@ export default class Subscriber {
     return subscription;
   }
 
-  private routeSubscribe(client: IConnextClient, subscription: EventSubscription) {
+  private async routeSubscribe(client: IConnextClient, subscription: EventSubscription) {
     if (isMessagingSubscription(subscription)) {
-      this.subscribeOnMessaging(client, subscription);
+      await this.subscribeOnMessaging(client, subscription);
     } else {
-      this.subscribeOnClient(client, subscription);
+      await this.subscribeOnClient(client, subscription);
     }
   }
 
-  private subscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
+  private async subscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
     client.on(subscription.params.event as any, data =>
       this.onSubscription(subscription.params.event, data),
     );
   }
 
-  private subscribeOnMessaging(client: IConnextClient, subscription: EventSubscription) {
+  private async subscribeOnMessaging(client: IConnextClient, subscription: EventSubscription) {
     const subject = this.formatMessagingSubject(client, subscription.params.event);
-    client.messaging.subscribe(subject, async (res: any) => {
+    await client.messaging.subscribe(subject, async (res: any) => {
       let data = res;
       if (res.subject) {
         const subjectParams = res.subject.split(".");
@@ -63,23 +63,23 @@ export default class Subscriber {
     await this.removeSubscription(id);
   }
 
-  private routeUnsubscribe(client: IConnextClient, subscription: EventSubscription) {
+  private async routeUnsubscribe(client: IConnextClient, subscription: EventSubscription) {
     if (isMessagingSubscription(subscription)) {
-      this.unsubscribeOnMessaging(client, subscription);
+      await this.unsubscribeOnMessaging(client, subscription);
     } else {
-      this.unsubscribeOnClient(client, subscription);
+      await this.unsubscribeOnClient(client, subscription);
     }
   }
 
-  private unsubscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
-    client.removeListener(subscription.params.event as any, data =>
+  private async unsubscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
+    await client.removeListener(subscription.params.event as any, data =>
       this.onSubscription(subscription.params.event, data),
     );
   }
 
-  private unsubscribeOnMessaging(client: IConnextClient, subscription: EventSubscription) {
+  private async unsubscribeOnMessaging(client: IConnextClient, subscription: EventSubscription) {
     const subject = this.formatMessagingSubject(client, subscription.params.event);
-    client.messaging.unsubscribe(subject);
+    await client.messaging.unsubscribe(subject);
   }
 
   // -- FORMAT ---------------------------------------------------------------- //
