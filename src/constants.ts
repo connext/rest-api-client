@@ -8,6 +8,7 @@ export const EMPTY_CHANNEL_PROVIDER_CONFIG = {
   userPublicIdentifier: undefined,
 };
 export const EMPTY_ARRAY = [];
+export const ADDRESS_ZERO = "0x000000000000000000000000000000000000000";
 
 export const CONNEXT_WALLET_FILE_NAME = "CONNEXT_WALLET.json";
 export const CONNEXT_INIT_OPTIONS_FILE_NAME = "CONNEXT_INIT_OPTIONS.json";

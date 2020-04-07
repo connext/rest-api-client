@@ -12,7 +12,7 @@ import {
 } from "@connext/types";
 
 import config from "./config";
-import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
+import { EMPTY_CHANNEL_PROVIDER_CONFIG, ADDRESS_ZERO } from "./constants";
 import { storeMnemonic, storeInitOptions } from "./utilities";
 import {
   EventSubscriptionParams,
@@ -96,22 +96,22 @@ export default class ClientManager {
   }
 
   public async hashLockTransfer(
-    opts: HashLockTransferParameters,
+    params: HashLockTransferParameters,
   ): Promise<ConditionalTransferResponse> {
     const client = await this.getClient();
+    if (params.assetId === ADDRESS_ZERO) {
+      delete params.assetId;
+    }
     const response = await client.conditionalTransfer({
-      amount: opts.amount,
-      recipient: opts.recipient,
+      amount: params.amount,
+      recipient: params.recipient,
       conditionType: "HashLockTransfer",
-      lockHash: opts.lockHash,
-      assetId: opts.assetId,
-      meta: opts.meta,
-      timelock: opts.timelock,
+      lockHash: params.lockHash,
+      assetId: params.assetId,
+      meta: params.meta,
+      timelock: params.timelock,
     });
-    // TODO: To be removed once https://github.com/ConnextProject/indra/pull/953 is merged
-    // @ts-ignore
-    const appId = response.transferAppInstanceId || response.appId;
-    const appDetails = await client.getAppInstanceDetails(appId);
+    const appDetails = await client.getAppInstanceDetails(response.appId);
     const data = deBigNumberifyJson({ ...response, ...appDetails });
     return data;
   }
@@ -151,6 +151,9 @@ export default class ClientManager {
 
   public async deposit(params: DepositParameters) {
     const client = await this.getClient();
+    if (params.assetId === ADDRESS_ZERO) {
+      delete params.assetId;
+    }
     const response = await client.deposit(params);
     return { freeBalance: response.freeBalance[client.freeBalanceAddress].toString() };
   }
