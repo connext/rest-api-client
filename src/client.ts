@@ -88,10 +88,10 @@ export default class ClientManager {
     return config;
   }
 
-  public async getAppInstanceDetails(appInstanceId: string) {
+  public async getAppInstanceDetails(appIdentityHash: string) {
     const client = await this.getClient();
-    const response = client.getAppInstanceDetails(appInstanceId);
-    const data = deBigNumberifyJson(response);
+    const appDetails = await client.getAppInstance(appIdentityHash);
+    const data = deBigNumberifyJson(appDetails);
     return data;
   }
 
@@ -111,7 +111,7 @@ export default class ClientManager {
       meta: params.meta,
       timelock: params.timelock,
     });
-    const appDetails = await client.getAppInstanceDetails(response.appId);
+    const appDetails = await client.getAppInstance(response.appIdentityHash);
     const data = deBigNumberifyJson({ ...response, ...appDetails });
     return data;
   }
@@ -122,7 +122,7 @@ export default class ClientManager {
       conditionType: "HashLockTransfer",
       preImage,
     } as ResolveHashLockTransferParameters);
-    const appDetails = await client.getAppInstanceDetails(response.appId);
+    const appDetails = await client.getAppInstance(response.appIdentityHash);
     const data = deBigNumberifyJson({ ...response, ...appDetails });
     return data;
   }
