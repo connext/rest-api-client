@@ -1,4 +1,5 @@
 import path from "path";
+import tokenAbi from "human-standard-token-abi";
 import {
   fsWrite,
   fsRead,
@@ -13,8 +14,10 @@ import {
   CONNEXT_WALLET_FILE_NAME,
   CONNEXT_SUBSCRIPTIONS_FILE_NAME,
   CONNEXT_INIT_OPTIONS_FILE_NAME,
+  ADDRESS_ZERO,
 } from "./constants";
 import { EventSubscription, InitOptions } from "./types";
+import { IConnextClient, Contract } from "@connext/types";
 
 export function verifyType(value: any, type: string) {
   switch (type) {
@@ -100,4 +103,26 @@ export async function fetchAll(fileDir: string) {
     subscriptions,
     initOptions,
   };
+}
+
+export async function getFreeBalanceOffChain(client: IConnextClient, assetId: string) {
+  return (await client.getFreeBalance(assetId !== ADDRESS_ZERO ? assetId : undefined))[
+    client.freeBalanceAddress
+  ].toString();
+}
+
+export async function getFreeBalanceOnChain(client: IConnextClient, assetId: string) {
+  return assetId === ADDRESS_ZERO
+    ? (await client.ethProvider.getBalance(client.freeBalanceAddress)).toString()
+    : (
+        await new Contract(assetId, tokenAbi, client.ethProvider).functions.balanceOf(
+          client.freeBalanceAddress,
+        )
+      ).toString();
+}
+
+export async function getClientBalance(client: IConnextClient, assetId) {
+  const freeBalanceOffChain = await getFreeBalanceOffChain(client, assetId);
+  const freeBalanceOnChain = await getFreeBalanceOnChain(client, assetId);
+  return { freeBalanceOffChain, freeBalanceOnChain };
 }

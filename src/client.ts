@@ -3,17 +3,18 @@ import { ConnextStore } from "@connext/store";
 import {
   IConnextClient,
   ChannelProviderConfig,
-  HashLockTransferParameters,
-  ResolveHashLockTransferParameters,
-  DepositParameters,
-  ConditionalTransferResponse,
-  ResolveConditionResponse,
   deBigNumberifyJson,
+  PublicParams,
 } from "@connext/types";
 
 import config from "./config";
 import { EMPTY_CHANNEL_PROVIDER_CONFIG, ADDRESS_ZERO } from "./constants";
-import { storeMnemonic, storeInitOptions } from "./utilities";
+import {
+  storeMnemonic,
+  storeInitOptions,
+  getClientBalance,
+  getFreeBalanceOnChain,
+} from "./utilities";
 import {
   EventSubscriptionParams,
   InitClientManagerOptions,
@@ -95,9 +96,7 @@ export default class ClientManager {
     return data;
   }
 
-  public async hashLockTransfer(
-    params: HashLockTransferParameters,
-  ): Promise<ConditionalTransferResponse> {
+  public async hashLockTransfer(params: PublicParams.HashLockTransfer) {
     const client = await this.getClient();
     if (params.assetId === ADDRESS_ZERO) {
       delete params.assetId;
@@ -110,18 +109,18 @@ export default class ClientManager {
       assetId: params.assetId,
       meta: params.meta,
       timelock: params.timelock,
-    });
+    } as PublicParams.HashLockTransfer);
     const appDetails = await client.getAppInstance(response.appIdentityHash);
     const data = deBigNumberifyJson({ ...response, ...appDetails });
     return data;
   }
 
-  public async hashLockResolve(preImage: string): Promise<ResolveConditionResponse> {
+  public async hashLockResolve(preImage: string) {
     const client = await this.getClient();
     const response = await client.resolveCondition({
       conditionType: "HashLockTransfer",
       preImage,
-    } as ResolveHashLockTransferParameters);
+    } as PublicParams.ResolveHashLockTransfer);
     const appDetails = await client.getAppInstance(response.appIdentityHash);
     const data = deBigNumberifyJson({ ...response, ...appDetails });
     return data;
@@ -139,8 +138,7 @@ export default class ClientManager {
 
   public async balance(assetId: string) {
     const client = await this.getClient();
-    const freeBalance = await client.getFreeBalance(assetId);
-    return { freeBalance: freeBalance[client.freeBalanceAddress].toString() };
+    return getClientBalance(client, assetId);
   }
 
   public async setMnemonic(mnemonic: string) {
@@ -149,13 +147,17 @@ export default class ClientManager {
     this._logger.info("Mnemonic set successfully");
   }
 
-  public async deposit(params: DepositParameters) {
+  public async deposit(params: PublicParams.Deposit) {
     const client = await this.getClient();
+    const assetId = params.assetId || ADDRESS_ZERO;
     if (params.assetId === ADDRESS_ZERO) {
       delete params.assetId;
     }
     const response = await client.deposit(params);
-    return { freeBalance: response.freeBalance[client.freeBalanceAddress].toString() };
+    return {
+      freeBalanceOffChain: response.freeBalance[client.freeBalanceAddress].toString(),
+      freeBalanceOnChain: await getFreeBalanceOnChain(client, assetId),
+    };
   }
 
   public async subscribe(params: EventSubscriptionParams): Promise<{ id: string }> {
