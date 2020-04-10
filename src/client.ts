@@ -54,19 +54,20 @@ export default class ClientManager {
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
     const nodeUrl = opts?.nodeUrl || config.nodeUrl;
     const store = new ConnextStore("File", { fileDir: config.storeDir });
-    const clientOpts: any = { mnemonic, store, ethProviderUrl, nodeUrl };
+    const clientOpts = { mnemonic, store, ethProviderUrl, nodeUrl };
     const client = await connext.connect(network, clientOpts);
-    this._client = client;
-    await storeInitOptions(
-      {
-        network,
-        ...clientOpts,
-      },
-      config.storeDir,
-    );
-    this._logger.info("Client initialized successfully");
+    const initOpts = { network, ...clientOpts };
+    await this.updateClient(client, initOpts);
     this._logger.info("Client initialized successfully");
     return client;
+  }
+
+  private async updateClient(client: IConnextClient, initOpts: Partial<InitOptions>) {
+    if (this._client) {
+      await this._subscriber.clearAllSubscriptions(this._client);
+    }
+    this._client = client;
+    await storeInitOptions(initOpts, config.storeDir);
   }
 
   public async getClient(): Promise<IConnextClient> {
