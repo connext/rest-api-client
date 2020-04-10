@@ -33,7 +33,6 @@ export default class ClientManager {
     this._logger = opts.logger;
     this._mnemonic = opts.mnemonic;
     this._subscriber = new Subscriber(opts.logger);
-    this.initSubscriptions(opts.subscriptions);
   }
 
   get mnemonic(): string {
@@ -44,7 +43,10 @@ export default class ClientManager {
     this._mnemonic = value;
   }
 
-  public async initClient(opts?: Partial<InitOptions>): Promise<IConnextClient> {
+  public async initClient(
+    opts?: Partial<InitOptions>,
+    subscriptions?: EventSubscription[],
+  ): Promise<IConnextClient> {
     const mnemonic = opts?.mnemonic || this.mnemonic;
     if (!mnemonic) {
       throw new Error("Cannot init Connext client without mnemonic");
@@ -57,17 +59,9 @@ export default class ClientManager {
     const clientOpts = { mnemonic, store, ethProviderUrl, nodeUrl };
     const client = await connext.connect(network, clientOpts);
     const initOpts = { network, ...clientOpts };
-    await this.updateClient(client, initOpts);
+    await this.updateClient(client, initOpts, subscriptions);
     this._logger.info("Client initialized successfully");
     return client;
-  }
-
-  private async updateClient(client: IConnextClient, initOpts: Partial<InitOptions>) {
-    if (this._client) {
-      await this._subscriber.clearAllSubscriptions(this._client);
-    }
-    this._client = client;
-    await storeInitOptions(initOpts, config.storeDir);
   }
 
   public async getClient(): Promise<IConnextClient> {
@@ -193,10 +187,23 @@ export default class ClientManager {
     return { success: true };
   }
 
+  private async updateClient(
+    client: IConnextClient,
+    initOpts: Partial<InitOptions>,
+    subscriptions?: EventSubscription[],
+  ) {
+    if (this._client) {
+      await this._subscriber.clearAllSubscriptions(this._client);
+    }
+    this._client = client;
+    await this.initSubscriptions(subscriptions);
+    await await storeInitOptions(initOpts, config.storeDir);
+  }
+
   private async initSubscriptions(subscriptions?: EventSubscription[]) {
     if (subscriptions && subscriptions.length) {
       const client = await this.getClient();
-      this._subscriber.batchResubscribe(client, subscriptions);
+      await this._subscriber.batchResubscribe(client, subscriptions);
     }
   }
 }

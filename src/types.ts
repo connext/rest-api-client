@@ -17,5 +17,4 @@ export interface InitOptions extends ClientOptions {
 export interface InitClientManagerOptions {
   logger: any;
   mnemonic?: string;
-  subscriptions?: EventSubscription[];
 }
