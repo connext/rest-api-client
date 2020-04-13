@@ -19,8 +19,7 @@ export default class Subscriber {
 
   public async subscribe(client: IConnextClient, params: EventSubscriptionParams) {
     const subscription = this.formatSubscription(params);
-
-    await this.addSubscription(subscription);
+    await this.saveSubscription(subscription);
     await this.subscribeOnClient(client, subscription);
     return subscription;
   }
@@ -84,7 +83,7 @@ export default class Subscriber {
     await storeSubscriptions(subscriptions, config.storeDir);
   }
 
-  private async addSubscription(subscription: EventSubscription) {
+  private async saveSubscription(subscription: EventSubscription) {
     const subscriptions = this._subscriptions;
     subscriptions.push(subscription);
     await this.persistSubscriptions(subscriptions);
