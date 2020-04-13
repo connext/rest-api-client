@@ -1,7 +1,7 @@
 {
   "name": "@connext/rest-api",
   "description": "REST API client for Connext",
-  "version": "6.0.0-alpha.8",
+  "version": "6.0.0-alpha.13",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ConnextProject/rest-api-client.git"
@@ -19,16 +19,18 @@
     "compile": "tsc -p tsconfig.json",
     "build": "npm run clean:build && npm run compile",
     "start": "npm run build && node ./build",
-    "lint": "eslint -c './.eslintrc' --fix './src/**/*.ts'"
+    "lint": "eslint -c './.eslintrc' --fix './src/**/*.ts'",
+    "start:dev": "ts-node-dev src/index.ts"
   },
   "dependencies": {
-    "@connext/client": "^6.0.0-alpha.8",
-    "@connext/store": "6.0.0-alpha.8",
-    "@connext/types": "6.0.0-alpha.8",
+    "@connext/client": "^6.0.0-alpha.13",
+    "@connext/store": "6.0.0-alpha.13",
+    "@connext/types": "6.0.0-alpha.13",
     "axios": "^0.18.1",
     "babel-polyfill": "^6.26.0",
     "core-js": "^3.6.4",
     "dotenv": "^8.0.0",
+    "human-standard-token-abi": "^2.0.0",
     "fastify": "^1.13.4",
     "fastify-helmet": "^3.0.0",
     "pg": "^8.0.0",
@@ -61,6 +63,7 @@
     "eslint-plugin-react": "^7.18.3",
     "eslint-plugin-standard": "^4.0.1",
     "prettier": "^1.19.1",
+    "ts-node-dev": "^1.0.0-pre.44",
     "typescript": "^3.7.3"
   }
 }

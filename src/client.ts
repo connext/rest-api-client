@@ -3,17 +3,20 @@ import { ConnextStore } from "@connext/store";
 import {
   IConnextClient,
   ChannelProviderConfig,
-  HashLockTransferParameters,
-  ResolveHashLockTransferParameters,
-  DepositParameters,
-  ConditionalTransferResponse,
-  ResolveConditionResponse,
   deBigNumberifyJson,
+  PublicParams,
 } from "@connext/types";
 
 import config from "./config";
-import { EMPTY_CHANNEL_PROVIDER_CONFIG } from "./constants";
-import { storeMnemonic, storeInitOptions, postgresStore } from "./utilities";
+import { EMPTY_CHANNEL_PROVIDER_CONFIG, ADDRESS_ZERO } from "./constants";
+import {
+  storeMnemonic,
+  storeInitOptions,
+  postgresStore,
+  getFreeBalanceOnChain,
+  getClientBalance,
+} from "./utilities";
+
 import {
   EventSubscriptionParams,
   InitClientManagerOptions,
@@ -32,7 +35,6 @@ export default class ClientManager {
     this._logger = opts.logger;
     this._mnemonic = opts.mnemonic;
     this._subscriber = new Subscriber(opts.logger);
-    this.initSubscriptions(opts.subscriptions);
   }
 
   get mnemonic(): string {
@@ -43,7 +45,10 @@ export default class ClientManager {
     this._mnemonic = value;
   }
 
-  public async initClient(opts?: Partial<InitOptions>): Promise<IConnextClient> {
+  public async initClient(
+    opts?: Partial<InitOptions>,
+    subscriptions?: EventSubscription[],
+  ): Promise<IConnextClient> {
     const mnemonic = opts?.mnemonic || this.mnemonic;
     if (!mnemonic) {
       throw new Error("Cannot init Connext client without mnemonic");
@@ -55,9 +60,8 @@ export default class ClientManager {
     const store = new ConnextStore("Postgres", { storage: postgresStore });
     const clientOpts = { mnemonic, store, ethProviderUrl, nodeUrl };
     const client = await connext.connect(network, clientOpts);
-    this._client = client;
-    await storeInitOptions({ mnemonic, network, ethProviderUrl, nodeUrl });
-    this._logger.info("Client initialized successfully");
+    const initOpts = { network, ...clientOpts };
+    await this.updateClient(client, initOpts, subscriptions);
     this._logger.info("Client initialized successfully");
     return client;
   }
@@ -82,41 +86,39 @@ export default class ClientManager {
     return config;
   }
 
-  public async getAppInstanceDetails(appInstanceId: string) {
+  public async getAppInstanceDetails(appIdentityHash: string) {
     const client = await this.getClient();
-    const response = client.getAppInstanceDetails(appInstanceId);
-    const data = deBigNumberifyJson(response);
+    const appDetails = await client.getAppInstance(appIdentityHash);
+    const data = deBigNumberifyJson(appDetails);
     return data;
   }
 
-  public async hashLockTransfer(
-    opts: HashLockTransferParameters,
-  ): Promise<ConditionalTransferResponse> {
+  public async hashLockTransfer(params: PublicParams.HashLockTransfer) {
     const client = await this.getClient();
+    if (params.assetId === ADDRESS_ZERO) {
+      delete params.assetId;
+    }
     const response = await client.conditionalTransfer({
-      amount: opts.amount,
-      recipient: opts.recipient,
+      amount: params.amount,
+      recipient: params.recipient,
       conditionType: "HashLockTransfer",
-      lockHash: opts.lockHash,
-      assetId: opts.assetId,
-      meta: opts.meta,
-      timelock: opts.timelock,
-    });
-    // TODO: To be removed once https://github.com/ConnextProject/indra/pull/953 is merged
-    // @ts-ignore
-    const appId = response.transferAppInstanceId || response.appId;
-    const appDetails = await client.getAppInstanceDetails(appId);
+      lockHash: params.lockHash,
+      assetId: params.assetId,
+      meta: params.meta,
+      timelock: params.timelock,
+    } as PublicParams.HashLockTransfer);
+    const appDetails = await client.getAppInstance(response.appIdentityHash);
     const data = deBigNumberifyJson({ ...response, ...appDetails });
     return data;
   }
 
-  public async hashLockResolve(preImage: string): Promise<ResolveConditionResponse> {
+  public async hashLockResolve(preImage: string) {
     const client = await this.getClient();
     const response = await client.resolveCondition({
       conditionType: "HashLockTransfer",
       preImage,
-    } as ResolveHashLockTransferParameters);
-    const appDetails = await client.getAppInstanceDetails(response.appId);
+    } as PublicParams.ResolveHashLockTransfer);
+    const appDetails = await client.getAppInstance(response.appIdentityHash);
     const data = deBigNumberifyJson({ ...response, ...appDetails });
     return data;
   }
@@ -133,8 +135,7 @@ export default class ClientManager {
 
   public async balance(assetId: string) {
     const client = await this.getClient();
-    const freeBalance = await client.getFreeBalance(assetId);
-    return { freeBalance: freeBalance[client.freeBalanceAddress].toString() };
+    return getClientBalance(client, assetId);
   }
 
   public async setMnemonic(mnemonic: string) {
@@ -143,10 +144,17 @@ export default class ClientManager {
     this._logger.info("Mnemonic set successfully");
   }
 
-  public async deposit(params: DepositParameters) {
+  public async deposit(params: PublicParams.Deposit) {
     const client = await this.getClient();
+    const assetId = params.assetId || ADDRESS_ZERO;
+    if (params.assetId === ADDRESS_ZERO) {
+      delete params.assetId;
+    }
     const response = await client.deposit(params);
-    return { freeBalance: response.freeBalance[client.freeBalanceAddress].toString() };
+    return {
+      freeBalanceOffChain: response.freeBalance[client.freeBalanceAddress].toString(),
+      freeBalanceOnChain: await getFreeBalanceOnChain(client, assetId),
+    };
   }
 
   public async subscribe(params: EventSubscriptionParams): Promise<{ id: string }> {
@@ -169,7 +177,7 @@ export default class ClientManager {
     return { success: true };
   }
 
-  public async unsubcribeBatch(idsArr: string[]) {
+  public async unsubscribeBatch(idsArr: string[]) {
     const client = await this.getClient();
     await this._subscriber.batchUnsubscribe(client, idsArr);
     return { success: true };
@@ -181,10 +189,25 @@ export default class ClientManager {
     return { success: true };
   }
 
+  private async updateClient(
+    client: IConnextClient,
+    initOpts: Partial<InitOptions>,
+    subscriptions?: EventSubscription[],
+  ) {
+    console.log("updateClient", "subscriptions.length", subscriptions?.length);
+    if (this._client) {
+      await this._subscriber.clearAllSubscriptions(this._client);
+    }
+    this._client = client;
+    await this.initSubscriptions(subscriptions);
+    await await storeInitOptions(initOpts);
+  }
+
   private async initSubscriptions(subscriptions?: EventSubscription[]) {
     if (subscriptions && subscriptions.length) {
       const client = await this.getClient();
-      this._subscriber.batchResubscribe(client, subscriptions);
+      console.log("initSubscriptions", "subscriptions.length", subscriptions.length);
+      await this._subscriber.batchResubscribe(client, subscriptions);
     }
   }
 }

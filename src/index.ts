@@ -160,7 +160,7 @@ app.delete("/subscribe", async (req, res) => {
 app.delete("/subscribe/batch", async (req, res) => {
   try {
     await requireParam(req.body, "ids", "array");
-    res.status(200).send(await clientManager.unsubcribeBatch(req.body.ids));
+    res.status(200).send(await clientManager.unsubscribeBatch(req.body.ids));
   } catch (error) {
     app.log.error(error);
     res.status(500).send({ message: error.message });
@@ -181,9 +181,9 @@ app.delete("/subscribe/all", async (req, res) => {
 app.ready(async () => {
   await initPostgresStore();
   const { mnemonic, subscriptions, initOptions } = await fetchAll();
-  clientManager = new ClientManager({ mnemonic, subscriptions, logger: app.log });
+  clientManager = new ClientManager({ mnemonic, logger: app.log });
   if (initOptions && Object.keys(initOptions).length) {
-    await clientManager.initClient(initOptions);
+    await clientManager.initClient(initOptions, subscriptions);
   }
 });
 

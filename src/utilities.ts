@@ -1,3 +1,6 @@
+import path from "path";
+import tokenAbi from "human-standard-token-abi";
+import { IConnextClient, Contract } from "@connext/types";
 import {
   WrappedPostgresStorage,
   DEFAULT_STORE_PREFIX,
@@ -8,7 +11,8 @@ import {
 import {
   CONNEXT_INIT_OPTIONS_STORE_KEY,
   CONNEXT_SUBSCRIPTIONS_STORE_KEY,
-  CONNEXT_WALLET_STORE_KEY,
+  CONNEXT_MNEMONIC_STORE_KEY,
+  ADDRESS_ZERO,
 } from "./constants";
 import { EventSubscription, InitOptions } from "./types";
 import config from "./config";
@@ -53,12 +57,12 @@ const assertPostgresStore = () => {
 
 export async function storeMnemonic(mnemonic: string): Promise<void> {
   assertPostgresStore();
-  await postgresStore.setItem(CONNEXT_WALLET_STORE_KEY, { mnemonic });
+  await postgresStore.setItem(CONNEXT_MNEMONIC_STORE_KEY, { mnemonic });
 }
 
 export async function fetchMnemonic(): Promise<string | undefined> {
   assertPostgresStore();
-  const result = await postgresStore.getItem<{ mnemonic: string }>(CONNEXT_WALLET_STORE_KEY);
+  const result = await postgresStore.getItem<{ mnemonic: string }>(CONNEXT_MNEMONIC_STORE_KEY);
   if (typeof result !== "object" || !result?.mnemonic) {
     return undefined;
   }
@@ -107,4 +111,26 @@ export async function fetchAll() {
     subscriptions,
     initOptions,
   };
+}
+
+export async function getFreeBalanceOffChain(client: IConnextClient, assetId: string) {
+  return (await client.getFreeBalance(assetId !== ADDRESS_ZERO ? assetId : undefined))[
+    client.freeBalanceAddress
+  ].toString();
+}
+
+export async function getFreeBalanceOnChain(client: IConnextClient, assetId: string) {
+  return assetId === ADDRESS_ZERO
+    ? (await client.ethProvider.getBalance(client.freeBalanceAddress)).toString()
+    : (
+        await new Contract(assetId, tokenAbi, client.ethProvider).functions.balanceOf(
+          client.freeBalanceAddress,
+        )
+      ).toString();
+}
+
+export async function getClientBalance(client: IConnextClient, assetId) {
+  const freeBalanceOffChain = await getFreeBalanceOffChain(client, assetId);
+  const freeBalanceOnChain = await getFreeBalanceOnChain(client, assetId);
+  return { freeBalanceOffChain, freeBalanceOnChain };
 }
