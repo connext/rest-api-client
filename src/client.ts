@@ -175,7 +175,7 @@ export default class ClientManager {
     return { success: true };
   }
 
-  public async unsubcribeBatch(idsArr: string[]) {
+  public async unsubscribeBatch(idsArr: string[]) {
     const client = await this.getClient();
     await this._subscriber.batchUnsubscribe(client, idsArr);
     return { success: true };
@@ -192,6 +192,7 @@ export default class ClientManager {
     initOpts: Partial<InitOptions>,
     subscriptions?: EventSubscription[],
   ) {
+    console.log("updateClient", "subscriptions.length", subscriptions?.length);
     if (this._client) {
       await this._subscriber.clearAllSubscriptions(this._client);
     }
@@ -203,6 +204,7 @@ export default class ClientManager {
   private async initSubscriptions(subscriptions?: EventSubscription[]) {
     if (subscriptions && subscriptions.length) {
       const client = await this.getClient();
+      console.log("initSubscriptions", "subscriptions.length", subscriptions.length);
       await this._subscriber.batchResubscribe(client, subscriptions);
     }
   }

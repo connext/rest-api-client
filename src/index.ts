@@ -160,7 +160,7 @@ app.delete("/subscribe", async (req, res) => {
 app.delete("/subscribe/batch", async (req, res) => {
   try {
     await requireParam(req.body, "ids", "array");
-    res.status(200).send(await clientManager.unsubcribeBatch(req.body.ids));
+    res.status(200).send(await clientManager.unsubscribeBatch(req.body.ids));
   } catch (error) {
     app.log.error(error);
     res.status(500).send({ message: error.message });

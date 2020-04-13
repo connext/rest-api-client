@@ -2,14 +2,13 @@ import axios from "axios";
 import { v4 as uuid } from "uuid";
 import { IConnextClient, deBigNumberifyJson } from "@connext/types";
 
-import { EMPTY_ARRAY } from "./constants";
 import { storeSubscriptions } from "./utilities";
 import { EventSubscription, EventSubscriptionParams } from "./types";
 import config from "./config";
 
 export default class Subscriber {
   private _logger: any;
-  private _subscriptions: EventSubscription[] = EMPTY_ARRAY;
+  private _subscriptions: EventSubscription[] = [];
 
   constructor(logger: any) {
     this._logger = logger;
@@ -18,6 +17,10 @@ export default class Subscriber {
   // -- SUBSCRIBE ---------------------------------------------------------------- //
 
   public async subscribe(client: IConnextClient, params: EventSubscriptionParams) {
+    const match = this.getSubscriptionByParams(params);
+    if (match) {
+      return match;
+    }
     const subscription = this.formatSubscription(params);
     await this.saveSubscription(subscription);
     await this.subscribeOnClient(client, subscription);
@@ -48,23 +51,6 @@ export default class Subscriber {
 
   // -- BATCH ---------------------------------------------------------------- //
 
-  public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
-    await Promise.all(
-      this._subscriptions.map(subscription => this.unsubscribeOnClient(client, subscription)),
-    );
-    await this.persistSubscriptions(EMPTY_ARRAY);
-  }
-
-  public async batchResubscribe(
-    client: IConnextClient,
-    subscriptions: EventSubscription[],
-  ): Promise<void> {
-    this._subscriptions = [...this._subscriptions, ...subscriptions];
-    await Promise.all(
-      subscriptions.map(subscription => this.subscribeOnClient(client, subscription)),
-    );
-  }
-
   public async batchSubscribe(
     client: IConnextClient,
     paramsArr: EventSubscriptionParams[],
@@ -72,24 +58,47 @@ export default class Subscriber {
     return Promise.all(paramsArr.map(params => this.subscribe(client, params)));
   }
 
+  public async batchResubscribe(
+    client: IConnextClient,
+    subscriptions: EventSubscription[],
+  ): Promise<void> {
+    await Promise.all(
+      subscriptions.map(subscription => this.subscribeOnClient(client, subscription)),
+    );
+    console.log("batchResubscribe", "subscriptions", subscriptions);
+    await this.persistSubscriptions(subscriptions);
+  }
+
   public async batchUnsubscribe(client: IConnextClient, idsArr: string[]): Promise<void> {
     await Promise.all(idsArr.map(id => this.unsubscribe(client, id)));
+  }
+
+  public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
+    console.log("clearAllSubscriptions", "BEFORE");
+    await Promise.all(
+      this._subscriptions.map(subscription => this.unsubscribeOnClient(client, subscription)),
+    );
+    console.log("clearAllSubscriptions", "EMPTY_ARRAY", []);
+    await this.persistSubscriptions([]);
   }
 
   // -- STORE ---------------------------------------------------------------- //
 
   private async persistSubscriptions(subscriptions: EventSubscription[]) {
+    console.log("persistSubscriptions", "subscriptions", subscriptions);
     this._subscriptions = subscriptions;
     await storeSubscriptions(subscriptions, config.storeDir);
   }
 
   private async saveSubscription(subscription: EventSubscription) {
+    console.log("saveSubscription", "subscription", subscription);
     const subscriptions = this._subscriptions;
     subscriptions.push(subscription);
     await this.persistSubscriptions(subscriptions);
   }
 
   private async removeSubscription(id: string) {
+    console.log("removeSubscription", "id", id);
     const subscriptions = this._subscriptions.filter(x => x.id !== id);
     await this.persistSubscriptions(subscriptions);
   }
@@ -104,6 +113,19 @@ export default class Subscriber {
 
   private getSubscriptionsByEvent(event: string) {
     return this._subscriptions.filter(x => x.params.event === event);
+  }
+
+  private getSubscriptionByParams(params: EventSubscriptionParams): EventSubscription | undefined {
+    let result;
+    const matches = this.getSubscriptionsByEvent(params.event);
+    if (matches && matches.length) {
+      matches.forEach(event => {
+        if (event.params.webhook === params.webhook) {
+          result = event;
+        }
+      });
+    }
+    return result;
   }
 
   // -- MISC ---------------------------------------------------------------- //

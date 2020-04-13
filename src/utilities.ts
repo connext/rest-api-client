@@ -11,7 +11,10 @@ import {
 } from "@connext/store";
 
 import {
-  CONNEXT_WALLET_FILE_NAME,
+  CONNEXT_MNEMONIC_KEY,
+  CONNEXT_INIT_OPTIONS_KEY,
+  CONNEXT_SUBSCRIPTIONS_KEY,
+  CONNEXT_MNEMONIC_FILE_NAME,
   CONNEXT_SUBSCRIPTIONS_FILE_NAME,
   CONNEXT_INIT_OPTIONS_FILE_NAME,
   ADDRESS_ZERO,
@@ -36,62 +39,64 @@ export async function requireParam(obj: any, param: string, type = "string") {
   }
 }
 
-export async function storeFile(data: any, fileDir: string, fileName: string): Promise<void> {
+export async function storeFile(
+  key: string,
+  data: any,
+  fileDir: string,
+  fileName: string,
+): Promise<void> {
   await createDirectory(fileDir);
-  await fsWrite(path.join(fileDir, fileName), safeJsonStringify(data));
+  await fsWrite(path.join(fileDir, fileName), safeJsonStringify({ [key]: data }));
 }
 
-export async function fetchFile(fileDir: string, fileName: string): Promise<any> {
+export async function fetchFile(key: string, fileDir: string, fileName: string): Promise<any> {
   const filePath = path.join(fileDir, fileName);
   if ((await checkFile(filePath)) === FILE_DOESNT_EXIST) {
     return undefined;
   }
   const data = await fsRead(filePath);
-  return safeJsonParse(data);
+  const json = safeJsonParse(data);
+  if (typeof json !== "object" || !json[key]) {
+    return undefined;
+  }
+  return json[key];
 }
 
 export async function storeMnemonic(mnemonic: string, fileDir: string): Promise<void> {
-  await storeFile({ mnemonic }, fileDir, CONNEXT_WALLET_FILE_NAME);
+  await storeFile(CONNEXT_MNEMONIC_KEY, mnemonic, fileDir, CONNEXT_MNEMONIC_FILE_NAME);
 }
 
 export async function fetchMnemonic(fileDir: string): Promise<string | undefined> {
-  const result = await fetchFile(fileDir, CONNEXT_WALLET_FILE_NAME);
-  if (typeof result !== "object" || !result.mnemonic) {
-    return undefined;
-  }
-  return result.mnemonic;
+  return fetchFile(CONNEXT_MNEMONIC_KEY, fileDir, CONNEXT_MNEMONIC_FILE_NAME);
 }
 
 export async function storeSubscriptions(
   subscriptions: EventSubscription[],
   fileDir: string,
 ): Promise<void> {
-  await storeFile(subscriptions, fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
+  await storeFile(
+    CONNEXT_SUBSCRIPTIONS_KEY,
+    subscriptions,
+    fileDir,
+    CONNEXT_SUBSCRIPTIONS_FILE_NAME,
+  );
 }
 
 export async function fetchSubscriptions(
   fileDir: string,
 ): Promise<EventSubscription[] | undefined> {
-  const result = await fetchFile(fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
-  if (!Array.isArray(result)) {
-    return undefined;
-  }
-  return result;
+  return fetchFile(CONNEXT_SUBSCRIPTIONS_KEY, fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
 }
 
 export async function storeInitOptions(
   initOptions: Partial<InitOptions>,
   fileDir: string,
 ): Promise<void> {
-  await storeFile(initOptions, fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
+  await storeFile(CONNEXT_INIT_OPTIONS_KEY, initOptions, fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
 }
 
 export async function fetchInitOptions(fileDir: string): Promise<Partial<InitOptions> | undefined> {
-  const result = await fetchFile(fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
-  if (typeof result !== "object" || !result) {
-    return undefined;
-  }
-  return result;
+  return fetchFile(CONNEXT_INIT_OPTIONS_KEY, fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
 }
 
 export async function fetchAll(fileDir: string) {
