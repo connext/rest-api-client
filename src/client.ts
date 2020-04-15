@@ -118,8 +118,7 @@ export default class ClientManager {
       conditionType: "HashLockTransfer",
       preImage,
     } as PublicParams.ResolveHashLockTransfer);
-    const appDetails = await client.getAppInstance(response.appIdentityHash);
-    const data = deBigNumberifyJson({ ...response, ...appDetails });
+    const data = deBigNumberifyJson(response);
     return data;
   }
 
