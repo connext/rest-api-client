@@ -105,7 +105,12 @@ export default class ClientManager {
       meta: params.meta,
       timelock: params.timelock,
     } as PublicParams.HashLockTransfer);
-    const appDetails = await client.getAppInstance(response.appIdentityHash);
+    let appDetails = {};
+    try {
+      appDetails = await client.getAppInstance(response.appIdentityHash);
+    } catch (e) {
+      // do nothing
+    }
     const data = deBigNumberifyJson({ ...response, ...appDetails });
     return data;
   }
@@ -116,7 +121,12 @@ export default class ClientManager {
       conditionType: "HashLockTransfer",
       preImage,
     } as PublicParams.ResolveHashLockTransfer);
-    const appDetails = await client.getAppInstance(response.appIdentityHash);
+    let appDetails = {};
+    try {
+      appDetails = await client.getAppInstance(response.appIdentityHash);
+    } catch (e) {
+      // do nothing
+    }
     const data = deBigNumberifyJson({ ...response, ...appDetails });
     return data;
   }
