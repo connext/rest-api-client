@@ -69,7 +69,6 @@ export default class Subscriber {
     await Promise.all(
       subscriptions.map(subscription => this.subscribeOnClient(client, subscription)),
     );
-    console.log("batchResubscribe", "subscriptions", subscriptions);
     await this.persistSubscriptions(subscriptions);
   }
 
@@ -78,31 +77,26 @@ export default class Subscriber {
   }
 
   public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
-    console.log("clearAllSubscriptions", "BEFORE");
     await Promise.all(
       this._subscriptions.map(subscription => this.unsubscribeOnClient(client, subscription)),
     );
-    console.log("clearAllSubscriptions", "EMPTY_ARRAY", []);
     await this.persistSubscriptions([]);
   }
 
   // -- STORE ---------------------------------------------------------------- //
 
   private async persistSubscriptions(subscriptions: EventSubscription[]) {
-    console.log("persistSubscriptions", "subscriptions", subscriptions);
     this._subscriptions = subscriptions;
     await storeSubscriptions(subscriptions, config.storeDir);
   }
 
   private async saveSubscription(subscription: EventSubscription) {
-    console.log("saveSubscription", "subscription", subscription);
     const subscriptions = this._subscriptions;
     subscriptions.push(subscription);
     await this.persistSubscriptions(subscriptions);
   }
 
   private async removeSubscription(id: string) {
-    console.log("removeSubscription", "id", id);
     const subscriptions = this._subscriptions.filter(x => x.id !== id);
     await this.persistSubscriptions(subscriptions);
   }
