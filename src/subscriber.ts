@@ -2,8 +2,12 @@ import axios from "axios";
 import { v4 as uuid } from "uuid";
 import { IConnextClient } from "@connext/types";
 
-import { storeSubscriptions, deBigNumberifyJson } from "./utilities";
-import { EventSubscription, EventSubscriptionParams } from "./types";
+import {
+  EventSubscription,
+  EventSubscriptionParams,
+  storeSubscriptions,
+  deBigNumberifyJson,
+} from "./helpers";
 import config from "./config";
 
 export default class Subscriber {
