@@ -4,7 +4,7 @@ import Helmet from "fastify-helmet";
 import config from "./config";
 
 import ClientManager from "./client";
-import { requireParam, fetchAll } from "./utilities";
+import { requireParam, fetchAll } from "./helpers";
 
 const app = fastify({
   logger: { prettyPrint: config.debug ? { forceColor: true } : undefined },

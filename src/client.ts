@@ -4,19 +4,18 @@ import { IConnextClient, ChannelProviderConfig, PublicParams, StoreTypes } from 
 import { Wallet } from "ethers";
 
 import config from "./config";
+
 import {
   storeMnemonic,
   storeInitOptions,
   getClientBalance,
   getFreeBalanceOnChain,
   deBigNumberifyJson,
-} from "./utilities";
-import {
   EventSubscriptionParams,
   InitClientManagerOptions,
   InitOptions,
   EventSubscription,
-} from "./types";
+} from "./helpers";
 import Subscriber from "./subscriber";
 import { AddressZero } from "ethers/constants";
 
