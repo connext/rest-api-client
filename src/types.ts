@@ -11,6 +11,7 @@ export type EventSubscription = {
 };
 
 export interface InitOptions extends ClientOptions {
+  mnemonic: string;
   network?: string;
 }
 

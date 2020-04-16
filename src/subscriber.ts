@@ -1,8 +1,8 @@
 import axios from "axios";
 import { v4 as uuid } from "uuid";
-import { IConnextClient, deBigNumberifyJson } from "@connext/types";
+import { IConnextClient } from "@connext/types";
 
-import { storeSubscriptions } from "./utilities";
+import { storeSubscriptions, deBigNumberifyJson } from "./utilities";
 import { EventSubscription, EventSubscriptionParams } from "./types";
 import config from "./config";
 

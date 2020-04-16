@@ -1,20 +1,16 @@
 import * as connext from "@connext/client";
 import { ConnextStore } from "@connext/store";
-import {
-  IConnextClient,
-  ChannelProviderConfig,
-  deBigNumberifyJson,
-  PublicParams,
-} from "@connext/types";
+import { IConnextClient, ChannelProviderConfig, PublicParams, StoreTypes } from "@connext/types";
+import { Wallet } from "ethers";
 
 import config from "./config";
-import { EMPTY_CHANNEL_PROVIDER_CONFIG, ADDRESS_ZERO } from "./constants";
 import {
   storeMnemonic,
   storeInitOptions,
   postgresStore,
   getFreeBalanceOnChain,
   getClientBalance,
+  deBigNumberifyJson,
 } from "./utilities";
 
 import {
@@ -24,6 +20,7 @@ import {
   EventSubscription,
 } from "./types";
 import Subscriber from "./subscriber";
+import { AddressZero } from "ethers/constants";
 
 export default class ClientManager {
   private _client: IConnextClient | undefined;
@@ -57,8 +54,9 @@ export default class ClientManager {
     const network = opts?.network || config.network;
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
     const nodeUrl = opts?.nodeUrl || config.nodeUrl;
-    const store = new ConnextStore("Postgres", { storage: postgresStore });
-    const clientOpts = { mnemonic, store, ethProviderUrl, nodeUrl };
+    const store = new ConnextStore(StoreTypes.Postgres, { storage: postgresStore });
+    const signer = Wallet.fromMnemonic(mnemonic).privateKey;
+    const clientOpts = { signer, store, ethProviderUrl, nodeUrl };
     const client = await connext.connect(network, clientOpts);
     const initOpts = { network, ...clientOpts };
     await this.updateClient(client, initOpts, subscriptions);
@@ -77,7 +75,7 @@ export default class ClientManager {
   public async getConfig(): Promise<Partial<ChannelProviderConfig>> {
     const client = await this.getClient();
     const config = {
-      ...EMPTY_CHANNEL_PROVIDER_CONFIG,
+      multisigAddress: undefined,
       ...client.channelProvider.config,
     };
     if (!config.multisigAddress) {
@@ -95,7 +93,7 @@ export default class ClientManager {
 
   public async hashLockTransfer(params: PublicParams.HashLockTransfer) {
     const client = await this.getClient();
-    if (params.assetId === ADDRESS_ZERO) {
+    if (params.assetId === AddressZero) {
       delete params.assetId;
     }
     const response = await client.conditionalTransfer({
@@ -145,13 +143,13 @@ export default class ClientManager {
 
   public async deposit(params: PublicParams.Deposit) {
     const client = await this.getClient();
-    const assetId = params.assetId || ADDRESS_ZERO;
-    if (params.assetId === ADDRESS_ZERO) {
+    const assetId = params.assetId || AddressZero;
+    if (params.assetId === AddressZero) {
       delete params.assetId;
     }
     const response = await client.deposit(params);
     return {
-      freeBalanceOffChain: response.freeBalance[client.freeBalanceAddress].toString(),
+      freeBalanceOffChain: response.freeBalance[client.signerAddress].toString(),
       freeBalanceOnChain: await getFreeBalanceOnChain(client, assetId),
     };
   }
