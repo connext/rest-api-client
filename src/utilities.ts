@@ -1,14 +1,6 @@
 import path from "path";
 import tokenAbi from "human-standard-token-abi";
-import {
-  fsWrite,
-  fsRead,
-  safeJsonStringify,
-  safeJsonParse,
-  checkFile,
-  createDirectory,
-  FILE_DOESNT_EXIST,
-} from "@connext/store";
+import { fsWrite, fsRead, checkFile, createDirectory, FILE_DOESNT_EXIST } from "@connext/store";
 
 import {
   CONNEXT_MNEMONIC_KEY,
@@ -17,10 +9,26 @@ import {
   CONNEXT_MNEMONIC_FILE_NAME,
   CONNEXT_SUBSCRIPTIONS_FILE_NAME,
   CONNEXT_INIT_OPTIONS_FILE_NAME,
-  ADDRESS_ZERO,
 } from "./constants";
 import { EventSubscription, InitOptions } from "./types";
 import { IConnextClient, Contract } from "@connext/types";
+import { AddressZero } from "ethers/constants";
+
+export function safeJsonParse(value: any): any {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+export function safeJsonStringify(value: any): string {
+  return typeof value === "string"
+    ? value
+    : JSON.stringify(value, (key: string, value: any) =>
+        typeof value === "undefined" ? null : value,
+      );
+}
 
 export function verifyType(value: any, type: string) {
   switch (type) {
@@ -111,17 +119,17 @@ export async function fetchAll(fileDir: string) {
 }
 
 export async function getFreeBalanceOffChain(client: IConnextClient, assetId: string) {
-  return (await client.getFreeBalance(assetId !== ADDRESS_ZERO ? assetId : undefined))[
-    client.freeBalanceAddress
+  return (await client.getFreeBalance(assetId !== AddressZero ? assetId : undefined))[
+    client.signerAddress
   ].toString();
 }
 
 export async function getFreeBalanceOnChain(client: IConnextClient, assetId: string) {
-  return assetId === ADDRESS_ZERO
-    ? (await client.ethProvider.getBalance(client.freeBalanceAddress)).toString()
+  return assetId === AddressZero
+    ? (await client.ethProvider.getBalance(client.signerAddress)).toString()
     : (
         await new Contract(assetId, tokenAbi, client.ethProvider).functions.balanceOf(
-          client.freeBalanceAddress,
+          client.signerAddress,
         )
       ).toString();
 }
@@ -130,4 +138,8 @@ export async function getClientBalance(client: IConnextClient, assetId) {
   const freeBalanceOffChain = await getFreeBalanceOffChain(client, assetId);
   const freeBalanceOnChain = await getFreeBalanceOnChain(client, assetId);
   return { freeBalanceOffChain, freeBalanceOnChain };
+}
+
+export function deBigNumberifyJson(value: any) {
+  return value;
 }
