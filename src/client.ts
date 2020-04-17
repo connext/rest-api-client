@@ -10,7 +10,6 @@ import {
   storeInitOptions,
   getClientBalance,
   getFreeBalanceOnChain,
-  deBigNumberifyJson,
   EventSubscriptionParams,
   InitClientManagerOptions,
   InitOptions,
@@ -51,9 +50,10 @@ export default class ClientManager {
     const network = opts?.network || config.network;
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
     const nodeUrl = opts?.nodeUrl || config.nodeUrl;
+    const logLevel = opts?.logLevel || config.logLevel;
     const store = new ConnextStore(StoreTypes.File, { fileDir: config.storeDir });
     const signer = Wallet.fromMnemonic(mnemonic).privateKey;
-    const clientOpts = { signer, store, ethProviderUrl, nodeUrl };
+    const clientOpts = { signer, store, ethProviderUrl, nodeUrl, logLevel };
     const client = await connext.connect(network, clientOpts);
     const initOpts = { network, ...clientOpts };
     await this.updateClient(client, initOpts, subscriptions);
@@ -84,7 +84,7 @@ export default class ClientManager {
   public async getAppInstanceDetails(appIdentityHash: string) {
     const client = await this.getClient();
     const appDetails = await client.getAppInstance(appIdentityHash);
-    const data = deBigNumberifyJson(appDetails);
+    const data = appDetails;
     return data;
   }
 
@@ -103,7 +103,7 @@ export default class ClientManager {
       timelock: params.timelock,
     } as PublicParams.HashLockTransfer);
     const appDetails = await client.getAppInstance(response.appIdentityHash);
-    const data = deBigNumberifyJson({ ...response, ...appDetails });
+    const data = { ...response, ...appDetails };
     return data;
   }
 
@@ -113,7 +113,7 @@ export default class ClientManager {
       conditionType: "HashLockTransfer",
       preImage,
     } as PublicParams.ResolveHashLockTransfer);
-    const data = deBigNumberifyJson(response);
+    const data = response;
     return data;
   }
 
@@ -123,7 +123,7 @@ export default class ClientManager {
     if (!response) {
       throw new Error(`No HashLock Transfer found for lockHash: ${lockHash}`);
     }
-    const data = deBigNumberifyJson(response);
+    const data = response;
     return data;
   }
 
