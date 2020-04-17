@@ -61,14 +61,6 @@ export default class ClientManager {
     return client;
   }
 
-  public async getClient(): Promise<IConnextClient> {
-    let client = this._client;
-    if (!client) {
-      client = await this.initClient();
-    }
-    return client;
-  }
-
   public async getConfig(): Promise<Partial<ChannelProviderConfig>> {
     const client = await this.getClient();
     const config = {
@@ -183,24 +175,32 @@ export default class ClientManager {
     return { success: true };
   }
 
+  // -- Private ---------------------------------------------------------------- //
+
+  private async getClient(): Promise<IConnextClient> {
+    let client = this._client;
+    if (!client) {
+      client = await this.initClient();
+    }
+    return client;
+  }
+
   private async updateClient(
     client: IConnextClient,
     initOpts: Partial<InitOptions>,
     subscriptions?: EventSubscription[],
   ) {
-    console.log("updateClient", "subscriptions.length", subscriptions?.length);
     if (this._client) {
       await this._subscriber.clearAllSubscriptions(this._client);
     }
     this._client = client;
     await this.initSubscriptions(subscriptions);
-    await await storeInitOptions(initOpts, config.storeDir);
+    await storeInitOptions(initOpts, config.storeDir);
   }
 
   private async initSubscriptions(subscriptions?: EventSubscription[]) {
     if (subscriptions && subscriptions.length) {
       const client = await this.getClient();
-      console.log("initSubscriptions", "subscriptions.length", subscriptions.length);
       await this._subscriber.batchResubscribe(client, subscriptions);
     }
   }

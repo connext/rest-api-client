@@ -27,11 +27,11 @@ export default class Subscriber {
     }
     const subscription = this.formatSubscription(params);
     await this.saveSubscription(subscription);
-    await this.subscribeOnClient(client, subscription);
+    this.subscribeOnClient(client, subscription);
     return subscription;
   }
 
-  private async subscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
+  private subscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
     client.on(subscription.params.event as any, data =>
       this.onSubscription(subscription.params.event, data),
     );
@@ -42,13 +42,13 @@ export default class Subscriber {
   public async unsubscribe(client: IConnextClient, id: string) {
     const subscription = this.getSubscriptionById(id);
     if (subscription) {
-      await this.unsubscribeOnClient(client, subscription);
+      this.unsubscribeOnClient(client, subscription);
     }
     await this.removeSubscription(id);
   }
 
-  private async unsubscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
-    await client.removeListener(subscription.params.event as any, data =>
+  private unsubscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
+    client.removeListener(subscription.params.event as any, data =>
       this.onSubscription(subscription.params.event, data),
     );
   }
@@ -66,9 +66,7 @@ export default class Subscriber {
     client: IConnextClient,
     subscriptions: EventSubscription[],
   ): Promise<void> {
-    await Promise.all(
-      subscriptions.map(subscription => this.subscribeOnClient(client, subscription)),
-    );
+    subscriptions.map(subscription => this.subscribeOnClient(client, subscription));
     await this.persistSubscriptions(subscriptions);
   }
 
@@ -77,9 +75,7 @@ export default class Subscriber {
   }
 
   public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
-    await Promise.all(
-      this._subscriptions.map(subscription => this.unsubscribeOnClient(client, subscription)),
-    );
+    this._subscriptions.map(subscription => this.unsubscribeOnClient(client, subscription));
     await this.persistSubscriptions([]);
   }
 
