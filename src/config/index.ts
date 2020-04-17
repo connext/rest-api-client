@@ -12,6 +12,7 @@ const ethProviderUrl = process.env.CONNEXT_ETH_PROVIDER_URL || undefined;
 const nodeUrl = process.env.CONNEXT_NODE_URL || undefined;
 const mnemonic = process.env.CONNEXT_MNEMONIC || "";
 const storeDir = process.env.CONNEXT_STORE_DIR || "./connext-store";
+const logLevel = parseInt(process.env.CONNEXT_LOG_LEVEL || "3", 10);
 
 const dbHost = process.env.POSTGRES_HOST || "localhost";
 const dbPort = parseInt(process.env.POSTGRES_PORT || "5432");
@@ -24,6 +25,7 @@ export default {
   debug: debug,
   port,
   host,
+  logLevel,
   network,
   ethProviderUrl,
   nodeUrl,

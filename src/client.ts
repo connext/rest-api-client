@@ -11,7 +11,6 @@ import {
   postgresStore,
   getFreeBalanceOnChain,
   getClientBalance,
-  deBigNumberifyJson,
   EventSubscriptionParams,
   InitClientManagerOptions,
   InitOptions,
@@ -52,21 +51,14 @@ export default class ClientManager {
     const network = opts?.network || config.network;
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
     const nodeUrl = opts?.nodeUrl || config.nodeUrl;
+    const logLevel = opts?.logLevel || config.logLevel;
     const store = new ConnextStore(StoreTypes.Postgres, { storage: postgresStore });
     const signer = Wallet.fromMnemonic(mnemonic).privateKey;
-    const clientOpts = { signer, store, ethProviderUrl, nodeUrl };
+    const clientOpts = { signer, store, ethProviderUrl, nodeUrl, logLevel };
     const client = await connext.connect(network, clientOpts);
     const initOpts = { network, ...clientOpts };
     await this.updateClient(client, initOpts, subscriptions);
     this._logger.info("Client initialized successfully");
-    return client;
-  }
-
-  public async getClient(): Promise<IConnextClient> {
-    let client = this._client;
-    if (!client) {
-      client = await this.initClient();
-    }
     return client;
   }
 
@@ -85,7 +77,7 @@ export default class ClientManager {
   public async getAppInstanceDetails(appIdentityHash: string) {
     const client = await this.getClient();
     const appDetails = await client.getAppInstance(appIdentityHash);
-    const data = deBigNumberifyJson(appDetails);
+    const data = appDetails;
     return data;
   }
 
@@ -104,7 +96,7 @@ export default class ClientManager {
       timelock: params.timelock,
     } as PublicParams.HashLockTransfer);
     const appDetails = await client.getAppInstance(response.appIdentityHash);
-    const data = deBigNumberifyJson({ ...response, ...appDetails });
+    const data = { ...response, ...appDetails };
     return data;
   }
 
@@ -114,7 +106,7 @@ export default class ClientManager {
       conditionType: "HashLockTransfer",
       preImage,
     } as PublicParams.ResolveHashLockTransfer);
-    const data = deBigNumberifyJson(response);
+    const data = response;
     return data;
   }
 
@@ -124,7 +116,7 @@ export default class ClientManager {
     if (!response) {
       throw new Error(`No HashLock Transfer found for lockHash: ${lockHash}`);
     }
-    const data = deBigNumberifyJson(response);
+    const data = response;
     return data;
   }
 
@@ -184,24 +176,32 @@ export default class ClientManager {
     return { success: true };
   }
 
+  // -- Private ---------------------------------------------------------------- //
+
+  private async getClient(): Promise<IConnextClient> {
+    let client = this._client;
+    if (!client) {
+      client = await this.initClient();
+    }
+    return client;
+  }
+
   private async updateClient(
     client: IConnextClient,
     initOpts: Partial<InitOptions>,
     subscriptions?: EventSubscription[],
   ) {
-    console.log("updateClient", "subscriptions.length", subscriptions?.length);
     if (this._client) {
       await this._subscriber.clearAllSubscriptions(this._client);
     }
     this._client = client;
     await this.initSubscriptions(subscriptions);
-    await await storeInitOptions(initOpts);
+    await storeInitOptions(initOpts);
   }
 
   private async initSubscriptions(subscriptions?: EventSubscription[]) {
     if (subscriptions && subscriptions.length) {
       const client = await this.getClient();
-      console.log("initSubscriptions", "subscriptions.length", subscriptions.length);
       await this._subscriber.batchResubscribe(client, subscriptions);
     }
   }

@@ -2,12 +2,7 @@ import axios from "axios";
 import { v4 as uuid } from "uuid";
 import { IConnextClient } from "@connext/types";
 
-import {
-  EventSubscription,
-  EventSubscriptionParams,
-  storeSubscriptions,
-  deBigNumberifyJson,
-} from "./helpers";
+import { EventSubscription, EventSubscriptionParams, storeSubscriptions } from "./helpers";
 import config from "./config";
 
 export default class Subscriber {
@@ -27,11 +22,11 @@ export default class Subscriber {
     }
     const subscription = this.formatSubscription(params);
     await this.saveSubscription(subscription);
-    await this.subscribeOnClient(client, subscription);
+    this.subscribeOnClient(client, subscription);
     return subscription;
   }
 
-  private async subscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
+  private subscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
     client.on(subscription.params.event as any, data =>
       this.onSubscription(subscription.params.event, data),
     );
@@ -42,13 +37,13 @@ export default class Subscriber {
   public async unsubscribe(client: IConnextClient, id: string) {
     const subscription = this.getSubscriptionById(id);
     if (subscription) {
-      await this.unsubscribeOnClient(client, subscription);
+      this.unsubscribeOnClient(client, subscription);
     }
     await this.removeSubscription(id);
   }
 
-  private async unsubscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
-    await client.removeListener(subscription.params.event as any, data =>
+  private unsubscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
+    client.removeListener(subscription.params.event as any, data =>
       this.onSubscription(subscription.params.event, data),
     );
   }
@@ -66,10 +61,7 @@ export default class Subscriber {
     client: IConnextClient,
     subscriptions: EventSubscription[],
   ): Promise<void> {
-    await Promise.all(
-      subscriptions.map(subscription => this.subscribeOnClient(client, subscription)),
-    );
-    console.log("batchResubscribe", "subscriptions", subscriptions);
+    subscriptions.map(subscription => this.subscribeOnClient(client, subscription));
     await this.persistSubscriptions(subscriptions);
   }
 
@@ -78,31 +70,24 @@ export default class Subscriber {
   }
 
   public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
-    console.log("clearAllSubscriptions", "BEFORE");
-    await Promise.all(
-      this._subscriptions.map(subscription => this.unsubscribeOnClient(client, subscription)),
-    );
-    console.log("clearAllSubscriptions", "EMPTY_ARRAY", []);
+    this._subscriptions.map(subscription => this.unsubscribeOnClient(client, subscription));
     await this.persistSubscriptions([]);
   }
 
   // -- STORE ---------------------------------------------------------------- //
 
   private async persistSubscriptions(subscriptions: EventSubscription[]) {
-    console.log("persistSubscriptions", "subscriptions", subscriptions);
     this._subscriptions = subscriptions;
     await storeSubscriptions(subscriptions);
   }
 
   private async saveSubscription(subscription: EventSubscription) {
-    console.log("saveSubscription", "subscription", subscription);
     const subscriptions = this._subscriptions;
     subscriptions.push(subscription);
     await this.persistSubscriptions(subscriptions);
   }
 
   private async removeSubscription(id: string) {
-    console.log("removeSubscription", "id", id);
     const subscriptions = this._subscriptions.filter(x => x.id !== id);
     await this.persistSubscriptions(subscriptions);
   }
@@ -142,7 +127,7 @@ export default class Subscriber {
         try {
           await axios.post(webhook, {
             id: subscription.id,
-            data: deBigNumberifyJson(data),
+            data,
           });
           this._logger.info(`Successfully pushed event ${event} to webhook: ${webhook}`);
         } catch (error) {

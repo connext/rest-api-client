@@ -56,7 +56,3 @@ export async function getClientBalance(client: IConnextClient, assetId) {
   const freeBalanceOnChain = await getFreeBalanceOnChain(client, assetId);
   return { freeBalanceOffChain, freeBalanceOnChain };
 }
-
-export function deBigNumberifyJson(value: any) {
-  return value;
-}
