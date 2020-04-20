@@ -1,7 +1,7 @@
 {
   "name": "@connext/rest-api",
   "description": "REST API client for Connext",
-  "version": "6.0.3",
+  "version": "6.0.4",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ConnextProject/rest-api-client.git"
@@ -18,14 +18,15 @@
     "clean:all": "npm run clean:build && npm run clean:store",
     "compile": "tsc -p tsconfig.json",
     "build": "npm run clean:build && npm run compile",
-    "start": "npm run build && node ./build",
+    "prod": "node ./build/src",
+    "start": "npm run build && npm run prod",
     "lint": "eslint -c './.eslintrc' --fix './src/**/*.ts'",
     "start:dev": "ts-node-dev src/index.ts"
   },
   "dependencies": {
-    "@connext/client": "^6.0.3",
-    "@connext/store": "6.0.3",
-    "@connext/types": "6.0.3",
+    "@connext/client": "6.0.4",
+    "@connext/store": "6.0.4",
+    "@connext/types": "6.0.4",
     "axios": "^0.18.1",
     "babel-polyfill": "^6.26.0",
     "core-js": "^3.6.4",
@@ -48,7 +49,7 @@
     "@types/chai": "^4.1.6",
     "@types/mocha": "^5.2.5",
     "@types/node": "^10.12.0",
-    "@types/ws": "^6.0.3",
+    "@types/ws": "^6.0.4",
     "@typescript-eslint/eslint-plugin": "^2.22.0",
     "@typescript-eslint/parser": "^2.22.0",
     "eslint": "^6.8.0",
