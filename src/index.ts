@@ -1,6 +1,7 @@
 import fastify from "fastify";
 import Helmet from "fastify-helmet";
 
+import pkg from "../package.json";
 import config from "./config";
 
 import ClientManager from "./client";
@@ -22,6 +23,15 @@ app.get("/health", (req, res) => {
 
 app.get("/hello", (req, res) => {
   res.status(200).send(`Hello World, this is Connext client`);
+});
+
+app.get("/version", (req, res) => {
+  try {
+    res.status(200).send({ version: pkg.version });
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
 });
 
 app.get("/balance/:assetId", async (req, res) => {

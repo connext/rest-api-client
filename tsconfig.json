@@ -28,8 +28,9 @@
     "strictPropertyInitialization": true,
 
     "outDir": "./build",
-    "rootDir": "./src",
+    "rootDir": ".",
     "target": "es5",
     "module": "commonjs"
-  }
+  },
+  "include": ["src", "package.json"]
 }
