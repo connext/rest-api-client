@@ -99,11 +99,12 @@ export default class ClientManager {
     return data;
   }
 
-  public async hashLockResolve(preImage: string) {
+  public async hashLockResolve(params: PublicParams.ResolveHashLockTransfer) {
     const client = await this.getClient();
     const response = await client.resolveCondition({
       conditionType: "HashLockTransfer",
-      preImage,
+      preImage: params.preImage,
+      assetId: params.assetId,
     } as PublicParams.ResolveHashLockTransfer);
     const data = response;
     return data;
