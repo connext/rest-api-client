@@ -115,8 +115,9 @@ app.post("/hashlock-transfer", async (req, res) => {
 
 app.post("/hashlock-resolve", async (req, res) => {
   try {
-    await requireParam(req.body, "lockHash");
-    res.status(200).send(await clientManager.hashLockResolve(req.body.lockHash));
+    await requireParam(req.body, "preImage");
+    await requireParam(req.body, "assetId");
+    res.status(200).send(await clientManager.hashLockResolve(req.body));
   } catch (error) {
     app.log.error(error);
     res.status(500).send({ message: error.message });
