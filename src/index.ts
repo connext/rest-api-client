@@ -53,10 +53,12 @@ app.get("/config", async (req, res) => {
   }
 });
 
-app.get("/hashlock-status/:lockHash", async (req, res) => {
+app.get("/hashlock-status/:lockHash/:assetId", async (req, res) => {
   try {
     await requireParam(req.params, "lockHash");
-    res.status(200).send(await clientManager.hashLockStatus(req.params.lockHash));
+    await requireParam(req.params, "assetId");
+    const { lockHash, assetId } = req.params;
+    res.status(200).send(await clientManager.hashLockStatus(lockHash, assetId));
   } catch (error) {
     app.log.error(error);
     res.status(500).send({ message: error.message });
