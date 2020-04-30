@@ -5,15 +5,36 @@ import pkg from "../package.json";
 import config from "./config";
 
 import ClientManager from "./client";
-import { requireParam, fetchAll } from "./helpers";
+import { requireParam, fetchAll, isNotIncluded } from "./helpers";
 
 const app = fastify({
   logger: { prettyPrint: config.debug ? { forceColor: true } : undefined },
+  disableRequestLogging: true,
 });
 
 let clientManager: ClientManager;
 
 app.register(Helmet);
+
+const loggingBlacklist = ["/balance"];
+
+app.addHook("onRequest", (req, reply, done) => {
+  if (config.debug && req.req.url) {
+    if (isNotIncluded(req.req.url, loggingBlacklist)) {
+      req.log.info({ url: req.req.url, id: req.id }, "received request");
+    }
+  }
+  done();
+});
+
+app.addHook("onResponse", (req, reply, done) => {
+  if (config.debug && req.req.url) {
+    if (isNotIncluded(req.req.url, loggingBlacklist)) {
+      req.log.info({ url: req.req.url, id: req.id }, "received request");
+    }
+  }
+  done();
+});
 
 // -- GET ---------------------------------------------------------------- //
 
@@ -199,5 +220,4 @@ app.ready(async () => {
 const [host, port] = config.host.split(":");
 app.listen(+port, host, (err, address) => {
   if (err) throw err;
-  app.log.info(`Server listening on ${address}`);
 });

@@ -18,6 +18,18 @@ export function safeJsonStringify(value: any): string {
       );
 }
 
+export function isNotIncluded(val: string, arr: string[]) {
+  let res = true;
+  for (const i in arr) {
+    const matches = val.match(arr[i]);
+    if (matches && matches.length) {
+      res = false;
+      break;
+    }
+  }
+  return res;
+}
+
 export function verifyType(value: any, type: string) {
   switch (type) {
     case "array":
