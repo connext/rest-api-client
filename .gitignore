@@ -44,6 +44,8 @@ dist
 build
 
 .DS_Store
-connext-store
 *.tsbuildinfo 
 .env
+
+connext-store
+bot-1-store
