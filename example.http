@@ -19,3 +19,47 @@ Content-Type: application/json
 GET http://localhost:5040/balance/0x0000000000000000000000000000000000000000
 
 ###
+
+POST http://localhost:5040/deposit
+Content-Type: application/json
+
+{
+  "amount": "10000000000000000",
+  "assetId": "0x0000000000000000000000000000000000000000"
+}
+
+###
+
+POST http://localhost:5040/hashlock-transfer
+Content-Type: application/json
+
+{
+  "amount": "100000000000000",
+  "assetId": "0x0000000000000000000000000000000000000000",
+  "lockHash": "0x19d524db661311610860e1454c153545df6fa48ecc828acfc44ebeb1b7238ddc",
+  "timelock": "5000",
+  "recipient": "indra7AL99fUWtNFAzPoUb3T7CSLBZMK3Z77zLQxn3ZYgHosMcrCQTX"
+}
+
+###
+
+GET http://localhost:5041/config
+
+###
+
+POST http://localhost:5041/connect
+Content-Type: application/json
+
+{
+  "mnemonic": "tragic robot dwarf ramp churn unusual flavor stairs choice noodle warm hello",
+  "network": "localhost"
+}
+
+###
+POST http://localhost:5041/hashlock-resolve
+Content-Type: application/json
+
+{
+  "preImage": "0x35070066ca7ded15507bf02c8576647734a0bd95238580a45cc40bbb5589e06f",
+  "assetId": "0x0000000000000000000000000000000000000000"
+}
