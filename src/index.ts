@@ -30,7 +30,7 @@ app.addHook("onRequest", (req, reply, done) => {
 app.addHook("onResponse", (req, reply, done) => {
   if (config.debug && req.req.url) {
     if (isNotIncluded(req.req.url, loggingBlacklist)) {
-      req.log.info({ url: req.req.url, id: req.id }, "received request");
+      req.log.info({ url: req.req.url, statusCode: reply.res.statusCode }, "request completed");
     }
   }
   done();
@@ -74,10 +74,12 @@ app.get("/config", async (req, res) => {
   }
 });
 
-app.get("/hashlock-status/:lockHash", async (req, res) => {
+app.get("/hashlock-status/:lockHash/:assetId", async (req, res) => {
   try {
     await requireParam(req.params, "lockHash");
-    res.status(200).send(await clientManager.hashLockStatus(req.params.lockHash));
+    await requireParam(req.params, "assetId");
+    const { lockHash, assetId } = req.params;
+    res.status(200).send(await clientManager.hashLockStatus(lockHash, assetId));
   } catch (error) {
     app.log.error(error);
     res.status(500).send({ message: error.message });
@@ -136,8 +138,9 @@ app.post("/hashlock-transfer", async (req, res) => {
 
 app.post("/hashlock-resolve", async (req, res) => {
   try {
-    await requireParam(req.body, "lockHash");
-    res.status(200).send(await clientManager.hashLockResolve(req.body.lockHash));
+    await requireParam(req.body, "preImage");
+    await requireParam(req.body, "assetId");
+    res.status(200).send(await clientManager.hashLockResolve(req.body));
   } catch (error) {
     app.log.error(error);
     res.status(500).send({ message: error.message });

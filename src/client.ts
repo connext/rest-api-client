@@ -99,21 +99,22 @@ export default class ClientManager {
     return data;
   }
 
-  public async hashLockResolve(preImage: string) {
+  public async hashLockResolve(params: PublicParams.ResolveHashLockTransfer) {
     const client = await this.getClient();
     const response = await client.resolveCondition({
       conditionType: "HashLockTransfer",
-      preImage,
+      preImage: params.preImage,
+      assetId: params.assetId,
     } as PublicParams.ResolveHashLockTransfer);
     const data = response;
     return data;
   }
 
-  public async hashLockStatus(lockHash: string) {
+  public async hashLockStatus(lockHash: string, assetId: string) {
     const client = await this.getClient();
-    const response = await client.getHashLockTransfer(lockHash);
+    const response = await client.getHashLockTransfer(lockHash, assetId);
     if (!response) {
-      throw new Error(`No HashLock Transfer found for lockHash: ${lockHash}`);
+      throw new Error(`No HashLock Transfer found for lockHash: ${lockHash} and assetId: ${assetId}`);
     }
     const data = response;
     return data;
