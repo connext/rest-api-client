@@ -24,9 +24,9 @@
     "start:dev": "ts-node-dev src/index.ts"
   },
   "dependencies": {
-    "@connext/client": "6.3.0",
-    "@connext/store": "6.3.0",
-    "@connext/types": "6.3.0",
+    "@connext/client": "6.3.1",
+    "@connext/store": "6.3.1",
+    "@connext/types": "6.3.1",
     "axios": "^0.18.1",
     "core-js": "^3.6.4",
     "dotenv": "^8.0.0",
