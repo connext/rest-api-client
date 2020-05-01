@@ -24,7 +24,7 @@ POST http://localhost:5040/deposit
 Content-Type: application/json
 
 {
-  "amount": "10000000000000000",
+  "amount": "10000000000000000000",
   "assetId": "0x0000000000000000000000000000000000000000"
 }
 
@@ -34,9 +34,9 @@ POST http://localhost:5040/hashlock-transfer
 Content-Type: application/json
 
 {
-  "amount": "100000000000000",
+  "amount": "1000000000000000",
   "assetId": "0x0000000000000000000000000000000000000000",
-  "lockHash": "0x19d524db661311610860e1454c153545df6fa48ecc828acfc44ebeb1b7238ddc",
+  "lockHash": "0xebaa579b054794dd232cdf7b4f8a29ea5521e4ddff1125f05cecde5d8640b311",
   "timelock": "5000",
   "recipient": "indra7AL99fUWtNFAzPoUb3T7CSLBZMK3Z77zLQxn3ZYgHosMcrCQTX"
 }
@@ -56,6 +56,21 @@ Content-Type: application/json
 }
 
 ###
+
+GET http://localhost:5041/balance/0x0000000000000000000000000000000000000000
+
+###
+
+POST http://localhost:5041/deposit
+Content-Type: application/json
+
+{
+  "amount": "10000000000000000000",
+  "assetId": "0x0000000000000000000000000000000000000000"
+}
+
+###
+
 POST http://localhost:5041/hashlock-resolve
 Content-Type: application/json
 
