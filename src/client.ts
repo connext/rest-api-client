@@ -28,7 +28,7 @@ export default class ClientManager {
   constructor(opts: InitClientManagerOptions) {
     this._logger = opts.logger;
     this._mnemonic = opts.mnemonic;
-    this._subscriber = new Subscriber(opts.logger);
+    this._subscriber = new Subscriber(opts.logger, opts.store);
     this._store = opts.store;
   }
 
@@ -199,7 +199,6 @@ export default class ClientManager {
     }
     this._client = client;
     await this.initSubscriptions(subscriptions);
-    console.log('initOpts: ', initOpts);
     await storeInitOptions(initOpts, this._store);
   }
 

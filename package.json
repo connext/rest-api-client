@@ -1,7 +1,7 @@
 {
   "name": "@connext/rest-api",
   "description": "REST API client for Connext",
-  "version": "6.3.7",
+  "version": "6.3.8",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ConnextProject/rest-api-client.git"
