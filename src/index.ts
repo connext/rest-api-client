@@ -6,6 +6,7 @@ import config from "./config";
 
 import ClientManager from "./client";
 import { requireParam, fetchAll, isNotIncluded } from "./helpers";
+import { getFileStore, ConnextStore } from "@connext/store";
 
 const app = fastify({
   logger: { prettyPrint: config.debug ? { forceColor: true } : undefined },
@@ -213,8 +214,10 @@ app.delete("/subscribe/all", async (req, res) => {
 // -- INIT ---------------------------------------------------------------- //
 
 app.ready(async () => {
-  const { mnemonic, subscriptions, initOptions } = await fetchAll(config.storeDir);
-  clientManager = new ClientManager({ mnemonic, logger: app.log });
+  const store = getFileStore(config.storeDir) as ConnextStore;
+  await store.init();
+  const { mnemonic, subscriptions, initOptions } = await fetchAll(store);
+  clientManager = new ClientManager({ mnemonic, logger: app.log, store });
   if (initOptions && Object.keys(initOptions).length) {
     await clientManager.initClient(initOptions, subscriptions);
   }
