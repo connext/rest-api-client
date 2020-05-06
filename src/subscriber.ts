@@ -4,13 +4,16 @@ import { IConnextClient } from "@connext/types";
 
 import { EventSubscription, EventSubscriptionParams, storeSubscriptions } from "./helpers";
 import config from "./config";
+import { ConnextStore } from "@connext/store";
 
 export default class Subscriber {
+  private _store: ConnextStore;
   private _logger: any;
   private _subscriptions: EventSubscription[] = [];
 
-  constructor(logger: any) {
+  constructor(logger: any, store: ConnextStore) {
     this._logger = logger;
+    this._store = store;
   }
 
   // -- SUBSCRIBE ---------------------------------------------------------------- //
@@ -78,7 +81,7 @@ export default class Subscriber {
 
   private async persistSubscriptions(subscriptions: EventSubscription[]) {
     this._subscriptions = subscriptions;
-    await storeSubscriptions(subscriptions, config.storeDir);
+    await storeSubscriptions(subscriptions, this._store);
   }
 
   private async saveSubscription(subscription: EventSubscription) {
