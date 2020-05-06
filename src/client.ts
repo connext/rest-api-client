@@ -48,6 +48,10 @@ export default class ClientManager {
     if (!mnemonic) {
       throw new Error("Cannot init Connext client without mnemonic");
     }
+    if (this._client) {
+      this._logger.info("Client is already connected - skipping initClient logic");
+      return this._client;
+    }
     this.setMnemonic(mnemonic);
     const network = opts?.network || config.network;
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
