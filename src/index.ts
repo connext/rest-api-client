@@ -123,6 +123,18 @@ app.post("/mnemonic", async (req, res) => {
   }
 });
 
+app.post("/onchain-transfer", async (req, res) => {
+  try {
+    await requireParam(req.body, "amount");
+    await requireParam(req.body, "assetId");
+    await requireParam(req.body, "recipient");
+    res.status(200).send(await clientManager.transferOnChain(req.body));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
 app.post("/hashlock-transfer", async (req, res) => {
   try {
     await requireParam(req.body, "amount");

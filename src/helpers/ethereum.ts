@@ -30,17 +30,20 @@ export async function transferOnChain(params: {
   assetId: string;
   amount: string;
   recipient: string;
-}) {
+}): Promise<string> {
+  let tx: providers.TransactionResponse;
   const wallet = Wallet.fromMnemonic(params.mnemonic).connect(params.ethProvider);
   if (params.assetId === constants.AddressZero) {
-    wallet.sendTransaction({
+    tx = await wallet.sendTransaction({
       to: params.recipient,
       value: params.amount,
     });
   } else {
-    await new Contract(params.assetId, tokenAbi, params.ethProvider).functions.transfer([
-      params.recipient,
-      params.amount,
-    ]);
+    const token = new Contract(params.assetId, tokenAbi, params.ethProvider);
+    tx = await token.transfer([params.recipient, params.amount]);
   }
+  if (typeof tx.hash === "undefined") {
+    throw new Error("Transaction hash is undefined");
+  }
+  return tx.hash;
 }

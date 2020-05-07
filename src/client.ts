@@ -14,6 +14,7 @@ import {
   InitClientManagerOptions,
   InitOptions,
   EventSubscription,
+  transferOnChain,
 } from "./helpers";
 import Subscriber from "./subscriber";
 import { AddressZero } from "ethers/constants";
@@ -149,6 +150,22 @@ export default class ClientManager {
       freeBalanceOffChain: response.freeBalance[client.signerAddress].toString(),
       freeBalanceOnChain: await getFreeBalanceOnChain(client, assetId),
     };
+  }
+
+  public async transferOnChain(params: {
+    amount: string;
+    assetId: string;
+    recipient: string;
+  }): Promise<{ txhash: string }> {
+    const client = await this.getClient();
+    const txhash = await transferOnChain({
+      mnemonic: this.mnemonic,
+      ethProvider: client.ethProvider,
+      assetId: params.assetId,
+      amount: params.amount,
+      recipient: params.recipient,
+    });
+    return { txhash };
   }
 
   public async subscribe(params: EventSubscriptionParams): Promise<{ id: string }> {
