@@ -1,6 +1,6 @@
 import * as connext from "@connext/client";
 import { ConnextStore } from "@connext/store";
-import { IConnextClient, ChannelProviderConfig, PublicParams, StoreTypes } from "@connext/types";
+import { IConnextClient, ChannelProviderConfig, PublicParams } from "@connext/types";
 import { Wallet } from "ethers";
 
 import config from "./config";
@@ -23,11 +23,13 @@ export default class ClientManager {
   private _logger: any;
   private _mnemonic: string | undefined;
   private _subscriber: Subscriber;
+  private _store: ConnextStore;
 
   constructor(opts: InitClientManagerOptions) {
     this._logger = opts.logger;
     this._mnemonic = opts.mnemonic;
-    this._subscriber = new Subscriber(opts.logger);
+    this._subscriber = new Subscriber(opts.logger, opts.store);
+    this._store = opts.store;
   }
 
   get mnemonic(): string {
@@ -46,16 +48,19 @@ export default class ClientManager {
     if (!mnemonic) {
       throw new Error("Cannot init Connext client without mnemonic");
     }
+    if (this._client) {
+      this._logger.info("Client is already connected - skipping initClient logic");
+      return this._client;
+    }
     this.setMnemonic(mnemonic);
     const network = opts?.network || config.network;
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
     const nodeUrl = opts?.nodeUrl || config.nodeUrl;
     const logLevel = opts?.logLevel || config.logLevel;
-    const store = new ConnextStore(StoreTypes.File, { fileDir: config.storeDir });
     const signer = Wallet.fromMnemonic(mnemonic).privateKey;
-    const clientOpts = { signer, store, ethProviderUrl, nodeUrl, logLevel };
+    const clientOpts = { signer, store: this._store, ethProviderUrl, nodeUrl, logLevel };
     const client = await connext.connect(network, clientOpts);
-    const initOpts = { network, ...clientOpts };
+    const initOpts = { network, signer, ethProviderUrl, nodeUrl, logLevel };
     await this.updateClient(client, initOpts, subscriptions);
     this._logger.info("Client initialized successfully");
     return client;
@@ -114,7 +119,9 @@ export default class ClientManager {
     const client = await this.getClient();
     const response = await client.getHashLockTransfer(lockHash, assetId);
     if (!response) {
-      throw new Error(`No HashLock Transfer found for lockHash: ${lockHash} and assetId: ${assetId}`);
+      throw new Error(
+        `No HashLock Transfer found for lockHash: ${lockHash} and assetId: ${assetId}`,
+      );
     }
     const data = response;
     return data;
@@ -126,7 +133,7 @@ export default class ClientManager {
   }
 
   public async setMnemonic(mnemonic: string) {
-    await storeMnemonic(mnemonic, config.storeDir);
+    await storeMnemonic(mnemonic, this._store);
     this._mnemonic = mnemonic;
     this._logger.info("Mnemonic set successfully");
   }
@@ -196,7 +203,7 @@ export default class ClientManager {
     }
     this._client = client;
     await this.initSubscriptions(subscriptions);
-    await storeInitOptions(initOpts, config.storeDir);
+    await storeInitOptions(initOpts, this._store);
   }
 
   private async initSubscriptions(subscriptions?: EventSubscription[]) {

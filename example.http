@@ -36,7 +36,7 @@ Content-Type: application/json
 {
   "amount": "1000000000000000",
   "assetId": "0x0000000000000000000000000000000000000000",
-  "lockHash": "0xebaa579b054794dd232cdf7b4f8a29ea5521e4ddff1125f05cecde5d8640b311",
+  "lockHash": "0x7c0023168317e7010af1e8f5d583d2990bd0f7141f2068a9269ca92d9128c95a",
   "timelock": "5000",
   "recipient": "indra7AL99fUWtNFAzPoUb3T7CSLBZMK3Z77zLQxn3ZYgHosMcrCQTX"
 }
@@ -75,6 +75,6 @@ POST http://localhost:5041/hashlock-resolve
 Content-Type: application/json
 
 {
-  "preImage": "0x35070066ca7ded15507bf02c8576647734a0bd95238580a45cc40bbb5589e06f",
+  "preImage": "0xc77aa66f6327b1590a802bc1427ee9154bf5e9005542863e11045519f2d6eb78",
   "assetId": "0x0000000000000000000000000000000000000000"
 }

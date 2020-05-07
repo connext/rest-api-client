@@ -1,81 +1,50 @@
-import path from "path";
-import { fsWrite, fsRead, checkFile, createDirectory, FILE_DOESNT_EXIST } from "@connext/store";
+import { ConnextStore } from "@connext/store";
 
 import {
   CONNEXT_MNEMONIC_KEY,
   CONNEXT_INIT_OPTIONS_KEY,
   CONNEXT_SUBSCRIPTIONS_KEY,
-  CONNEXT_MNEMONIC_FILE_NAME,
-  CONNEXT_SUBSCRIPTIONS_FILE_NAME,
-  CONNEXT_INIT_OPTIONS_FILE_NAME,
 } from "./constants";
 import { EventSubscription, InitOptions } from "./types";
-import { safeJsonStringify, safeJsonParse } from "./utilities";
 
-export async function storeFile(
-  key: string,
-  data: any,
-  fileDir: string,
-  fileName: string,
-): Promise<void> {
-  await createDirectory(fileDir);
-  await fsWrite(path.join(fileDir, fileName), safeJsonStringify({ [key]: data }));
+export function storeMnemonic(mnemonic: string, store: ConnextStore): Promise<void> {
+  return store.internalStore.setItem(CONNEXT_MNEMONIC_KEY, mnemonic);
 }
 
-export async function fetchFile(key: string, fileDir: string, fileName: string): Promise<any> {
-  const filePath = path.join(fileDir, fileName);
-  if ((await checkFile(filePath)) === FILE_DOESNT_EXIST) {
-    return undefined;
-  }
-  const data = await fsRead(filePath);
-  const json = safeJsonParse(data);
-  if (typeof json !== "object" || !json[key]) {
-    return undefined;
-  }
-  return json[key];
-}
-
-export async function storeMnemonic(mnemonic: string, fileDir: string): Promise<void> {
-  await storeFile(CONNEXT_MNEMONIC_KEY, mnemonic, fileDir, CONNEXT_MNEMONIC_FILE_NAME);
-}
-
-export async function fetchMnemonic(fileDir: string): Promise<string | undefined> {
-  return fetchFile(CONNEXT_MNEMONIC_KEY, fileDir, CONNEXT_MNEMONIC_FILE_NAME);
+export function fetchMnemonic(store: ConnextStore): Promise<string | undefined> {
+  return store.internalStore.getItem(CONNEXT_MNEMONIC_KEY);
 }
 
 export async function storeSubscriptions(
   subscriptions: EventSubscription[],
-  fileDir: string,
+  store: ConnextStore,
 ): Promise<void> {
-  await storeFile(
-    CONNEXT_SUBSCRIPTIONS_KEY,
-    subscriptions,
-    fileDir,
-    CONNEXT_SUBSCRIPTIONS_FILE_NAME,
-  );
+  return store.internalStore.setItem(CONNEXT_SUBSCRIPTIONS_KEY, subscriptions);
 }
 
 export async function fetchSubscriptions(
-  fileDir: string,
+  store: ConnextStore,
 ): Promise<EventSubscription[] | undefined> {
-  return fetchFile(CONNEXT_SUBSCRIPTIONS_KEY, fileDir, CONNEXT_SUBSCRIPTIONS_FILE_NAME);
+  return store.internalStore.getItem(CONNEXT_SUBSCRIPTIONS_KEY);
 }
 
 export async function storeInitOptions(
   initOptions: Partial<InitOptions>,
-  fileDir: string,
+  store: ConnextStore,
 ): Promise<void> {
-  await storeFile(CONNEXT_INIT_OPTIONS_KEY, initOptions, fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
+  return store.internalStore.setItem(CONNEXT_INIT_OPTIONS_KEY, initOptions);
 }
 
-export async function fetchInitOptions(fileDir: string): Promise<Partial<InitOptions> | undefined> {
-  return fetchFile(CONNEXT_INIT_OPTIONS_KEY, fileDir, CONNEXT_INIT_OPTIONS_FILE_NAME);
+export async function fetchInitOptions(
+  store: ConnextStore,
+): Promise<Partial<InitOptions> | undefined> {
+  return store.internalStore.getItem(CONNEXT_INIT_OPTIONS_KEY);
 }
 
-export async function fetchAll(fileDir: string) {
-  const mnemonic = await fetchMnemonic(fileDir);
-  const subscriptions = await fetchSubscriptions(fileDir);
-  const initOptions = await fetchInitOptions(fileDir);
+export async function fetchAll(store: ConnextStore) {
+  const mnemonic = await fetchMnemonic(store);
+  const subscriptions = await fetchSubscriptions(store);
+  const initOptions = await fetchInitOptions(store);
   return {
     mnemonic,
     subscriptions,
