@@ -115,7 +115,7 @@ app.post("/connect", async (req, res) => {
 app.post("/mnemonic", async (req, res) => {
   try {
     await requireParam(req.body, "mnemonic");
-    clientManager.setMnemonic(req.body.mnemonic);
+    await clientManager.setMnemonic(req.body.mnemonic);
     res.status(200).send({ success: true });
   } catch (error) {
     app.log.error(error);
