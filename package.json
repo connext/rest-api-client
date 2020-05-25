@@ -1,7 +1,7 @@
 {
   "name": "@connext/rest-api",
   "description": "REST API client for Connext",
-  "version": "6.5.7",
+  "version": "6.6.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ConnextProject/rest-api-client.git"
@@ -24,9 +24,9 @@
     "start:dev": "ts-node-dev src/index.ts"
   },
   "dependencies": {
-    "@connext/client": "6.5.7",
-    "@connext/store": "6.5.7",
-    "@connext/types": "6.5.7",
+    "@connext/client": "6.6.1",
+    "@connext/store": "6.6.1",
+    "@connext/types": "6.6.1",
     "axios": "^0.18.1",
     "core-js": "^3.6.4",
     "dotenv": "^8.0.0",
