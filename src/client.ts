@@ -150,6 +150,15 @@ export default class ClientManager {
     };
   }
 
+  public async withdraw(params: PublicParams.Withdraw) {
+    const client = this.getClient();
+    if (params.assetId === AddressZero) {
+      delete params.assetId;
+    }
+    const response = await client.withdraw(params);
+    return response;
+  }
+
   public async subscribe(params: EventSubscriptionParams): Promise<{ id: string }> {
     const client = this.getClient();
     const subscription = await this._subscriber.subscribe(client, params);
