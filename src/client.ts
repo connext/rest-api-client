@@ -61,14 +61,13 @@ export default class ClientManager {
     const signer = Wallet.fromMnemonic(mnemonic).privateKey;
     const clientOpts = { signer, store: this._store, ethProviderUrl, nodeUrl, logLevel };
     const client = await connext.connect(network, clientOpts);
-    const initOpts = { network, signer, ethProviderUrl, nodeUrl, logLevel };
-    await this.updateClient(client, initOpts, subscriptions);
+    this._client = client;
     this._logger.info("Client initialized successfully");
     return client;
   }
 
   public async getConfig(): Promise<Partial<ChannelProviderConfig>> {
-    const client = await this.getClient();
+    const client = this.getClient();
     const config = {
       multisigAddress: undefined,
       ...client.channelProvider.config,
@@ -80,14 +79,14 @@ export default class ClientManager {
   }
 
   public async getAppInstanceDetails(appIdentityHash: string) {
-    const client = await this.getClient();
+    const client = this.getClient();
     const appDetails = await client.getAppInstance(appIdentityHash);
     const data = appDetails;
     return data;
   }
 
   public async hashLockTransfer(params: PublicParams.HashLockTransfer) {
-    const client = await this.getClient();
+    const client = this.getClient();
     if (params.assetId === AddressZero) {
       delete params.assetId;
     }
@@ -106,7 +105,7 @@ export default class ClientManager {
   }
 
   public async hashLockResolve(params: PublicParams.ResolveHashLockTransfer) {
-    const client = await this.getClient();
+    const client = this.getClient();
     const response = await client.resolveCondition({
       conditionType: "HashLockTransfer",
       preImage: params.preImage,
@@ -117,7 +116,7 @@ export default class ClientManager {
   }
 
   public async hashLockStatus(lockHash: string, assetId: string) {
-    const client = await this.getClient();
+    const client = this.getClient();
     const response = await client.getHashLockTransfer(lockHash, assetId);
     if (!response) {
       throw new Error(
@@ -129,7 +128,7 @@ export default class ClientManager {
   }
 
   public async balance(assetId: string) {
-    const client = await this.getClient();
+    const client = this.getClient();
     return getClientBalance(client, assetId);
   }
 
@@ -140,7 +139,7 @@ export default class ClientManager {
   }
 
   public async deposit(params: PublicParams.Deposit) {
-    const client = await this.getClient();
+    const client = this.getClient();
     const assetId = params.assetId || AddressZero;
     if (params.assetId === AddressZero) {
       delete params.assetId;
@@ -168,8 +167,17 @@ export default class ClientManager {
     return { txhash };
   }
 
+  public async withdraw(params: PublicParams.Withdraw) {
+    const client = this.getClient();
+    if (params.assetId === AddressZero) {
+      delete params.assetId;
+    }
+    const response = await client.withdraw(params);
+    return response;
+  }
+
   public async subscribe(params: EventSubscriptionParams): Promise<{ id: string }> {
-    const client = await this.getClient();
+    const client = this.getClient();
     const subscription = await this._subscriber.subscribe(client, params);
     return { id: subscription.id };
   }
@@ -177,37 +185,36 @@ export default class ClientManager {
   public async subscribeBatch(
     paramsArr: EventSubscriptionParams[],
   ): Promise<{ subscriptions: EventSubscription[] }> {
-    const client = await this.getClient();
+    const client = this.getClient();
     const subscriptions = await this._subscriber.batchSubscribe(client, paramsArr);
     return { subscriptions };
   }
 
   public async unsubscribe(id: string) {
-    const client = await this.getClient();
+    const client = this.getClient();
     await this._subscriber.unsubscribe(client, id);
     return { success: true };
   }
 
   public async unsubscribeBatch(idsArr: string[]) {
-    const client = await this.getClient();
+    const client = this.getClient();
     await this._subscriber.batchUnsubscribe(client, idsArr);
     return { success: true };
   }
 
   public async unsubscribeAll() {
-    const client = await this.getClient();
+    const client = this.getClient();
     await this._subscriber.clearAllSubscriptions(client);
     return { success: true };
   }
 
   // -- Private ---------------------------------------------------------------- //
 
-  private async getClient(): Promise<IConnextClient> {
-    let client = this._client;
-    if (!client) {
-      client = await this.initClient();
+  private getClient(): IConnextClient {
+    if (!this._client) {
+      throw new Error("Client is not initialized");
     }
-    return client;
+    return this._client;
   }
 
   private async updateClient(
@@ -225,7 +232,7 @@ export default class ClientManager {
 
   private async initSubscriptions(subscriptions?: EventSubscription[]) {
     if (subscriptions && subscriptions.length) {
-      const client = await this.getClient();
+      const client = this.getClient();
       await this._subscriber.batchResubscribe(client, subscriptions);
     }
   }

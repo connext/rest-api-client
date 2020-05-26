@@ -115,7 +115,7 @@ app.post("/connect", async (req, res) => {
 app.post("/mnemonic", async (req, res) => {
   try {
     await requireParam(req.body, "mnemonic");
-    clientManager.setMnemonic(req.body.mnemonic);
+    await clientManager.setMnemonic(req.body.mnemonic);
     res.status(200).send({ success: true });
   } catch (error) {
     app.log.error(error);
@@ -165,6 +165,16 @@ app.post("/deposit", async (req, res) => {
     await requireParam(req.body, "amount");
     await requireParam(req.body, "assetId");
     res.status(200).send(await clientManager.deposit(req.body));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
+app.post("/withdraw", async (req, res) => {
+  try {
+    await requireParam(req.body, "amount");
+    res.status(200).send(await clientManager.withdraw(req.body));
   } catch (error) {
     app.log.error(error);
     res.status(500).send({ message: error.message });
