@@ -159,6 +159,16 @@ app.post("/deposit", async (req, res) => {
   }
 });
 
+app.post("/withdraw", async (req, res) => {
+  try {
+    await requireParam(req.body, "amount");
+    res.status(200).send(await clientManager.withdraw(req.body));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
 app.post("/subscribe", async (req, res) => {
   try {
     await requireParam(req.body, "event");
