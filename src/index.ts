@@ -1,12 +1,13 @@
+import { getFileStore } from "@connext/store";
 import fastify from "fastify";
 import Helmet from "fastify-helmet";
+import { ServerResponse } from "http";
 
 import pkg from "../package.json";
-import config from "./config";
 
+import config from "./config";
 import ClientManager from "./client";
 import { requireParam, fetchAll, isNotIncluded } from "./helpers";
-import { getFileStore, ConnextStore } from "@connext/store";
 
 const app = fastify({
   logger: { prettyPrint: config.debug ? { forceColor: true } : undefined },
@@ -236,7 +237,7 @@ app.delete("/subscribe/all", async (req, res) => {
 // -- INIT ---------------------------------------------------------------- //
 
 app.ready(async () => {
-  const store = getFileStore(config.storeDir) as ConnextStore;
+  const store = getFileStore(config.storeDir);
   await store.init();
   const { mnemonic, subscriptions, initOptions } = await fetchAll(store);
   clientManager = new ClientManager({ mnemonic, logger: app.log, store });

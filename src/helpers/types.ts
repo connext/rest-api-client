@@ -1,5 +1,4 @@
-import { ClientOptions } from "@connext/types";
-import { ConnextStore } from "@connext/store";
+import { ClientOptions, IStoreService } from "@connext/types";
 
 export type EventSubscriptionParams = {
   event: string;
@@ -19,5 +18,5 @@ export interface InitOptions extends ClientOptions {
 export interface InitClientManagerOptions {
   logger: any;
   mnemonic?: string;
-  store: ConnextStore;
+  store: IStoreService;
 }

@@ -1,6 +1,12 @@
 import * as connext from "@connext/client";
-import { ConnextStore } from "@connext/store";
-import { IConnextClient, ChannelProviderConfig, PublicParams } from "@connext/types";
+import {
+  IConnextClient,
+  ChannelProviderConfig,
+  PublicParams,
+  ConditionalTransferTypes,
+  IStoreService,
+} from "@connext/types";
+import { AddressZero } from "ethers/constants";
 import { Wallet } from "ethers";
 
 import config from "./config";
@@ -17,14 +23,14 @@ import {
   transferOnChain,
 } from "./helpers";
 import Subscriber from "./subscriber";
-import { AddressZero } from "ethers/constants";
 
 export default class ClientManager {
   private _client: IConnextClient | undefined;
   private _logger: any;
   private _mnemonic: string | undefined;
   private _subscriber: Subscriber;
-  private _store: ConnextStore;
+  private _store: IStoreService;
+  private _initializing = false;
 
   constructor(opts: InitClientManagerOptions) {
     this._logger = opts.logger;
@@ -41,18 +47,22 @@ export default class ClientManager {
     this._mnemonic = value;
   }
 
-  public async initClient(
-    opts?: Partial<InitOptions>,
-    subscriptions?: EventSubscription[],
-  ): Promise<IConnextClient> {
+  public async initClient(opts?: Partial<InitOptions>): Promise<IConnextClient> {
     const mnemonic = opts?.mnemonic || this.mnemonic;
     if (!mnemonic) {
       throw new Error("Cannot init Connext client without mnemonic");
     }
+
+    if (this._initializing) {
+      throw new Error(`Client is initializing`);
+    }
+
     if (this._client) {
       this._logger.info("Client is already connected - skipping initClient logic");
       return this._client;
     }
+
+    this._initializing = true;
     this.setMnemonic(mnemonic);
     const network = opts?.network || config.network;
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
@@ -60,10 +70,14 @@ export default class ClientManager {
     const logLevel = opts?.logLevel || config.logLevel;
     const signer = Wallet.fromMnemonic(mnemonic).privateKey;
     const clientOpts = { signer, store: this._store, ethProviderUrl, nodeUrl, logLevel };
-    const client = await connext.connect(network, clientOpts);
-    this._client = client;
-    this._logger.info("Client initialized successfully");
-    return client;
+    try {
+      const client = await connext.connect(network, clientOpts);
+      this._client = client;
+      this._logger.info("Client initialized successfully");
+      return client;
+    } finally {
+      this._initializing = false;
+    }
   }
 
   public async getConfig(): Promise<Partial<ChannelProviderConfig>> {
@@ -93,12 +107,12 @@ export default class ClientManager {
     const response = await client.conditionalTransfer({
       amount: params.amount,
       recipient: params.recipient,
-      conditionType: "HashLockTransfer",
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
       lockHash: params.lockHash,
       assetId: params.assetId,
       meta: params.meta,
       timelock: params.timelock,
-    } as PublicParams.HashLockTransfer);
+    } as PublicParams.ConditionalTransfer);
     const appDetails = await client.getAppInstance(response.appIdentityHash);
     const data = { ...response, ...appDetails };
     return data;
@@ -107,7 +121,7 @@ export default class ClientManager {
   public async hashLockResolve(params: PublicParams.ResolveHashLockTransfer) {
     const client = this.getClient();
     const response = await client.resolveCondition({
-      conditionType: "HashLockTransfer",
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
       preImage: params.preImage,
       assetId: params.assetId,
     } as PublicParams.ResolveHashLockTransfer);
@@ -156,7 +170,7 @@ export default class ClientManager {
     assetId: string;
     recipient: string;
   }): Promise<{ txhash: string }> {
-    const client = await this.getClient();
+    const client = this.getClient();
     const txhash = await transferOnChain({
       mnemonic: this.mnemonic,
       ethProvider: client.ethProvider,

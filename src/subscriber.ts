@@ -1,17 +1,15 @@
 import axios from "axios";
 import { v4 as uuid } from "uuid";
-import { IConnextClient } from "@connext/types";
+import { IConnextClient, IStoreService } from "@connext/types";
 
 import { EventSubscription, EventSubscriptionParams, storeSubscriptions } from "./helpers";
-import config from "./config";
-import { ConnextStore } from "@connext/store";
 
 export default class Subscriber {
-  private _store: ConnextStore;
+  private _store: IStoreService;
   private _logger: any;
   private _subscriptions: EventSubscription[] = [];
 
-  constructor(logger: any, store: ConnextStore) {
+  constructor(logger: any, store: IStoreService) {
     this._logger = logger;
     this._store = store;
   }
@@ -46,9 +44,7 @@ export default class Subscriber {
   }
 
   private unsubscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
-    client.removeListener(subscription.params.event as any, data =>
-      this.onSubscription(subscription.params.event, data),
-    );
+    client.off();
   }
 
   // -- BATCH ---------------------------------------------------------------- //
