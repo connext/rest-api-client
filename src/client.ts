@@ -47,7 +47,10 @@ export default class ClientManager {
     this._mnemonic = value;
   }
 
-  public async initClient(opts?: Partial<InitOptions>): Promise<IConnextClient> {
+  public async initClient(
+    opts?: Partial<InitOptions>,
+    subscriptions?: EventSubscription[],
+  ): Promise<IConnextClient> {
     const mnemonic = opts?.mnemonic || this.mnemonic;
     if (!mnemonic) {
       throw new Error("Cannot init Connext client without mnemonic");
