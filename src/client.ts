@@ -6,8 +6,7 @@ import {
   ConditionalTransferTypes,
   IStoreService,
 } from "@connext/types";
-import { AddressZero } from "ethers/constants";
-import { Wallet } from "ethers";
+import { Wallet, constants } from "ethers";
 
 import config from "./config";
 
@@ -23,6 +22,8 @@ import {
   transferOnChain,
 } from "./helpers";
 import Subscriber from "./subscriber";
+
+const { AddressZero } = constants;
 
 export default class ClientManager {
   private _client: IConnextClient | undefined;

@@ -28,7 +28,7 @@ export default class Subscriber {
   }
 
   private subscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
-    client.on(subscription.params.event as any, data =>
+    client.on(subscription.params.event as any, (data) =>
       this.onSubscription(subscription.params.event, data),
     );
   }
@@ -53,23 +53,23 @@ export default class Subscriber {
     client: IConnextClient,
     paramsArr: EventSubscriptionParams[],
   ): Promise<EventSubscription[]> {
-    return Promise.all(paramsArr.map(params => this.subscribe(client, params)));
+    return Promise.all(paramsArr.map((params) => this.subscribe(client, params)));
   }
 
   public async batchResubscribe(
     client: IConnextClient,
     subscriptions: EventSubscription[],
   ): Promise<void> {
-    subscriptions.map(subscription => this.subscribeOnClient(client, subscription));
+    subscriptions.map((subscription) => this.subscribeOnClient(client, subscription));
     await this.persistSubscriptions(subscriptions);
   }
 
   public async batchUnsubscribe(client: IConnextClient, idsArr: string[]): Promise<void> {
-    await Promise.all(idsArr.map(id => this.unsubscribe(client, id)));
+    await Promise.all(idsArr.map((id) => this.unsubscribe(client, id)));
   }
 
   public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
-    this._subscriptions.map(subscription => this.unsubscribeOnClient(client, subscription));
+    this._subscriptions.map((subscription) => this.unsubscribeOnClient(client, subscription));
     await this.persistSubscriptions([]);
   }
 
@@ -87,12 +87,12 @@ export default class Subscriber {
   }
 
   private async removeSubscription(id: string) {
-    const subscriptions = this._subscriptions.filter(x => x.id !== id);
+    const subscriptions = this._subscriptions.filter((x) => x.id !== id);
     await this.persistSubscriptions(subscriptions);
   }
 
   private getSubscriptionById(id: string) {
-    const matches = this._subscriptions.filter(x => x.id === id);
+    const matches = this._subscriptions.filter((x) => x.id === id);
     if (matches && matches.length) {
       return matches[0];
     }
@@ -100,14 +100,14 @@ export default class Subscriber {
   }
 
   private getSubscriptionsByEvent(event: string) {
-    return this._subscriptions.filter(x => x.params.event === event);
+    return this._subscriptions.filter((x) => x.params.event === event);
   }
 
   private getSubscriptionByParams(params: EventSubscriptionParams): EventSubscription | undefined {
     let result;
     const matches = this.getSubscriptionsByEvent(params.event);
     if (matches && matches.length) {
-      matches.forEach(event => {
+      matches.forEach((event) => {
         if (event.params.webhook === params.webhook) {
           result = event;
         }
@@ -121,7 +121,7 @@ export default class Subscriber {
   private async onSubscription(event: string, data: any) {
     const subscriptions = this.getSubscriptionsByEvent(event);
     await Promise.all(
-      subscriptions.map(async subscription => {
+      subscriptions.map(async (subscription) => {
         const { webhook } = subscription.params;
         try {
           await axios.post(webhook, {
