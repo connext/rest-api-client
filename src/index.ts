@@ -1,7 +1,6 @@
 import { getFileStore } from "@connext/store";
 import fastify from "fastify";
 import Helmet from "fastify-helmet";
-import { ServerResponse } from "http";
 
 import pkg from "../package.json";
 
