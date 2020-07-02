@@ -12,7 +12,7 @@ const ethProviderUrl = process.env.CONNEXT_ETH_PROVIDER_URL || undefined;
 const nodeUrl = process.env.CONNEXT_NODE_URL || undefined;
 const mnemonic = process.env.CONNEXT_MNEMONIC || "";
 const storeDir = process.env.CONNEXT_STORE_DIR || "./connext-store";
-const logLevel = parseInt(process.env.CONNEXT_LOG_LEVEL || "4", 10);
+const logLevel = parseInt(process.env.CONNEXT_LOG_LEVEL || "3", 10);
 
 export default {
   env: env,
