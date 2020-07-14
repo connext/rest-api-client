@@ -1,14 +1,21 @@
 import { IConnextClient, Contract } from "@connext/types";
 import { constants, Wallet, providers } from "ethers";
 import tokenAbi from "human-standard-token-abi";
+import { GetBalanceResponse } from "./types";
 
-export async function getFreeBalanceOffChain(client: IConnextClient, assetId: string) {
+export async function getFreeBalanceOffChain(
+  client: IConnextClient,
+  assetId: string,
+): Promise<string> {
   return (await client.getFreeBalance(assetId !== constants.AddressZero ? assetId : undefined))[
     client.signerAddress
   ].toString();
 }
 
-export async function getFreeBalanceOnChain(client: IConnextClient, assetId: string) {
+export async function getFreeBalanceOnChain(
+  client: IConnextClient,
+  assetId: string,
+): Promise<string> {
   return assetId === constants.AddressZero
     ? (await client.ethProvider.getBalance(client.signerAddress)).toString()
     : (
@@ -18,7 +25,10 @@ export async function getFreeBalanceOnChain(client: IConnextClient, assetId: str
       ).toString();
 }
 
-export async function getClientBalance(client: IConnextClient, assetId: string) {
+export async function getClientBalance(
+  client: IConnextClient,
+  assetId: string,
+): Promise<GetBalanceResponse> {
   const freeBalanceOffChain = await getFreeBalanceOffChain(client, assetId);
   const freeBalanceOnChain = await getFreeBalanceOnChain(client, assetId);
   return { freeBalanceOffChain, freeBalanceOnChain };

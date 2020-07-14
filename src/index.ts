@@ -1,15 +1,44 @@
 import { getFileStore } from "@connext/store";
-import fastify from "fastify";
+import fastify, { RequestGenericInterface } from "fastify";
 import Helmet from "fastify-helmet";
+// import Swagger from "fastify-swagger";
 
 import pkg from "../package.json";
 
 import config from "./config";
 import ClientManager from "./client";
-import { requireParam, fetchAll, isNotIncluded } from "./helpers";
+import {
+  requireParam,
+  fetchAll,
+  isNotIncluded,
+  InitOptions,
+  GenericErrorResponse,
+  GetVersionReponse,
+  GetBalanceResponse,
+  GenericSuccessResponse,
+  GetBalanceRequestParams,
+  GetHashLockStatusRequestParams,
+  GetHashLockStatusResponse,
+  PostMnemonicRequestBody,
+  PostTransactionRequestBody,
+  PostTransactionResponse,
+  PostHashLockTransferRequestBody,
+  PostHashLockTransferResponse,
+  PostHashLockResolveResponse,
+  PostHashLockResolveRequestBody,
+  PostDepositRequestBody,
+  PostWithdrawReponse,
+  PostWithdrawRequestBody,
+  EventSubscriptionParams,
+  SubscriptionResponse,
+  BatchSubscriptionReponse,
+  GetAppInstanceDetailsParams,
+  GetAppInstanceDetailsResponse,
+  GetConfigResponse,
+} from "./helpers";
 
 const app = fastify({
-  logger: { prettyPrint: config.debug ? { forceColor: true } : undefined },
+  logger: { prettyPrint: config.debug } as any,
   disableRequestLogging: true,
 });
 
@@ -17,21 +46,23 @@ let clientManager: ClientManager;
 
 app.register(Helmet);
 
+// app.register(Swagger);
+
 const loggingBlacklist = ["/balance"];
 
 app.addHook("onRequest", (req, reply, done) => {
-  if (config.debug && req.req.url) {
-    if (isNotIncluded(req.req.url, loggingBlacklist)) {
-      req.log.info({ url: req.req.url, id: req.id }, "received request");
+  if (config.debug && req.url) {
+    if (isNotIncluded(req.url, loggingBlacklist)) {
+      req.log.info({ url: req.url, id: req.id }, "received request");
     }
   }
   done();
 });
 
 app.addHook("onResponse", (req, reply, done) => {
-  if (config.debug && req.req.url) {
-    if (isNotIncluded(req.req.url, loggingBlacklist)) {
-      req.log.info({ url: req.req.url, statusCode: reply.res.statusCode }, "request completed");
+  if (config.debug && req.url) {
+    if (isNotIncluded(req.url, loggingBlacklist)) {
+      req.log.info({ url: req.url, statusCode: reply.statusCode }, "request completed");
     }
   }
   done();
@@ -44,192 +75,269 @@ app.get("/health", (req, res) => {
 });
 
 app.get("/hello", (req, res) => {
-  res.status(200).send(`Hello World, this is Connext client`);
+  res.status(200).send<string>(`Hello World, this is Connext client`);
 });
 
 app.get("/version", (req, res) => {
   try {
-    res.status(200).send({ version: pkg.version });
+    res.status(200).send<GetVersionReponse>({ version: pkg.version });
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.get("/balance/:assetId", async (req, res) => {
+interface GetBalanceRequest extends RequestGenericInterface {
+  Params: GetBalanceRequestParams;
+}
+
+app.get<GetBalanceRequest>("/balance/:assetId", async (req, res) => {
   try {
     await requireParam(req.params, "assetId");
-    res.status(200).send(await clientManager.balance(req.params.assetId));
+    res.status(200).send<GetBalanceResponse>(await clientManager.balance(req.params.assetId));
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
 app.get("/config", async (req, res) => {
   try {
-    res.status(200).send(await clientManager.getConfig());
+    res.status(200).send<GetConfigResponse>(await clientManager.getConfig());
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.get("/hashlock-status/:lockHash/:assetId", async (req, res) => {
+interface GetHashLockStatusRequest extends RequestGenericInterface {
+  Params: GetHashLockStatusRequestParams;
+}
+
+app.get<GetHashLockStatusRequest>("/hashlock-status/:lockHash/:assetId", async (req, res) => {
   try {
     await requireParam(req.params, "lockHash");
     await requireParam(req.params, "assetId");
     const { lockHash, assetId } = req.params;
-    res.status(200).send(await clientManager.hashLockStatus(lockHash, assetId));
+    res
+      .status(200)
+      .send<GetHashLockStatusResponse>(await clientManager.hashLockStatus(lockHash, assetId));
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.get("/appinstance-details/:appInstanceId", async (req, res) => {
+interface GetAppInstanceDetailsRequest extends RequestGenericInterface {
+  Params: GetAppInstanceDetailsParams;
+}
+
+app.get<GetAppInstanceDetailsRequest>("/appinstance-details/:appIdentityHash", async (req, res) => {
   try {
-    await requireParam(req.params, "appInstanceId");
-    res.status(200).send(await clientManager.getAppInstanceDetails(req.params.appInstanceId));
+    await requireParam(req.params, "appIdentityHash");
+    res
+      .status(200)
+      .send<GetAppInstanceDetailsResponse>(
+        await clientManager.getAppInstanceDetails(req.params.appIdentityHash),
+      );
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
 // -- POST ---------------------------------------------------------------- //
 
-app.post("/connect", async (req, res) => {
+interface PostConnectRequest extends RequestGenericInterface {
+  Body: Partial<InitOptions>;
+}
+
+app.post<PostConnectRequest>("/connect", async (req, res) => {
   try {
     if (!clientManager.mnemonic) {
       await requireParam(req.body, "mnemonic");
     }
     await clientManager.initClient(req.body);
-    res.status(200).send(await clientManager.getConfig());
+    const config = await clientManager.getConfig();
+    res.status(200).send<GetConfigResponse>(config);
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.post("/mnemonic", async (req, res) => {
+interface PostMnemonicRequest extends RequestGenericInterface {
+  Body: PostMnemonicRequestBody;
+}
+
+app.post<PostMnemonicRequest>("/mnemonic", async (req, res) => {
   try {
     await requireParam(req.body, "mnemonic");
     await clientManager.setMnemonic(req.body.mnemonic);
-    res.status(200).send({ success: true });
+    res.status(200).send<GenericSuccessResponse>({ success: true });
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.post("/onchain-transfer", async (req, res) => {
+interface PostTransactionRequest extends RequestGenericInterface {
+  Body: PostTransactionRequestBody;
+}
+
+app.post<PostTransactionRequest>("/onchain-transfer", async (req, res) => {
   try {
     await requireParam(req.body, "amount");
     await requireParam(req.body, "assetId");
     await requireParam(req.body, "recipient");
-    res.status(200).send(await clientManager.transferOnChain(req.body));
+    res.status(200).send<PostTransactionResponse>(await clientManager.transferOnChain(req.body));
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.post("/hashlock-transfer", async (req, res) => {
+interface PostHashLockTransferRequest extends RequestGenericInterface {
+  Body: PostHashLockTransferRequestBody;
+}
+
+app.post<PostHashLockTransferRequest>("/hashlock-transfer", async (req, res) => {
   try {
     await requireParam(req.body, "amount");
     await requireParam(req.body, "assetId");
     await requireParam(req.body, "lockHash");
     await requireParam(req.body, "timelock");
     await requireParam(req.body, "recipient");
-    res.status(200).send(await clientManager.hashLockTransfer(req.body));
+    res
+      .status(200)
+      .send<PostHashLockTransferResponse>(await clientManager.hashLockTransfer(req.body));
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.post("/hashlock-resolve", async (req, res) => {
+interface PostHashLockResolveRequest extends RequestGenericInterface {
+  Body: PostHashLockResolveRequestBody;
+}
+
+app.post<PostHashLockResolveRequest>("/hashlock-resolve", async (req, res) => {
   try {
     await requireParam(req.body, "preImage");
     await requireParam(req.body, "assetId");
-    res.status(200).send(await clientManager.hashLockResolve(req.body));
+    res
+      .status(200)
+      .send<PostHashLockResolveResponse>(await clientManager.hashLockResolve(req.body));
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.post("/deposit", async (req, res) => {
+interface PostDepositRequest extends RequestGenericInterface {
+  Body: PostDepositRequestBody;
+}
+
+app.post<PostDepositRequest>("/deposit", async (req, res) => {
   try {
     await requireParam(req.body, "amount");
     await requireParam(req.body, "assetId");
-    res.status(200).send(await clientManager.deposit(req.body));
+    res.status(200).send<GetBalanceResponse>(await clientManager.deposit(req.body));
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.post("/withdraw", async (req, res) => {
+interface PostWithdrawRequest extends RequestGenericInterface {
+  Body: PostWithdrawRequestBody;
+}
+
+app.post<PostWithdrawRequest>("/withdraw", async (req, res) => {
   try {
     await requireParam(req.body, "amount");
-    res.status(200).send(await clientManager.withdraw(req.body));
+    res.status(200).send<PostWithdrawReponse>(await clientManager.withdraw(req.body));
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.post("/subscribe", async (req, res) => {
+interface PostSubscribeRequest extends RequestGenericInterface {
+  Body: EventSubscriptionParams;
+}
+
+app.post<PostSubscribeRequest>("/subscribe", async (req, res) => {
   try {
     await requireParam(req.body, "event");
     await requireParam(req.body, "webhook");
-    res.status(200).send(await clientManager.subscribe(req.body));
+    res.status(200).send<SubscriptionResponse>(await clientManager.subscribe(req.body));
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.post("/subscribe/batch", async (req, res) => {
+interface PostBatchSubscribeRequest extends RequestGenericInterface {
+  Body: {
+    params: EventSubscriptionParams[];
+  };
+}
+
+app.post<PostBatchSubscribeRequest>("/subscribe/batch", async (req, res) => {
   try {
     await requireParam(req.body, "params", "array");
-    res.status(200).send(await clientManager.subscribeBatch(req.body.params));
+    res
+      .status(200)
+      .send<BatchSubscriptionReponse>(await clientManager.subscribeBatch(req.body.params));
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
 // -- DELETE ---------------------------------------------------------------- //
 
-app.delete("/subscribe", async (req, res) => {
+interface DeleteSubscribeRequest extends RequestGenericInterface {
+  Body: {
+    id: string;
+  };
+}
+
+app.delete<DeleteSubscribeRequest>("/subscribe", async (req, res) => {
   try {
     await requireParam(req.body, "id");
-    res.status(200).send(await clientManager.unsubscribe(req.params.id));
+    res.status(200).send<GenericSuccessResponse>(await clientManager.unsubscribe(req.body.id));
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
-app.delete("/subscribe/batch", async (req, res) => {
+interface DeleteBatchSubscribeRequest extends RequestGenericInterface {
+  Body: {
+    ids: string[];
+  };
+}
+
+app.delete<DeleteBatchSubscribeRequest>("/subscribe/batch", async (req, res) => {
   try {
     await requireParam(req.body, "ids", "array");
-    res.status(200).send(await clientManager.unsubscribeBatch(req.body.ids));
+    res
+      .status(200)
+      .send<GenericSuccessResponse>(await clientManager.unsubscribeBatch(req.body.ids));
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 
 app.delete("/subscribe/all", async (req, res) => {
   try {
-    res.status(200).send(await clientManager.unsubscribeAll());
+    res.status(200).send<GenericSuccessResponse>(await clientManager.unsubscribeAll());
   } catch (error) {
     app.log.error(error);
-    res.status(500).send({ message: error.message });
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
   }
 });
 

@@ -1,10 +1,9 @@
 import * as connext from "@connext/client";
 import {
   IConnextClient,
-  ChannelProviderConfig,
-  PublicParams,
-  ConditionalTransferTypes,
   IStoreService,
+  ConditionalTransferTypes,
+  PublicParams,
 } from "@connext/types";
 import { Wallet, constants } from "ethers";
 
@@ -20,6 +19,22 @@ import {
   InitOptions,
   EventSubscription,
   transferOnChain,
+  GetBalanceResponse,
+  PostTransactionResponse,
+  PostHashLockTransferResponse,
+  SubscriptionResponse,
+  BatchSubscriptionReponse,
+  GenericSuccessResponse,
+  GetAppInstanceDetailsResponse,
+  GetConfigResponse,
+  GetHashLockStatusResponse,
+  PostHashLockResolveResponse,
+  PostWithdrawReponse,
+  PostWithdrawRequestBody,
+  PostHashLockTransferRequestBody,
+  PostDepositRequestBody,
+  PostHashLockResolveRequestBody,
+  PostTransactionRequestBody,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
@@ -84,7 +99,7 @@ export default class ClientManager {
     }
   }
 
-  public async getConfig(): Promise<Partial<ChannelProviderConfig>> {
+  public async getConfig(): Promise<GetConfigResponse> {
     const client = this.getClient();
     const config = {
       multisigAddress: undefined,
@@ -96,14 +111,21 @@ export default class ClientManager {
     return config;
   }
 
-  public async getAppInstanceDetails(appIdentityHash: string) {
+  public async getAppInstanceDetails(
+    appIdentityHash: string,
+  ): Promise<GetAppInstanceDetailsResponse> {
     const client = this.getClient();
     const appDetails = await client.getAppInstance(appIdentityHash);
+    if (typeof appDetails === "undefined") {
+      throw new Error(`No App Instance found with appIdentityHash: ${appIdentityHash}`);
+    }
     const data = appDetails;
     return data;
   }
 
-  public async hashLockTransfer(params: PublicParams.HashLockTransfer) {
+  public async hashLockTransfer(
+    params: PostHashLockTransferRequestBody,
+  ): Promise<PostHashLockTransferResponse> {
     const client = this.getClient();
     if (params.assetId === AddressZero) {
       delete params.assetId;
@@ -117,23 +139,27 @@ export default class ClientManager {
       meta: params.meta,
       timelock: params.timelock,
     } as PublicParams.ConditionalTransfer);
-    const appDetails = await client.getAppInstance(response.appIdentityHash);
+    const appDetails = await this.getAppInstanceDetails(response.appIdentityHash);
     const data = { ...response, ...appDetails };
     return data;
   }
 
-  public async hashLockResolve(params: PublicParams.ResolveHashLockTransfer) {
+  public async hashLockResolve(
+    params: PostHashLockResolveRequestBody,
+  ): Promise<PostHashLockResolveResponse> {
     const client = this.getClient();
     const response = await client.resolveCondition({
       conditionType: ConditionalTransferTypes.HashLockTransfer,
       preImage: params.preImage,
       assetId: params.assetId,
     } as PublicParams.ResolveHashLockTransfer);
-    const data = response;
-    return data;
+    return response;
   }
 
-  public async hashLockStatus(lockHash: string, assetId: string) {
+  public async hashLockStatus(
+    lockHash: string,
+    assetId: string,
+  ): Promise<GetHashLockStatusResponse> {
     const client = this.getClient();
     const response = await client.getHashLockTransfer(lockHash, assetId);
     if (!response) {
@@ -141,22 +167,21 @@ export default class ClientManager {
         `No HashLock Transfer found for lockHash: ${lockHash} and assetId: ${assetId}`,
       );
     }
-    const data = response;
-    return data;
+    return response;
   }
 
-  public async balance(assetId: string) {
+  public async balance(assetId: string): Promise<GetBalanceResponse> {
     const client = this.getClient();
     return getClientBalance(client, assetId);
   }
 
-  public async setMnemonic(mnemonic: string) {
+  public async setMnemonic(mnemonic: string): Promise<void> {
     await storeMnemonic(mnemonic, this._store);
     this._mnemonic = mnemonic;
     this._logger.info("Mnemonic set successfully");
   }
 
-  public async deposit(params: PublicParams.Deposit) {
+  public async deposit(params: PostDepositRequestBody): Promise<GetBalanceResponse> {
     const client = this.getClient();
     const assetId = params.assetId || AddressZero;
     if (params.assetId === AddressZero) {
@@ -169,11 +194,9 @@ export default class ClientManager {
     };
   }
 
-  public async transferOnChain(params: {
-    amount: string;
-    assetId: string;
-    recipient: string;
-  }): Promise<{ txhash: string }> {
+  public async transferOnChain(
+    params: PostTransactionRequestBody,
+  ): Promise<PostTransactionResponse> {
     const client = this.getClient();
     const txhash = await transferOnChain({
       mnemonic: this.mnemonic,
@@ -185,7 +208,7 @@ export default class ClientManager {
     return { txhash };
   }
 
-  public async withdraw(params: PublicParams.Withdraw) {
+  public async withdraw(params: PostWithdrawRequestBody): Promise<PostWithdrawReponse> {
     const client = this.getClient();
     if (params.assetId === AddressZero) {
       delete params.assetId;
@@ -194,7 +217,7 @@ export default class ClientManager {
     return response;
   }
 
-  public async subscribe(params: EventSubscriptionParams): Promise<{ id: string }> {
+  public async subscribe(params: EventSubscriptionParams): Promise<SubscriptionResponse> {
     const client = this.getClient();
     const subscription = await this._subscriber.subscribe(client, params);
     return { id: subscription.id };
@@ -202,25 +225,25 @@ export default class ClientManager {
 
   public async subscribeBatch(
     paramsArr: EventSubscriptionParams[],
-  ): Promise<{ subscriptions: EventSubscription[] }> {
+  ): Promise<BatchSubscriptionReponse> {
     const client = this.getClient();
     const subscriptions = await this._subscriber.batchSubscribe(client, paramsArr);
     return { subscriptions };
   }
 
-  public async unsubscribe(id: string) {
+  public async unsubscribe(id: string): Promise<GenericSuccessResponse> {
     const client = this.getClient();
     await this._subscriber.unsubscribe(client, id);
     return { success: true };
   }
 
-  public async unsubscribeBatch(idsArr: string[]) {
+  public async unsubscribeBatch(idsArr: string[]): Promise<GenericSuccessResponse> {
     const client = this.getClient();
     await this._subscriber.batchUnsubscribe(client, idsArr);
     return { success: true };
   }
 
-  public async unsubscribeAll() {
+  public async unsubscribeAll(): Promise<GenericSuccessResponse> {
     const client = this.getClient();
     await this._subscriber.clearAllSubscriptions(client);
     return { success: true };
