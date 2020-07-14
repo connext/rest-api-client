@@ -109,9 +109,9 @@ export default class ClientManager {
       delete params.assetId;
     }
     const response = await client.conditionalTransfer({
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
       amount: params.amount,
       recipient: params.recipient,
-      conditionType: ConditionalTransferTypes.HashLockTransfer,
       lockHash: params.lockHash,
       assetId: params.assetId,
       meta: params.meta,
@@ -129,6 +129,45 @@ export default class ClientManager {
       preImage: params.preImage,
       assetId: params.assetId,
     } as PublicParams.ResolveHashLockTransfer);
+    const data = response;
+    return data;
+  }
+
+  public async linkedStatus(paymentId: string) {
+    const client = this.getClient();
+    const response = await client.getLinkedTransfer(paymentId);
+    if (!response) {
+      throw new Error(`No Linked Transfer found for paymentId: ${paymentId}`);
+    }
+    const data = response;
+    return data;
+  }
+
+  public async linkedTransfer(params: PublicParams.LinkedTransfer) {
+    const client = this.getClient();
+    if (params.assetId === AddressZero) {
+      delete params.assetId;
+    }
+    const response = await client.conditionalTransfer({
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      amount: params.amount,
+      recipient: params.recipient,
+      preImage: params.preImage,
+      assetId: params.assetId,
+      meta: params.meta,
+    } as PublicParams.ConditionalTransfer);
+    const appDetails = await client.getAppInstance(response.appIdentityHash);
+    const data = { ...response, ...appDetails };
+    return data;
+  }
+
+  public async linkedResolve(params: PublicParams.ResolveLinkedTransfer) {
+    const client = this.getClient();
+    const response = await client.resolveCondition({
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      preImage: params.preImage,
+      paymentId: params.paymentId,
+    } as PublicParams.ResolveLinkedTransfer);
     const data = response;
     return data;
   }
@@ -152,6 +191,7 @@ export default class ClientManager {
 
   public async setMnemonic(mnemonic: string) {
     await storeMnemonic(mnemonic, this._store);
+    console.log("resolved to store mnemonic");
     this._mnemonic = mnemonic;
     this._logger.info("Mnemonic set successfully");
   }
@@ -166,6 +206,15 @@ export default class ClientManager {
     return {
       freeBalanceOffChain: response.freeBalance[client.signerAddress].toString(),
       freeBalanceOnChain: await getFreeBalanceOnChain(client, assetId),
+    };
+  }
+
+  public async swap(params: PublicParams.Swap) {
+    const client = this.getClient();
+    await client.swap(params);
+    return {
+      fromAssetIdBalance: await getFreeBalanceOnChain(client, params.fromAssetId),
+      toAssetIdBalance: await getFreeBalanceOnChain(client, params.toAssetId),
     };
   }
 

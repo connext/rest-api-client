@@ -7,6 +7,7 @@ import pkg from "../package.json";
 import config from "./config";
 import ClientManager from "./client";
 import { requireParam, fetchAll, isNotIncluded } from "./helpers";
+import { Wallet } from "ethers";
 
 const app = fastify({
   logger: { prettyPrint: config.debug ? { forceColor: true } : undefined },
@@ -87,6 +88,17 @@ app.get("/hashlock-status/:lockHash/:assetId", async (req, res) => {
   }
 });
 
+app.get("/linked-status/:paymentId", async (req, res) => {
+  try {
+    await requireParam(req.params, "paymentId");
+    const { paymentId } = req.params;
+    res.status(200).send(await clientManager.linkedStatus(paymentId));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
 app.get("/appinstance-details/:appInstanceId", async (req, res) => {
   try {
     await requireParam(req.params, "appInstanceId");
@@ -98,6 +110,20 @@ app.get("/appinstance-details/:appInstanceId", async (req, res) => {
 });
 
 // -- POST ---------------------------------------------------------------- //
+
+app.post("/create", async (req, res) => {
+  try {
+    let opts = { ...req.body };
+    if (!clientManager.mnemonic && !opts.mnemonic) {
+      opts.mnemonic = Wallet.createRandom().mnemonic.phrase;
+    }
+    await clientManager.initClient(opts);
+    res.status(200).send(await clientManager.getConfig());
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
 
 app.post("/connect", async (req, res) => {
   try {
@@ -160,11 +186,47 @@ app.post("/hashlock-resolve", async (req, res) => {
   }
 });
 
+app.post("/linked-transfer", async (req, res) => {
+  try {
+    await requireParam(req.body, "amount");
+    await requireParam(req.body, "assetId");
+    await requireParam(req.body, "preImage");
+    res.status(200).send(await clientManager.linkedTransfer(req.body));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
+app.post("/linked-resolve", async (req, res) => {
+  try {
+    await requireParam(req.body, "preImage");
+    await requireParam(req.body, "paymentId");
+    res.status(200).send(await clientManager.linkedResolve(req.body));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
 app.post("/deposit", async (req, res) => {
   try {
     await requireParam(req.body, "amount");
     await requireParam(req.body, "assetId");
     res.status(200).send(await clientManager.deposit(req.body));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
+app.post("/swap", async (req, res) => {
+  try {
+    await requireParam(req.body, "amount");
+    await requireParam(req.body, "fromAssetId");
+    await requireParam(req.body, "swapRate");
+    await requireParam(req.body, "toAssetId");
+    res.status(200).send(await clientManager.swap(req.body));
   } catch (error) {
     app.log.error(error);
     res.status(500).send({ message: error.message });

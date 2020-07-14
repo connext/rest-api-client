@@ -1,6 +1,6 @@
-import { IConnextClient, Contract } from "@connext/types";
+import { IConnextClient } from "@connext/types";
 import { ERC20 } from "@connext/contracts";
-import { constants, Wallet, providers } from "ethers";
+import { Wallet, Contract, providers, constants } from "ethers";
 
 export async function getFreeBalanceOffChain(client: IConnextClient, assetId: string) {
   return (await client.getFreeBalance(assetId !== constants.AddressZero ? assetId : undefined))[

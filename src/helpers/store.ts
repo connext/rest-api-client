@@ -7,6 +7,7 @@ import { EventSubscription, InitOptions } from "./types";
 import { IStoreService } from "@connext/types";
 
 export function storeMnemonic(mnemonic: string, store: IStoreService): Promise<void> {
+  console.log("STORE MNEMONIC", mnemonic);
   return (store as any).setItem(CONNEXT_MNEMONIC_KEY, mnemonic);
 }
 

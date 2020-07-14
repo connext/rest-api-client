@@ -28,11 +28,11 @@
     "axios": "^0.19.2",
     "core-js": "^3.6.5",
     "dotenv": "^8.2.0",
-    "ethers": "^5.0.2",
+    "ethers": "^5.0.5",
     "fastify": "^2.15.0",
     "fastify-helmet": "^3.0.2",
-    "pino-pretty": "^4.0.0",
-    "sqlite3": "^4.2.0",
+    "pino-pretty": "^4.0.1",
+    "sqlite3": "^5.0.0",
     "uuid": "^8.2.0"
   },
   "devDependencies": {
