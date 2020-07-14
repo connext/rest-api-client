@@ -11,6 +11,7 @@ import {
   requireParam,
   fetchAll,
   isNotIncluded,
+  getRandomMnemonic,
   InitOptions,
   GenericErrorResponse,
   GetBalanceResponse,
@@ -45,8 +46,6 @@ import {
   PostSwapRequestParams,
   PostSwapResponse,
 } from "./helpers";
-
-import { Wallet } from "ethers";
 
 const app = fastify({
   logger: { prettyPrint: config.debug } as any,
@@ -191,7 +190,7 @@ app.post<PostCreateRequest>("/create", async (req, res) => {
   try {
     const opts = { ...req.body };
     if (!clientManager.mnemonic && !opts.mnemonic) {
-      opts.mnemonic = Wallet.createRandom().mnemonic.phrase;
+      opts.mnemonic = getRandomMnemonic();
     }
     await clientManager.initClient(opts);
     res.status(200).send<GetConfigResponse>(await clientManager.getConfig());

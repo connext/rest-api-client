@@ -3,6 +3,10 @@ import { IConnextClient } from "@connext/types";
 import { ERC20 } from "@connext/contracts";
 import { Wallet, Contract, providers, constants } from "ethers";
 
+export function getRandomMnemonic(): string {
+  return Wallet.createRandom().mnemonic.phrase;
+}
+
 export async function getFreeBalanceOffChain(
   client: IConnextClient,
   assetId: string,
