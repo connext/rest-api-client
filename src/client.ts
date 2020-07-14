@@ -234,7 +234,6 @@ export default class ClientManager {
 
   public async setMnemonic(mnemonic: string): Promise<void> {
     await storeMnemonic(mnemonic, this._store);
-    console.log("resolved to store mnemonic");
     this._mnemonic = mnemonic;
     this._logger.info("Mnemonic set successfully");
   }
