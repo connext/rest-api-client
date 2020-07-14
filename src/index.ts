@@ -109,11 +109,20 @@ app.get("/appinstance-details/:appInstanceId", async (req, res) => {
   }
 });
 
+app.get("/transfer-history", async (req, res) => {
+  try {
+    res.status(200).send(await clientManager.getTransferHistory());
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send({ message: error.message });
+  }
+});
+
 // -- POST ---------------------------------------------------------------- //
 
 app.post("/create", async (req, res) => {
   try {
-    let opts = { ...req.body };
+    const opts = { ...req.body };
     if (!clientManager.mnemonic && !opts.mnemonic) {
       opts.mnemonic = Wallet.createRandom().mnemonic.phrase;
     }

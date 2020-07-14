@@ -96,6 +96,12 @@ export default class ClientManager {
     return config;
   }
 
+  public async getTransferHistory() {
+    const client = this.getClient();
+    const transferHistory = await client.getTransferHistory();
+    return transferHistory;
+  }
+
   public async getAppInstanceDetails(appIdentityHash: string) {
     const client = this.getClient();
     const appDetails = await client.getAppInstance(appIdentityHash);
