@@ -1,6 +1,6 @@
 import { IConnextClient, Contract } from "@connext/types";
+import { ERC20 } from "@connext/contracts";
 import { constants, Wallet, providers } from "ethers";
-import tokenAbi from "human-standard-token-abi";
 
 export async function getFreeBalanceOffChain(client: IConnextClient, assetId: string) {
   return (await client.getFreeBalance(assetId !== constants.AddressZero ? assetId : undefined))[
@@ -12,7 +12,7 @@ export async function getFreeBalanceOnChain(client: IConnextClient, assetId: str
   return assetId === constants.AddressZero
     ? (await client.ethProvider.getBalance(client.signerAddress)).toString()
     : (
-        await new Contract(assetId, tokenAbi, client.ethProvider).functions.balanceOf(
+        await new Contract(assetId, ERC20.abi, client.ethProvider).functions.balanceOf(
           client.signerAddress,
         )
       ).toString();
@@ -39,7 +39,7 @@ export async function transferOnChain(params: {
       value: params.amount,
     });
   } else {
-    const token = new Contract(params.assetId, tokenAbi, params.ethProvider);
+    const token = new Contract(params.assetId, ERC20.abi, params.ethProvider);
     tx = await token.transfer([params.recipient, params.amount]);
   }
   if (typeof tx.hash === "undefined") {
