@@ -23,18 +23,26 @@ import {
   PostTransactionResponse,
   PostHashLockTransferResponse,
   SubscriptionResponse,
-  BatchSubscriptionReponse,
+  BatchSubscriptionResponse,
   GenericSuccessResponse,
   GetAppInstanceDetailsResponse,
   GetConfigResponse,
   GetHashLockStatusResponse,
   PostHashLockResolveResponse,
-  PostWithdrawReponse,
-  PostWithdrawRequestBody,
-  PostHashLockTransferRequestBody,
-  PostDepositRequestBody,
-  PostHashLockResolveRequestBody,
-  PostTransactionRequestBody,
+  PostWithdrawResponse,
+  PostWithdrawRequestParams,
+  PostHashLockTransferRequestParams,
+  PostDepositRequestParams,
+  PostHashLockResolveRequestParams,
+  PostTransactionRequestParams,
+  PostSwapRequestParams,
+  PostSwapResponse,
+  PostLinkedTransferRequestParams,
+  PostLinkedTransferResponse,
+  GetLinkedStatusResponse,
+  PostLinkedResolveRequestParams,
+  PostLinkedResolveResponse,
+  GetTransferHistory,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
@@ -111,6 +119,12 @@ export default class ClientManager {
     return config;
   }
 
+  public async getTransferHistory(): Promise<GetTransferHistory> {
+    const client = this.getClient();
+    const transferHistory = await client.getTransferHistory();
+    return transferHistory;
+  }
+
   public async getAppInstanceDetails(
     appIdentityHash: string,
   ): Promise<GetAppInstanceDetailsResponse> {
@@ -124,16 +138,16 @@ export default class ClientManager {
   }
 
   public async hashLockTransfer(
-    params: PostHashLockTransferRequestBody,
+    params: PostHashLockTransferRequestParams,
   ): Promise<PostHashLockTransferResponse> {
     const client = this.getClient();
     if (params.assetId === AddressZero) {
       delete params.assetId;
     }
     const response = await client.conditionalTransfer({
+      conditionType: ConditionalTransferTypes.HashLockTransfer,
       amount: params.amount,
       recipient: params.recipient,
-      conditionType: ConditionalTransferTypes.HashLockTransfer,
       lockHash: params.lockHash,
       assetId: params.assetId,
       meta: params.meta,
@@ -145,7 +159,7 @@ export default class ClientManager {
   }
 
   public async hashLockResolve(
-    params: PostHashLockResolveRequestBody,
+    params: PostHashLockResolveRequestParams,
   ): Promise<PostHashLockResolveResponse> {
     const client = this.getClient();
     const response = await client.resolveCondition({
@@ -170,6 +184,49 @@ export default class ClientManager {
     return response;
   }
 
+  public async linkedStatus(paymentId: string): Promise<GetLinkedStatusResponse> {
+    const client = this.getClient();
+    const response = await client.getLinkedTransfer(paymentId);
+    if (!response) {
+      throw new Error(`No Linked Transfer found for paymentId: ${paymentId}`);
+    }
+    const data = response;
+    return data;
+  }
+
+  public async linkedTransfer(
+    params: PostLinkedTransferRequestParams,
+  ): Promise<PostLinkedTransferResponse> {
+    const client = this.getClient();
+    if (params.assetId === AddressZero) {
+      delete params.assetId;
+    }
+    const response = await client.conditionalTransfer({
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      amount: params.amount,
+      recipient: params.recipient,
+      preImage: params.preImage,
+      assetId: params.assetId,
+      meta: params.meta,
+    } as PublicParams.ConditionalTransfer);
+    const appDetails = await this.getAppInstanceDetails(response.appIdentityHash);
+    const data = { ...response, ...appDetails };
+    return data;
+  }
+
+  public async linkedResolve(
+    params: PostLinkedResolveRequestParams,
+  ): Promise<PostLinkedResolveResponse> {
+    const client = this.getClient();
+    const response = await client.resolveCondition({
+      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      preImage: params.preImage,
+      paymentId: params.paymentId,
+    } as PublicParams.ResolveLinkedTransfer);
+    const data = response;
+    return data;
+  }
+
   public async balance(assetId: string): Promise<GetBalanceResponse> {
     const client = this.getClient();
     return getClientBalance(client, assetId);
@@ -177,11 +234,12 @@ export default class ClientManager {
 
   public async setMnemonic(mnemonic: string): Promise<void> {
     await storeMnemonic(mnemonic, this._store);
+    console.log("resolved to store mnemonic");
     this._mnemonic = mnemonic;
     this._logger.info("Mnemonic set successfully");
   }
 
-  public async deposit(params: PostDepositRequestBody): Promise<GetBalanceResponse> {
+  public async deposit(params: PostDepositRequestParams): Promise<GetBalanceResponse> {
     const client = this.getClient();
     const assetId = params.assetId || AddressZero;
     if (params.assetId === AddressZero) {
@@ -194,8 +252,26 @@ export default class ClientManager {
     };
   }
 
+  public async swap(params: PostSwapRequestParams): Promise<PostSwapResponse> {
+    const client = this.getClient();
+    await client.swap(params);
+    return {
+      fromAssetIdBalance: await getFreeBalanceOnChain(client, params.fromAssetId),
+      toAssetIdBalance: await getFreeBalanceOnChain(client, params.toAssetId),
+    };
+  }
+
+  public async withdraw(params: PostWithdrawRequestParams): Promise<PostWithdrawResponse> {
+    const client = this.getClient();
+    if (params.assetId === AddressZero) {
+      delete params.assetId;
+    }
+    const response = await client.withdraw(params);
+    return response;
+  }
+
   public async transferOnChain(
-    params: PostTransactionRequestBody,
+    params: PostTransactionRequestParams,
   ): Promise<PostTransactionResponse> {
     const client = this.getClient();
     const txhash = await transferOnChain({
@@ -208,15 +284,6 @@ export default class ClientManager {
     return { txhash };
   }
 
-  public async withdraw(params: PostWithdrawRequestBody): Promise<PostWithdrawReponse> {
-    const client = this.getClient();
-    if (params.assetId === AddressZero) {
-      delete params.assetId;
-    }
-    const response = await client.withdraw(params);
-    return response;
-  }
-
   public async subscribe(params: EventSubscriptionParams): Promise<SubscriptionResponse> {
     const client = this.getClient();
     const subscription = await this._subscriber.subscribe(client, params);
@@ -225,7 +292,7 @@ export default class ClientManager {
 
   public async subscribeBatch(
     paramsArr: EventSubscriptionParams[],
-  ): Promise<BatchSubscriptionReponse> {
+  ): Promise<BatchSubscriptionResponse> {
     const client = this.getClient();
     const subscriptions = await this._subscriber.batchSubscribe(client, paramsArr);
     return { subscriptions };

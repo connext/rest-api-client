@@ -1,7 +1,7 @@
 {
   "name": "@connext/rest-api",
   "description": "REST API client for Connext",
-  "version": "7.0.0-alpha.14",
+  "version": "7.0.0-alpha.19",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ConnextProject/rest-api-client.git"
@@ -24,9 +24,7 @@
     "start:dev": "ts-node-dev src/index.ts"
   },
   "dependencies": {
-    "@connext/client": "7.0.0-alpha.14",
-    "@connext/store": "7.0.0-alpha.14",
-    "@connext/types": "7.0.0-alpha.14",
+    "@connext/client": "7.0.0-alpha.19",
     "axios": "^0.19.2",
     "core-js": "^3.6.5",
     "dotenv": "^8.2.0",
@@ -34,7 +32,6 @@
     "fastify": "^3.0.2",
     "fastify-helmet": "^4.0.2",
     "fastify-swagger": "^3.1.2",
-    "human-standard-token-abi": "^2.0.0",
     "pino-pretty": "^4.0.1",
     "sqlite3": "^5.0.0",
     "uuid": "^8.2.0"

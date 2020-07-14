@@ -33,11 +33,11 @@ export interface GetBalanceResponse {
   freeBalanceOnChain: string;
 }
 
-export interface GetVersionReponse {
+export interface GetVersionResponse {
   version: string;
 }
 
-export interface BatchSubscriptionReponse {
+export interface BatchSubscriptionResponse {
   subscriptions: EventSubscription[];
 }
 export interface SubscriptionResponse {
@@ -55,22 +55,38 @@ export type GetConfigResponse = Partial<ChannelProviderConfig>;
 export type GetHashLockStatusRequestParams = { lockHash: string; assetId: string };
 export type GetHashLockStatusResponse = NodeResponses.GetHashLockTransfer;
 
-export type PostDepositRequestBody = PublicParams.Deposit;
+export type GetLinkedStatusRequestParams = { paymentId: string };
+export type GetLinkedStatusResponse = NodeResponses.GetLinkedTransfer;
 
-export type PostHashLockTransferRequestBody = PublicParams.HashLockTransfer;
+export type GetTransferHistory = NodeResponses.GetTransferHistory;
+
+export type PostDepositRequestParams = PublicParams.Deposit;
+
+export type PostHashLockTransferRequestParams = PublicParams.HashLockTransfer;
 export interface PostHashLockTransferResponse
   extends PublicResults.ConditionalTransfer,
     MethodResults.GetAppInstanceDetails {}
 
-export type PostHashLockResolveRequestBody = PublicParams.ResolveHashLockTransfer;
+export type PostHashLockResolveRequestParams = PublicParams.ResolveHashLockTransfer;
 export type PostHashLockResolveResponse = PublicResults.ResolveHashLockTransfer;
 
-export type PostMnemonicRequestBody = { mnemonic: string };
+export type PostLinkedTransferRequestParams = PublicParams.LinkedTransfer;
+export interface PostLinkedTransferResponse
+  extends PublicResults.ConditionalTransfer,
+    MethodResults.GetAppInstanceDetails {}
 
-export type PostTransactionRequestBody = { amount: string; assetId: string; recipient: string };
+export type PostLinkedResolveRequestParams = PublicParams.ResolveLinkedTransfer;
+export type PostLinkedResolveResponse = PublicResults.ResolveLinkedTransfer;
+
+export type PostMnemonicRequestParams = { mnemonic: string };
+
+export type PostTransactionRequestParams = { amount: string; assetId: string; recipient: string };
 export interface PostTransactionResponse {
   txhash: string;
 }
 
-export type PostWithdrawReponse = PublicResults.Withdraw;
-export type PostWithdrawRequestBody = PublicParams.Withdraw;
+export type PostWithdrawRequestParams = PublicParams.Withdraw;
+export type PostWithdrawResponse = PublicResults.Withdraw;
+
+export type PostSwapRequestParams = PublicParams.Swap;
+export type PostSwapResponse = { fromAssetIdBalance: string; toAssetIdBalance: string };

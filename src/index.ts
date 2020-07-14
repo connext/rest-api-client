@@ -13,29 +13,40 @@ import {
   isNotIncluded,
   InitOptions,
   GenericErrorResponse,
-  GetVersionReponse,
   GetBalanceResponse,
   GenericSuccessResponse,
   GetBalanceRequestParams,
   GetHashLockStatusRequestParams,
   GetHashLockStatusResponse,
-  PostMnemonicRequestBody,
-  PostTransactionRequestBody,
+  PostMnemonicRequestParams,
+  PostTransactionRequestParams,
   PostTransactionResponse,
-  PostHashLockTransferRequestBody,
+  PostHashLockTransferRequestParams,
   PostHashLockTransferResponse,
   PostHashLockResolveResponse,
-  PostHashLockResolveRequestBody,
-  PostDepositRequestBody,
-  PostWithdrawReponse,
-  PostWithdrawRequestBody,
+  PostHashLockResolveRequestParams,
+  PostDepositRequestParams,
+  PostWithdrawRequestParams,
   EventSubscriptionParams,
   SubscriptionResponse,
-  BatchSubscriptionReponse,
   GetAppInstanceDetailsParams,
   GetAppInstanceDetailsResponse,
   GetConfigResponse,
+  GetVersionResponse,
+  PostWithdrawResponse,
+  BatchSubscriptionResponse,
+  GetLinkedStatusRequestParams,
+  GetLinkedStatusResponse,
+  GetTransferHistory,
+  PostLinkedTransferRequestParams,
+  PostLinkedTransferResponse,
+  PostLinkedResolveRequestParams,
+  PostLinkedResolveResponse,
+  PostSwapRequestParams,
+  PostSwapResponse,
 } from "./helpers";
+
+import { Wallet } from "ethers";
 
 const app = fastify({
   logger: { prettyPrint: config.debug } as any,
@@ -71,7 +82,7 @@ app.addHook("onResponse", (req, reply, done) => {
 // -- GET ---------------------------------------------------------------- //
 
 app.get("/health", (req, res) => {
-  res.status(204).send();
+  res.status(204).send<void>();
 });
 
 app.get("/hello", (req, res) => {
@@ -80,7 +91,7 @@ app.get("/hello", (req, res) => {
 
 app.get("/version", (req, res) => {
   try {
-    res.status(200).send<GetVersionReponse>({ version: pkg.version });
+    res.status(200).send<GetVersionResponse>({ version: pkg.version });
   } catch (error) {
     app.log.error(error);
     res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -128,6 +139,21 @@ app.get<GetHashLockStatusRequest>("/hashlock-status/:lockHash/:assetId", async (
   }
 });
 
+interface GetLinkedStatusRequest extends RequestGenericInterface {
+  Params: GetLinkedStatusRequestParams;
+}
+
+app.get<GetLinkedStatusRequest>("/linked-status/:paymentId", async (req, res) => {
+  try {
+    await requireParam(req.params, "paymentId");
+    const { paymentId } = req.params;
+    res.status(200).send<GetLinkedStatusResponse>(await clientManager.linkedStatus(paymentId));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
+  }
+});
+
 interface GetAppInstanceDetailsRequest extends RequestGenericInterface {
   Params: GetAppInstanceDetailsParams;
 }
@@ -146,7 +172,34 @@ app.get<GetAppInstanceDetailsRequest>("/appinstance-details/:appIdentityHash", a
   }
 });
 
+app.get("/transfer-history", async (req, res) => {
+  try {
+    res.status(200).send<GetTransferHistory>(await clientManager.getTransferHistory());
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
+  }
+});
+
 // -- POST ---------------------------------------------------------------- //
+
+interface PostCreateRequest extends RequestGenericInterface {
+  Body: Partial<InitOptions>;
+}
+
+app.post<PostCreateRequest>("/create", async (req, res) => {
+  try {
+    const opts = { ...req.body };
+    if (!clientManager.mnemonic && !opts.mnemonic) {
+      opts.mnemonic = Wallet.createRandom().mnemonic.phrase;
+    }
+    await clientManager.initClient(opts);
+    res.status(200).send<GetConfigResponse>(await clientManager.getConfig());
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
+  }
+});
 
 interface PostConnectRequest extends RequestGenericInterface {
   Body: Partial<InitOptions>;
@@ -167,7 +220,7 @@ app.post<PostConnectRequest>("/connect", async (req, res) => {
 });
 
 interface PostMnemonicRequest extends RequestGenericInterface {
-  Body: PostMnemonicRequestBody;
+  Body: PostMnemonicRequestParams;
 }
 
 app.post<PostMnemonicRequest>("/mnemonic", async (req, res) => {
@@ -182,7 +235,7 @@ app.post<PostMnemonicRequest>("/mnemonic", async (req, res) => {
 });
 
 interface PostTransactionRequest extends RequestGenericInterface {
-  Body: PostTransactionRequestBody;
+  Body: PostTransactionRequestParams;
 }
 
 app.post<PostTransactionRequest>("/onchain-transfer", async (req, res) => {
@@ -198,7 +251,7 @@ app.post<PostTransactionRequest>("/onchain-transfer", async (req, res) => {
 });
 
 interface PostHashLockTransferRequest extends RequestGenericInterface {
-  Body: PostHashLockTransferRequestBody;
+  Body: PostHashLockTransferRequestParams;
 }
 
 app.post<PostHashLockTransferRequest>("/hashlock-transfer", async (req, res) => {
@@ -218,7 +271,7 @@ app.post<PostHashLockTransferRequest>("/hashlock-transfer", async (req, res) => 
 });
 
 interface PostHashLockResolveRequest extends RequestGenericInterface {
-  Body: PostHashLockResolveRequestBody;
+  Body: PostHashLockResolveRequestParams;
 }
 
 app.post<PostHashLockResolveRequest>("/hashlock-resolve", async (req, res) => {
@@ -234,8 +287,39 @@ app.post<PostHashLockResolveRequest>("/hashlock-resolve", async (req, res) => {
   }
 });
 
+interface PostLinkedTransferRequest extends RequestGenericInterface {
+  Body: PostLinkedTransferRequestParams;
+}
+
+app.post<PostLinkedTransferRequest>("/linked-transfer", async (req, res) => {
+  try {
+    await requireParam(req.body, "amount");
+    await requireParam(req.body, "assetId");
+    await requireParam(req.body, "preImage");
+    res.status(200).send<PostLinkedTransferResponse>(await clientManager.linkedTransfer(req.body));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
+  }
+});
+
+interface PostLinkedResolveRequest extends RequestGenericInterface {
+  Body: PostLinkedResolveRequestParams;
+}
+
+app.post<PostLinkedResolveRequest>("/linked-resolve", async (req, res) => {
+  try {
+    await requireParam(req.body, "preImage");
+    await requireParam(req.body, "paymentId");
+    res.status(200).send<PostLinkedResolveResponse>(await clientManager.linkedResolve(req.body));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
+  }
+});
+
 interface PostDepositRequest extends RequestGenericInterface {
-  Body: PostDepositRequestBody;
+  Body: PostDepositRequestParams;
 }
 
 app.post<PostDepositRequest>("/deposit", async (req, res) => {
@@ -249,14 +333,31 @@ app.post<PostDepositRequest>("/deposit", async (req, res) => {
   }
 });
 
+interface PostSwapRequest extends RequestGenericInterface {
+  Body: PostSwapRequestParams;
+}
+
+app.post<PostSwapRequest>("/swap", async (req, res) => {
+  try {
+    await requireParam(req.body, "amount");
+    await requireParam(req.body, "fromAssetId");
+    await requireParam(req.body, "swapRate");
+    await requireParam(req.body, "toAssetId");
+    res.status(200).send<PostSwapResponse>(await clientManager.swap(req.body));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
+  }
+});
+
 interface PostWithdrawRequest extends RequestGenericInterface {
-  Body: PostWithdrawRequestBody;
+  Body: PostWithdrawRequestParams;
 }
 
 app.post<PostWithdrawRequest>("/withdraw", async (req, res) => {
   try {
     await requireParam(req.body, "amount");
-    res.status(200).send<PostWithdrawReponse>(await clientManager.withdraw(req.body));
+    res.status(200).send<PostWithdrawResponse>(await clientManager.withdraw(req.body));
   } catch (error) {
     app.log.error(error);
     res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -289,7 +390,7 @@ app.post<PostBatchSubscribeRequest>("/subscribe/batch", async (req, res) => {
     await requireParam(req.body, "params", "array");
     res
       .status(200)
-      .send<BatchSubscriptionReponse>(await clientManager.subscribeBatch(req.body.params));
+      .send<BatchSubscriptionResponse>(await clientManager.subscribeBatch(req.body.params));
   } catch (error) {
     app.log.error(error);
     res.status(500).send<GenericErrorResponse>({ message: error.message });
