@@ -18,6 +18,12 @@ export interface InitOptions extends ClientOptions {
   network?: string;
 }
 
+export interface PersistedData {
+  mnemonic: string | undefined;
+  subscriptions: EventSubscription[] | undefined;
+  initOptions: Partial<InitOptions> | undefined;
+}
+
 export interface GenericErrorResponse {
   message: string;
 }

@@ -3,7 +3,7 @@ import {
   CONNEXT_INIT_OPTIONS_KEY,
   CONNEXT_SUBSCRIPTIONS_KEY,
 } from "./constants";
-import { EventSubscription, InitOptions } from "./types";
+import { EventSubscription, InitOptions, PersistedData } from "./types";
 import { IStoreService } from "@connext/types";
 
 export function storeMnemonic(mnemonic: string, store: IStoreService): Promise<void> {
@@ -40,7 +40,7 @@ export async function fetchInitOptions(
   return (store as any).getItem(CONNEXT_INIT_OPTIONS_KEY);
 }
 
-export async function fetchAll(store: IStoreService) {
+export async function fetchAll(store: IStoreService): Promise<PersistedData> {
   const mnemonic = await fetchMnemonic(store);
   const subscriptions = await fetchSubscriptions(store);
   const initOptions = await fetchInitOptions(store);

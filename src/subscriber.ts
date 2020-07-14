@@ -16,7 +16,10 @@ export default class Subscriber {
 
   // -- SUBSCRIBE ---------------------------------------------------------------- //
 
-  public async subscribe(client: IConnextClient, params: EventSubscriptionParams) {
+  public async subscribe(
+    client: IConnextClient,
+    params: EventSubscriptionParams,
+  ): Promise<EventSubscription> {
     const match = this.getSubscriptionByParams(params);
     if (match) {
       return match;
@@ -27,7 +30,7 @@ export default class Subscriber {
     return subscription;
   }
 
-  private subscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
+  private subscribeOnClient(client: IConnextClient, subscription: EventSubscription): void {
     client.on(subscription.params.event as any, (data) =>
       this.onSubscription(subscription.params.event, data),
     );
@@ -35,15 +38,15 @@ export default class Subscriber {
 
   // -- UNSUBSCRIBE ---------------------------------------------------------------- //
 
-  public async unsubscribe(client: IConnextClient, id: string) {
+  public async unsubscribe(client: IConnextClient, id: string): Promise<void> {
     const subscription = this.getSubscriptionById(id);
     if (subscription) {
-      this.unsubscribeOnClient(client, subscription);
+      this.unsubscribeOnClient(client);
     }
     await this.removeSubscription(id);
   }
 
-  private unsubscribeOnClient(client: IConnextClient, subscription: EventSubscription) {
+  private unsubscribeOnClient(client: IConnextClient) {
     client.off();
   }
 
@@ -69,7 +72,7 @@ export default class Subscriber {
   }
 
   public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
-    this._subscriptions.map((subscription) => this.unsubscribeOnClient(client, subscription));
+    this._subscriptions.map(() => this.unsubscribeOnClient(client));
     await this.persistSubscriptions([]);
   }
 

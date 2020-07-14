@@ -14,7 +14,7 @@ export function safeJsonStringify(value: any): string {
       );
 }
 
-export function isNotIncluded(val: string, arr: string[]) {
+export function isNotIncluded(val: string, arr: string[]): boolean {
   let res = true;
   for (const i in arr) {
     const matches = val.match(arr[i]);
@@ -26,7 +26,7 @@ export function isNotIncluded(val: string, arr: string[]) {
   return res;
 }
 
-export function verifyType(value: any, type: string) {
+export function verifyType(value: any, type: string): boolean {
   switch (type) {
     case "array":
       return Array.isArray(value);
@@ -37,7 +37,7 @@ export function verifyType(value: any, type: string) {
   }
 }
 
-export async function requireParam(obj: any, param: string, type = "string") {
+export async function requireParam(obj: any, param: string, type = "string"): Promise<void> {
   if (!obj[param] || !verifyType(obj[param], type)) {
     throw new Error(`Invalid or missing ${param}`);
   }

@@ -447,14 +447,14 @@ app.delete("/subscribe/all", async (req, res) => {
 app.ready(async () => {
   const store = getFileStore(config.storeDir);
   await store.init();
-  const { mnemonic, subscriptions, initOptions } = await fetchAll(store);
+  const { mnemonic, initOptions } = await fetchAll(store);
   clientManager = new ClientManager({ mnemonic, logger: app.log, store });
   if (initOptions && Object.keys(initOptions).length) {
-    await clientManager.initClient(initOptions, subscriptions);
+    await clientManager.initClient(initOptions);
   }
 });
 
 const [host, port] = config.host.split(":");
-app.listen(+port, host, (err, address) => {
+app.listen(+port, host, (err) => {
   if (err) throw err;
 });
