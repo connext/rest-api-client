@@ -13,7 +13,7 @@ export interface InitClientManagerOptions {
   mnemonic?: string;
   store: IStoreService;
 }
-export interface InitOptions extends ClientOptions {
+export interface ConnectOptions extends ClientOptions {
   mnemonic: string;
   network?: string;
 }
@@ -21,7 +21,7 @@ export interface InitOptions extends ClientOptions {
 export interface PersistedData {
   mnemonic: string | undefined;
   subscriptions: EventSubscription[] | undefined;
-  initOptions: Partial<InitOptions> | undefined;
+  initOptions: Partial<ConnectOptions> | undefined;
 }
 
 export interface GenericErrorResponse {

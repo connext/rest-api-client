@@ -1,3 +1,5 @@
+import { getFileStore } from "@connext/store";
+
 import * as connext from "@connext/client";
 import {
   IConnextClient,
@@ -16,7 +18,7 @@ import {
   getFreeBalanceOnChain,
   EventSubscriptionParams,
   InitClientManagerOptions,
-  InitOptions,
+  ConnectOptions,
   EventSubscription,
   transferOnChain,
   GetBalanceResponse,
@@ -43,12 +45,24 @@ import {
   PostLinkedResolveRequestParams,
   PostLinkedResolveResponse,
   GetTransferHistory,
+  fetchAll,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
 const { AddressZero } = constants;
 
-export default class ClientManager {
+export default class Client {
+  public static async init(logger: any) {
+    const store = getFileStore(config.storeDir);
+    await store.init();
+    const { mnemonic, initOptions } = await fetchAll(store);
+    const client = new Client({ mnemonic, logger, store });
+    if (initOptions && Object.keys(initOptions).length) {
+      await client.connect(initOptions);
+    }
+    return client;
+  }
+
   private _client: IConnextClient | undefined;
   private _logger: any;
   private _mnemonic: string | undefined;
@@ -71,7 +85,7 @@ export default class ClientManager {
     this._mnemonic = value;
   }
 
-  public async initClient(opts?: Partial<InitOptions>): Promise<IConnextClient> {
+  public async connect(opts?: Partial<ConnectOptions>): Promise<IConnextClient> {
     const mnemonic = opts?.mnemonic || this.mnemonic;
     if (!mnemonic) {
       throw new Error("Cannot init Connext client without mnemonic");
@@ -82,7 +96,7 @@ export default class ClientManager {
     }
 
     if (this._client) {
-      this._logger.info("Client is already connected - skipping initClient logic");
+      this._logger.info("Client is already connected - skipping connect logic");
       return this._client;
     }
 
@@ -323,7 +337,7 @@ export default class ClientManager {
 
   private async updateClient(
     client: IConnextClient,
-    initOpts: Partial<InitOptions>,
+    initOpts: Partial<ConnectOptions>,
     subscriptions?: EventSubscription[],
   ) {
     if (this._client) {
