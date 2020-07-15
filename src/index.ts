@@ -457,3 +457,5 @@ const [host, port] = config.host.split(":");
 app.listen(+port, host, (err) => {
   if (err) throw err;
 });
+
+export default app;
