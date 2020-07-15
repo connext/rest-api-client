@@ -4,7 +4,7 @@ import pkg from "../package.json";
 import { initApp } from "../src/app";
 import { App, safeJsonParse } from "../src/helpers";
 
-import { STAGING_URLS, MNEMONIC_OPTS } from "./shared";
+import { STAGING_URLS } from "./shared";
 
 describe("Server", () => {
   let app: App;
@@ -43,7 +43,7 @@ describe("Server", () => {
       expect(res.statusCode).to.equal(200);
       expect(json.multisigAddress).to.exist;
       expect(json.signerAddress).to.exist;
-      expect(json.publicIdentifier).to.exist;
+      expect(json.userIdentifier).to.exist;
       expect(json.nodeUrl).to.exist;
     });
   });

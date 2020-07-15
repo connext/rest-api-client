@@ -1,5 +1,6 @@
-import * as connext from "@connext/client";
 import { getFileStore } from "@connext/store";
+import * as connext from "@connext/client";
+
 import {
   IConnextClient,
   IStoreService,
@@ -16,7 +17,7 @@ import {
   getFreeBalanceOnChain,
   EventSubscriptionParams,
   InitClientOptions,
-  InitOptions,
+  ConnectOptions,
   EventSubscription,
   transferOnChain,
   GetBalanceResponse,
@@ -56,7 +57,7 @@ export default class Client {
     const { mnemonic, initOptions } = await fetchAll(store);
     const client = new Client({ mnemonic, logger, store }, appConfig);
     if (initOptions && Object.keys(initOptions).length) {
-      await client.initClient(initOptions);
+      await client.connect(initOptions);
     }
     return client;
   }
@@ -85,7 +86,7 @@ export default class Client {
     this._mnemonic = value;
   }
 
-  public async initClient(opts?: Partial<InitOptions>): Promise<IConnextClient> {
+  public async connect(opts?: Partial<ConnectOptions>): Promise<IConnextClient> {
     const mnemonic = opts?.mnemonic || this.mnemonic;
     if (!mnemonic) {
       throw new Error("Cannot init Connext client without mnemonic");
@@ -96,7 +97,7 @@ export default class Client {
     }
 
     if (this._client) {
-      this._logger.info("Client is already connected - skipping initClient logic");
+      this._logger.info("Client is already connected - skipping connect logic");
       return this._client;
     }
 
@@ -337,7 +338,7 @@ export default class Client {
 
   private async updateClient(
     client: IConnextClient,
-    initOpts: Partial<InitOptions>,
+    initOpts: Partial<ConnectOptions>,
     subscriptions?: EventSubscription[],
   ) {
     if (this._client) {

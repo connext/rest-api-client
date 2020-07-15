@@ -26,7 +26,7 @@ import {
   GetLinkedStatusResponse,
   GetTransferHistory,
   GetVersionResponse,
-  InitOptions,
+  ConnectOptions,
   PostDepositRequestParams,
   PostHashLockResolveRequestParams,
   PostHashLockResolveResponse,
@@ -186,7 +186,7 @@ export async function initApp(_config?: Partial<AppConfig>) {
   // -- POST ---------------------------------------------------------------- //
 
   interface PostCreateRequest extends RequestGenericInterface {
-    Body: Partial<InitOptions>;
+    Body: Partial<ConnectOptions>;
   }
 
   app.post<PostCreateRequest>("/create", async (req, res) => {
@@ -195,7 +195,7 @@ export async function initApp(_config?: Partial<AppConfig>) {
       if (!client.mnemonic || !opts.mnemonic) {
         opts.mnemonic = getRandomMnemonic();
       }
-      await client.initClient(opts);
+      await client.connect(opts);
       res.status(200).send<GetConfigResponse>(await client.getConfig());
     } catch (error) {
       app.log.error(error);
@@ -204,7 +204,7 @@ export async function initApp(_config?: Partial<AppConfig>) {
   });
 
   interface PostConnectRequest extends RequestGenericInterface {
-    Body: Partial<InitOptions>;
+    Body: Partial<ConnectOptions>;
   }
 
   app.post<PostConnectRequest>("/connect", async (req, res) => {
@@ -212,7 +212,7 @@ export async function initApp(_config?: Partial<AppConfig>) {
       if (!client.mnemonic) {
         await requireParam(req.body, "mnemonic");
       }
-      await client.initClient(req.body);
+      await client.connect(req.body);
       const config = await client.getConfig();
       res.status(200).send<GetConfigResponse>(config);
     } catch (error) {
