@@ -1,3 +1,6 @@
+import { RouteShorthandOptions } from "fastify";
+import * as SwaggerSchema from "swagger-schema-official";
+
 import {
   ClientOptions,
   IStoreService,
@@ -7,6 +10,47 @@ import {
   NodeResponses,
   PublicParams,
 } from "@connext/types";
+
+interface FastifySwaggerOptions {
+  mode?: "static" | "dynamic";
+  urlPrefix?: string;
+  exposeRoute?: boolean;
+}
+
+interface FastifyDynamicSwaggerOptions extends FastifySwaggerOptions {
+  mode?: "dynamic";
+  swagger?: Partial<SwaggerSchema.Spec>;
+  transform?: any;
+}
+
+interface StaticPathSpec {
+  path: string;
+  postProcessor?: (spec: SwaggerSchema.Spec) => SwaggerSchema.Spec;
+  baseDir: string;
+}
+
+interface StaticDocumentSpec {
+  document: string;
+}
+
+interface FastifyStaticSwaggerOptions extends FastifySwaggerOptions {
+  mode: "static";
+  specification: StaticPathSpec | StaticDocumentSpec;
+}
+
+export type SwaggerOptions = FastifyStaticSwaggerOptions | FastifyDynamicSwaggerOptions;
+
+export interface SwaggerDefinition {
+  options: SwaggerOptions;
+  routes: {
+    [method: string]: {
+      [route: string]: {
+        url: string;
+        opts: RouteShorthandOptions;
+      };
+    };
+  };
+}
 
 export interface InitClientManagerOptions {
   logger: any;
