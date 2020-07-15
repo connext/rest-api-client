@@ -21,7 +21,8 @@
     "no-prototype-builtins": ["off"],
     "sort-keys": ["off"],
     "space-before-function-paren": ["off"],
-    "indent": ["off"]
+    "indent": ["off"],
+    "no-unused-expressions": ["off"]
   },
   "env": {
     "browser": true,

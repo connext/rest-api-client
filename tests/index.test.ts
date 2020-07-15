@@ -1,37 +1,50 @@
-import "mocha";
-import { expect, request, use } from "chai";
-import chaiHttp from "chai-http";
+import { expect } from "chai";
 
 import pkg from "../package.json";
+import { initApp } from "../src/app";
+import { App, safeJsonParse } from "../src/helpers";
 
-import app from "../src";
-
-use(chaiHttp);
+import { STAGING_URLS, MNEMONIC_OPTS } from "./shared";
 
 describe("Server", () => {
-  let agent: ChaiHttp.Agent;
-  beforeEach(() => {
-    agent = request(app.server);
-    console.log("AGENTTTTT");
+  let app: App;
+  beforeEach(async () => {
+    app = (await initApp({ ...STAGING_URLS, logLevel: 0 })).app;
   });
   describe("GET /hello", () => {
-    it("should return a message text", () => {
-      agent.get("/hello").end((err, res) => {
-        // eslint-disable-next-line no-unused-expressions
-        expect(err).to.be.null;
-        expect(res).to.have.status(200);
-        expect(res.text).to.equal(`Hello World, this is Connext client`);
+    it("should return a message text", async () => {
+      const res = await app.inject({
+        method: "GET",
+        url: "/hello",
       });
+      expect(res.statusCode).to.equal(200);
+      expect(res.body).to.equal(`Hello World, this is Connext client`);
     });
   });
   describe("GET /version", () => {
-    it("should match package.json version", () => {
-      agent.get("/version").end((err, res) => {
-        // eslint-disable-next-line no-unused-expressions
-        expect(err).to.be.null;
-        expect(res).to.have.status(200);
-        expect(res.body).to.deep.equal({ version: pkg.version });
+    it("should match package.json version", async () => {
+      const res = await app.inject({
+        method: "GET",
+        url: "/version",
       });
+      const json = safeJsonParse(res.body);
+      expect(res.statusCode).to.equal(200);
+
+      expect(json).to.deep.equal({ version: pkg.version });
+    });
+  });
+  describe("POST /create", () => {
+    it("should create channel with random mnemonic", async () => {
+      const res = await app.inject({
+        method: "POST",
+        url: "/create",
+      });
+      const json = safeJsonParse(res.body);
+      expect(res.statusCode).to.equal(200);
+      expect(json.multisigAddress).to.exist;
+      expect(json.signerAddress).to.exist;
+      expect(json.publicIdentifier).to.exist;
+      expect(json.nodeUrl).to.exist;
     });
   });
 });

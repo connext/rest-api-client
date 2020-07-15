@@ -22,7 +22,7 @@
     "start": "npm run build && npm run prod",
     "lint": "eslint -c './.eslintrc' --fix './src/**/*.ts'",
     "start:dev": "ts-node src/index.ts --watch",
-    "test": "mocha --require ts-node/register --watch-extensions ts,tsx 'tests/**/*.test.ts'"
+    "test": "mocha --timeout 10000 --require ts-node/register 'tests/**/*.test.ts'"
   },
   "dependencies": {
     "@connext/client": "7.0.0-alpha.19",
@@ -53,7 +53,6 @@
     "@typescript-eslint/eslint-plugin": "^3.6.1",
     "@typescript-eslint/parser": "^3.6.1",
     "chai": "^4.2.0",
-    "chai-http": "^4.3.0",
     "eslint": "^7.4.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-config-standard": "^14.1.1",

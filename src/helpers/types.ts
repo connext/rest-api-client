@@ -1,3 +1,5 @@
+import { Server, IncomingMessage, ServerResponse } from "http";
+import { FastifyInstance } from "fastify";
 import {
   ClientOptions,
   IStoreService,
@@ -8,7 +10,22 @@ import {
   PublicParams,
 } from "@connext/types";
 
-export interface InitClientManagerOptions {
+export type App = FastifyInstance<Server, IncomingMessage, ServerResponse, any>;
+
+export interface AppConfig {
+  env: string;
+  debug: boolean;
+  port: number;
+  host: string;
+  logLevel: number;
+  network: string;
+  ethProviderUrl: string | undefined;
+  nodeUrl: string | undefined;
+  mnemonic: string;
+  storeDir: string;
+}
+
+export interface InitClientOptions {
   logger: any;
   mnemonic?: string;
   store: IStoreService;

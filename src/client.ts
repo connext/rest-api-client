@@ -1,4 +1,5 @@
 import * as connext from "@connext/client";
+import { getFileStore } from "@connext/store";
 import {
   IConnextClient,
   IStoreService,
@@ -7,15 +8,14 @@ import {
 } from "@connext/types";
 import { Wallet, constants } from "ethers";
 
-import config from "./config";
-
 import {
+  fetchAll,
   storeMnemonic,
   storeInitOptions,
   getClientBalance,
   getFreeBalanceOnChain,
   EventSubscriptionParams,
-  InitClientManagerOptions,
+  InitClientOptions,
   InitOptions,
   EventSubscription,
   transferOnChain,
@@ -43,28 +43,42 @@ import {
   PostLinkedResolveRequestParams,
   PostLinkedResolveResponse,
   GetTransferHistory,
+  AppConfig,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
 const { AddressZero } = constants;
 
-export default class ClientManager {
+export default class Client {
+  public static async init(logger: any, appConfig: AppConfig): Promise<Client> {
+    const store = getFileStore(appConfig.storeDir);
+    await store.init();
+    const { mnemonic, initOptions } = await fetchAll(store);
+    const client = new Client({ mnemonic, logger, store }, appConfig);
+    if (initOptions && Object.keys(initOptions).length) {
+      await client.initClient(initOptions);
+    }
+    return client;
+  }
+
   private _client: IConnextClient | undefined;
   private _logger: any;
   private _mnemonic: string | undefined;
   private _subscriber: Subscriber;
   private _store: IStoreService;
   private _initializing = false;
+  private _appConfig: AppConfig;
 
-  constructor(opts: InitClientManagerOptions) {
+  constructor(opts: InitClientOptions, appConfig: AppConfig) {
     this._logger = opts.logger;
     this._mnemonic = opts.mnemonic;
     this._subscriber = new Subscriber(opts.logger, opts.store);
     this._store = opts.store;
+    this._appConfig = appConfig;
   }
 
   get mnemonic(): string {
-    return this._mnemonic || config.mnemonic;
+    return this._mnemonic || this._appConfig.mnemonic;
   }
 
   set mnemonic(value: string) {
@@ -88,10 +102,10 @@ export default class ClientManager {
 
     this._initializing = true;
     this.setMnemonic(mnemonic);
-    const network = opts?.network || config.network;
-    const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
-    const nodeUrl = opts?.nodeUrl || config.nodeUrl;
-    const logLevel = opts?.logLevel || config.logLevel;
+    const network = opts?.network || this._appConfig.network;
+    const ethProviderUrl = opts?.ethProviderUrl || this._appConfig.ethProviderUrl;
+    const nodeUrl = opts?.nodeUrl || this._appConfig.nodeUrl;
+    const logLevel = opts?.logLevel || this._appConfig.logLevel;
     const signer = Wallet.fromMnemonic(mnemonic).privateKey;
     const clientOpts = { signer, store: this._store, ethProviderUrl, nodeUrl, logLevel };
     try {
