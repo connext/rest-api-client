@@ -1,24 +1,38 @@
-import { IConnextClient, Contract } from "@connext/types";
-import { constants, Wallet, providers } from "ethers";
-import tokenAbi from "human-standard-token-abi";
+import { GetBalanceResponse } from "./types";
+import { IConnextClient } from "@connext/types";
+import { ERC20 } from "@connext/contracts";
+import { Wallet, Contract, providers, constants } from "ethers";
 
-export async function getFreeBalanceOffChain(client: IConnextClient, assetId: string) {
+export function getRandomMnemonic(): string {
+  return Wallet.createRandom().mnemonic.phrase;
+}
+
+export async function getFreeBalanceOffChain(
+  client: IConnextClient,
+  assetId: string,
+): Promise<string> {
   return (await client.getFreeBalance(assetId !== constants.AddressZero ? assetId : undefined))[
     client.signerAddress
   ].toString();
 }
 
-export async function getFreeBalanceOnChain(client: IConnextClient, assetId: string) {
+export async function getFreeBalanceOnChain(
+  client: IConnextClient,
+  assetId: string,
+): Promise<string> {
   return assetId === constants.AddressZero
     ? (await client.ethProvider.getBalance(client.signerAddress)).toString()
     : (
-        await new Contract(assetId, tokenAbi, client.ethProvider).functions.balanceOf(
+        await new Contract(assetId, ERC20.abi, client.ethProvider).functions.balanceOf(
           client.signerAddress,
         )
       ).toString();
 }
 
-export async function getClientBalance(client: IConnextClient, assetId: string) {
+export async function getClientBalance(
+  client: IConnextClient,
+  assetId: string,
+): Promise<GetBalanceResponse> {
   const freeBalanceOffChain = await getFreeBalanceOffChain(client, assetId);
   const freeBalanceOnChain = await getFreeBalanceOnChain(client, assetId);
   return { freeBalanceOffChain, freeBalanceOnChain };
@@ -39,7 +53,7 @@ export async function transferOnChain(params: {
       value: params.amount,
     });
   } else {
-    const token = new Contract(params.assetId, tokenAbi, params.ethProvider);
+    const token = new Contract(params.assetId, ERC20.abi, params.ethProvider);
     tx = await token.transfer([params.recipient, params.amount]);
   }
   if (typeof tx.hash === "undefined") {
