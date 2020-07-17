@@ -277,7 +277,7 @@ export default class Client {
       delete params.assetId;
     }
     const response = await client.withdraw(params);
-    return response;
+    return { txhash: response.transaction.hash };
   }
 
   public async transferOnChain(

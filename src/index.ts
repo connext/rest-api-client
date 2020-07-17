@@ -3,7 +3,7 @@ import fastify, { RequestGenericInterface } from "fastify";
 import pkg from "../package.json";
 
 import config from "./config";
-import swagger from "./swagger";
+import { swaggerOptions, Routes } from "./schemas";
 import Client from "./client";
 import {
   requireParam,
@@ -52,7 +52,7 @@ const app = fastify({
 let client: Client;
 
 app.register(require("fastify-helmet"));
-app.register(require("fastify-swagger"), swagger.options as any);
+app.register(require("fastify-swagger"), swaggerOptions as any);
 
 app.addHook("onReady", async () => {
   client = await Client.init(app.log);
@@ -80,15 +80,15 @@ app.addHook("onResponse", (req, reply, done) => {
 
 // -- GET ---------------------------------------------------------------- //
 
-app.get(swagger.routes.get.health.url, swagger.routes.get.health.opts, (req, res) => {
+app.get(Routes.get.health.url, Routes.get.health.opts, (req, res) => {
   res.status(204).send<void>();
 });
 
-app.get(swagger.routes.get.hello.url, swagger.routes.get.hello.opts, (req, res) => {
+app.get(Routes.get.hello.url, Routes.get.hello.opts, (req, res) => {
   res.status(200).send<string>(`Hello World, this is Connext client`);
 });
 
-app.get(swagger.routes.get.version.url, swagger.routes.get.version.opts, (req, res) => {
+app.get(Routes.get.version.url, Routes.get.version.opts, (req, res) => {
   try {
     res.status(200).send<GetVersionResponse>({ version: pkg.version });
   } catch (error) {
@@ -101,21 +101,17 @@ interface GetBalanceRequest extends RequestGenericInterface {
   Params: GetBalanceRequestParams;
 }
 
-app.get<GetBalanceRequest>(
-  swagger.routes.get.balance.url,
-  swagger.routes.get.balance.opts,
-  async (req, res) => {
-    try {
-      await requireParam(req.params, "assetId");
-      res.status(200).send<GetBalanceResponse>(await client.balance(req.params.assetId));
-    } catch (error) {
-      app.log.error(error);
-      res.status(500).send<GenericErrorResponse>({ message: error.message });
-    }
-  },
-);
+app.get<GetBalanceRequest>(Routes.get.balance.url, Routes.get.balance.opts, async (req, res) => {
+  try {
+    await requireParam(req.params, "assetId");
+    res.status(200).send<GetBalanceResponse>(await client.balance(req.params.assetId));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
+  }
+});
 
-app.get(swagger.routes.get.config.url, swagger.routes.get.config.opts, async (req, res) => {
+app.get(Routes.get.config.url, Routes.get.config.opts, async (req, res) => {
   try {
     res.status(200).send<GetConfigResponse>(await client.getConfig());
   } catch (error) {
@@ -129,8 +125,8 @@ interface GetHashLockStatusRequest extends RequestGenericInterface {
 }
 
 app.get<GetHashLockStatusRequest>(
-  swagger.routes.get.hashLockStatus.url,
-  swagger.routes.get.hashLockStatus.opts,
+  Routes.get.hashLockStatus.url,
+  Routes.get.hashLockStatus.opts,
   async (req, res) => {
     try {
       await requireParam(req.params, "lockHash");
@@ -151,8 +147,8 @@ interface GetLinkedStatusRequest extends RequestGenericInterface {
 }
 
 app.get<GetLinkedStatusRequest>(
-  swagger.routes.get.linkedStatus.url,
-  swagger.routes.get.linkedStatus.opts,
+  Routes.get.linkedStatus.url,
+  Routes.get.linkedStatus.opts,
   async (req, res) => {
     try {
       await requireParam(req.params, "paymentId");
@@ -170,8 +166,8 @@ interface GetAppInstanceDetailsRequest extends RequestGenericInterface {
 }
 
 app.get<GetAppInstanceDetailsRequest>(
-  swagger.routes.get.appinstanceDetails.url,
-  swagger.routes.get.appinstanceDetails.opts,
+  Routes.get.appinstanceDetails.url,
+  Routes.get.appinstanceDetails.opts,
   async (req, res) => {
     try {
       await requireParam(req.params, "appIdentityHash");
@@ -187,18 +183,14 @@ app.get<GetAppInstanceDetailsRequest>(
   },
 );
 
-app.get(
-  swagger.routes.get.transferHistory.url,
-  swagger.routes.get.transferHistory.opts,
-  async (req, res) => {
-    try {
-      res.status(200).send<GetTransferHistory>(await client.getTransferHistory());
-    } catch (error) {
-      app.log.error(error);
-      res.status(500).send<GenericErrorResponse>({ message: error.message });
-    }
-  },
-);
+app.get(Routes.get.transferHistory.url, Routes.get.transferHistory.opts, async (req, res) => {
+  try {
+    res.status(200).send<GetTransferHistory>(await client.getTransferHistory());
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
+  }
+});
 
 // -- POST ---------------------------------------------------------------- //
 
@@ -206,31 +198,27 @@ interface PostCreateRequest extends RequestGenericInterface {
   Body: Partial<ConnectOptions>;
 }
 
-app.post<PostCreateRequest>(
-  swagger.routes.post.create.url,
-  swagger.routes.post.create.opts,
-  async (req, res) => {
-    try {
-      const opts = { ...req.body };
-      if (!client.mnemonic && !opts.mnemonic) {
-        opts.mnemonic = getRandomMnemonic();
-      }
-      await client.connect(opts);
-      res.status(200).send<GetConfigResponse>(await client.getConfig());
-    } catch (error) {
-      app.log.error(error);
-      res.status(500).send<GenericErrorResponse>({ message: error.message });
+app.post<PostCreateRequest>(Routes.post.create.url, Routes.post.create.opts, async (req, res) => {
+  try {
+    const opts = { ...req.body };
+    if (!client.mnemonic && !opts.mnemonic) {
+      opts.mnemonic = getRandomMnemonic();
     }
-  },
-);
+    await client.connect(opts);
+    res.status(200).send<GetConfigResponse>(await client.getConfig());
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
+  }
+});
 
 interface PostConnectRequest extends RequestGenericInterface {
   Body: Partial<ConnectOptions>;
 }
 
 app.post<PostConnectRequest>(
-  swagger.routes.post.connect.url,
-  swagger.routes.post.connect.opts,
+  Routes.post.connect.url,
+  Routes.post.connect.opts,
   async (req, res) => {
     try {
       if (!client.mnemonic) {
@@ -251,8 +239,8 @@ interface PostMnemonicRequest extends RequestGenericInterface {
 }
 
 app.post<PostMnemonicRequest>(
-  swagger.routes.post.mnemonic.url,
-  swagger.routes.post.mnemonic.opts,
+  Routes.post.mnemonic.url,
+  Routes.post.mnemonic.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "mnemonic");
@@ -270,8 +258,8 @@ interface PostTransactionRequest extends RequestGenericInterface {
 }
 
 app.post<PostTransactionRequest>(
-  swagger.routes.post.onchainTransfer.url,
-  swagger.routes.post.onchainTransfer.opts,
+  Routes.post.onchainTransfer.url,
+  Routes.post.onchainTransfer.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "amount");
@@ -290,8 +278,8 @@ interface PostHashLockTransferRequest extends RequestGenericInterface {
 }
 
 app.post<PostHashLockTransferRequest>(
-  swagger.routes.post.hashLockTransfer.url,
-  swagger.routes.post.hashLockTransfer.opts,
+  Routes.post.hashLockTransfer.url,
+  Routes.post.hashLockTransfer.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "amount");
@@ -312,8 +300,8 @@ interface PostHashLockResolveRequest extends RequestGenericInterface {
 }
 
 app.post<PostHashLockResolveRequest>(
-  swagger.routes.post.hashLockResolve.url,
-  swagger.routes.post.hashLockResolve.opts,
+  Routes.post.hashLockResolve.url,
+  Routes.post.hashLockResolve.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "preImage");
@@ -331,8 +319,8 @@ interface PostLinkedTransferRequest extends RequestGenericInterface {
 }
 
 app.post<PostLinkedTransferRequest>(
-  swagger.routes.post.linkedTransfer.url,
-  swagger.routes.post.linkedTransfer.opts,
+  Routes.post.linkedTransfer.url,
+  Routes.post.linkedTransfer.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "amount");
@@ -351,8 +339,8 @@ interface PostLinkedResolveRequest extends RequestGenericInterface {
 }
 
 app.post<PostLinkedResolveRequest>(
-  swagger.routes.post.linkedResolve.url,
-  swagger.routes.post.linkedResolve.opts,
+  Routes.post.linkedResolve.url,
+  Routes.post.linkedResolve.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "preImage");
@@ -370,8 +358,8 @@ interface PostDepositRequest extends RequestGenericInterface {
 }
 
 app.post<PostDepositRequest>(
-  swagger.routes.post.deposit.url,
-  swagger.routes.post.deposit.opts,
+  Routes.post.deposit.url,
+  Routes.post.deposit.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "amount");
@@ -388,33 +376,30 @@ interface PostSwapRequest extends RequestGenericInterface {
   Body: PostSwapRequestParams;
 }
 
-app.post<PostSwapRequest>(
-  swagger.routes.post.swap.url,
-  swagger.routes.post.swap.opts,
-  async (req, res) => {
-    try {
-      await requireParam(req.body, "amount");
-      await requireParam(req.body, "fromAssetId");
-      await requireParam(req.body, "swapRate");
-      await requireParam(req.body, "toAssetId");
-      res.status(200).send<PostSwapResponse>(await client.swap(req.body));
-    } catch (error) {
-      app.log.error(error);
-      res.status(500).send<GenericErrorResponse>({ message: error.message });
-    }
-  },
-);
+app.post<PostSwapRequest>(Routes.post.swap.url, Routes.post.swap.opts, async (req, res) => {
+  try {
+    await requireParam(req.body, "amount");
+    await requireParam(req.body, "fromAssetId");
+    await requireParam(req.body, "swapRate");
+    await requireParam(req.body, "toAssetId");
+    res.status(200).send<PostSwapResponse>(await client.swap(req.body));
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
+  }
+});
 
 interface PostWithdrawRequest extends RequestGenericInterface {
   Body: PostWithdrawRequestParams;
 }
 
 app.post<PostWithdrawRequest>(
-  swagger.routes.post.withdraw.url,
-  swagger.routes.post.withdraw.opts,
+  Routes.post.withdraw.url,
+  Routes.post.withdraw.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "amount");
+      await requireParam(req.body, "assetId");
       res.status(200).send<PostWithdrawResponse>(await client.withdraw(req.body));
     } catch (error) {
       app.log.error(error);
@@ -428,8 +413,8 @@ interface PostSubscribeRequest extends RequestGenericInterface {
 }
 
 app.post<PostSubscribeRequest>(
-  swagger.routes.post.subscribe.url,
-  swagger.routes.post.subscribe.opts,
+  Routes.post.subscribe.url,
+  Routes.post.subscribe.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "event");
@@ -449,8 +434,8 @@ interface PostBatchSubscribeRequest extends RequestGenericInterface {
 }
 
 app.post<PostBatchSubscribeRequest>(
-  swagger.routes.post.batchSubscribe.url,
-  swagger.routes.post.batchSubscribe.opts,
+  Routes.post.batchSubscribe.url,
+  Routes.post.batchSubscribe.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "params", "array");
@@ -471,8 +456,8 @@ interface DeleteSubscribeRequest extends RequestGenericInterface {
 }
 
 app.delete<DeleteSubscribeRequest>(
-  swagger.routes.delete.subscribe.url,
-  swagger.routes.delete.subscribe.opts,
+  Routes.delete.subscribe.url,
+  Routes.delete.subscribe.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "id");
@@ -491,8 +476,8 @@ interface DeleteBatchSubscribeRequest extends RequestGenericInterface {
 }
 
 app.delete<DeleteBatchSubscribeRequest>(
-  swagger.routes.delete.batchSubscribe.url,
-  swagger.routes.delete.batchSubscribe.opts,
+  Routes.delete.batchSubscribe.url,
+  Routes.delete.batchSubscribe.opts,
   async (req, res) => {
     try {
       await requireParam(req.body, "ids", "array");
@@ -504,18 +489,14 @@ app.delete<DeleteBatchSubscribeRequest>(
   },
 );
 
-app.delete(
-  swagger.routes.delete.subscribeAll.url,
-  swagger.routes.delete.subscribeAll.opts,
-  async (req, res) => {
-    try {
-      res.status(200).send<GenericSuccessResponse>(await client.unsubscribeAll());
-    } catch (error) {
-      app.log.error(error);
-      res.status(500).send<GenericErrorResponse>({ message: error.message });
-    }
-  },
-);
+app.delete(Routes.delete.subscribeAll.url, Routes.delete.subscribeAll.opts, async (req, res) => {
+  try {
+    res.status(200).send<GenericSuccessResponse>(await client.unsubscribeAll());
+  } catch (error) {
+    app.log.error(error);
+    res.status(500).send<GenericErrorResponse>({ message: error.message });
+  }
+});
 
 // -- INIT ---------------------------------------------------------------- //
 
