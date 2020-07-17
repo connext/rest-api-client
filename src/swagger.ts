@@ -61,14 +61,6 @@ const swagger: SwaggerDefinition = {
                   },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -93,14 +85,6 @@ const swagger: SwaggerDefinition = {
                   freeBalanceOnChain: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -120,14 +104,6 @@ const swagger: SwaggerDefinition = {
                 type: "object",
                 properties: {
                   hello: { type: "string" },
-                },
-              },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
                 },
               },
             },
@@ -162,14 +138,6 @@ const swagger: SwaggerDefinition = {
                   hello: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -197,14 +165,6 @@ const swagger: SwaggerDefinition = {
                 type: "object",
                 properties: {
                   hello: { type: "string" },
-                },
-              },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
                 },
               },
             },
@@ -236,14 +196,6 @@ const swagger: SwaggerDefinition = {
                   hello: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -263,14 +215,6 @@ const swagger: SwaggerDefinition = {
                 type: "object",
                 properties: {
                   hello: { type: "string" },
-                },
-              },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
                 },
               },
             },
@@ -296,14 +240,6 @@ const swagger: SwaggerDefinition = {
                   hello: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -323,14 +259,6 @@ const swagger: SwaggerDefinition = {
                 type: "object",
                 properties: {
                   hello: { type: "string" },
-                },
-              },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
                 },
               },
             },
@@ -354,14 +282,6 @@ const swagger: SwaggerDefinition = {
                   hello: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -381,14 +301,6 @@ const swagger: SwaggerDefinition = {
                 type: "object",
                 properties: {
                   hello: { type: "string" },
-                },
-              },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
                 },
               },
             },
@@ -412,14 +324,6 @@ const swagger: SwaggerDefinition = {
                   hello: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -439,14 +343,6 @@ const swagger: SwaggerDefinition = {
                 type: "object",
                 properties: {
                   hello: { type: "string" },
-                },
-              },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
                 },
               },
             },
@@ -470,14 +366,6 @@ const swagger: SwaggerDefinition = {
                   hello: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -497,14 +385,6 @@ const swagger: SwaggerDefinition = {
                 type: "object",
                 properties: {
                   hello: { type: "string" },
-                },
-              },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
                 },
               },
             },
@@ -528,14 +408,6 @@ const swagger: SwaggerDefinition = {
                   hello: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -555,14 +427,6 @@ const swagger: SwaggerDefinition = {
                 type: "object",
                 properties: {
                   hello: { type: "string" },
-                },
-              },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
                 },
               },
             },
@@ -586,14 +450,6 @@ const swagger: SwaggerDefinition = {
                   hello: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -615,14 +471,6 @@ const swagger: SwaggerDefinition = {
                   hello: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -642,14 +490,6 @@ const swagger: SwaggerDefinition = {
                 type: "object",
                 properties: {
                   hello: { type: "string" },
-                },
-              },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
                 },
               },
             },
@@ -675,14 +515,6 @@ const swagger: SwaggerDefinition = {
                   hello: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -704,14 +536,6 @@ const swagger: SwaggerDefinition = {
                   hello: { type: "string" },
                 },
               },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
-                },
-              },
             },
           },
         },
@@ -731,14 +555,6 @@ const swagger: SwaggerDefinition = {
                 type: "object",
                 properties: {
                   hello: { type: "string" },
-                },
-              },
-              500: {
-                type: "object",
-                properties: {
-                  message: {
-                    type: "string",
-                  },
                 },
               },
             },
