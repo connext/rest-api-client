@@ -1,4 +1,4 @@
-import { RouteShorthandOptions } from "fastify";
+import { RouteShorthandOptions, FastifySchema } from "fastify";
 import * as SwaggerSchema from "swagger-schema-official";
 
 import {

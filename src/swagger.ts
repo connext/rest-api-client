@@ -20,8 +20,6 @@ const swagger: SwaggerDefinition = {
       consumes: ["application/json"],
       produces: ["application/json"],
       // tags: [
-      //   { name: "assetId", description: "Asset Id" },
-      //   { name: "lockHash", description: "Lock Hash" },
       // ],
     },
     exposeRoute: true,
@@ -32,11 +30,8 @@ const swagger: SwaggerDefinition = {
         url: "/health",
         opts: {
           schema: {
-            // description: "Get 204 health response",
             response: {
-              204: {
-                // description: "Successful response",
-              },
+              204: {},
             },
           },
         },
@@ -45,10 +40,8 @@ const swagger: SwaggerDefinition = {
         url: "/hello",
         opts: {
           schema: {
-            // description: "Hello world test endpoint",
             response: {
               200: {
-                // description: "Successful response",
                 type: "string",
               },
             },
@@ -59,14 +52,20 @@ const swagger: SwaggerDefinition = {
         url: "/version",
         opts: {
           schema: {
-            // description: "Get client version number",
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
-                  id: {
-                    version: "string",
+                  version: {
+                    type: "string",
+                  },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
                   },
                 },
               },
@@ -78,23 +77,28 @@ const swagger: SwaggerDefinition = {
         url: "/balance/:assetId",
         opts: {
           schema: {
-            // description: "Get balances for specific asset",
             params: {
               type: "object",
               properties: {
                 assetId: {
                   type: "string",
-                  // description: "Asset Identifier",
                 },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   freeBalanceOffChain: { type: "string" },
                   freeBalanceOnChain: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -105,34 +109,25 @@ const swagger: SwaggerDefinition = {
         url: "/config",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -143,13 +138,14 @@ const swagger: SwaggerDefinition = {
         url: "/hashlock-status/:lockHash/:assetId",
         opts: {
           schema: {
-            // description: "post some data",
             params: {
               type: "object",
               properties: {
-                id: {
+                lockHash: {
                   type: "string",
-                  // description: "user id",
+                },
+                assetId: {
+                  type: "string",
                 },
               },
             },
@@ -157,20 +153,21 @@ const swagger: SwaggerDefinition = {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -181,13 +178,11 @@ const swagger: SwaggerDefinition = {
         url: "/linked-status/:paymentId",
         opts: {
           schema: {
-            // description: "post some data",
             params: {
               type: "object",
               properties: {
-                id: {
+                paymentId: {
                   type: "string",
-                  // description: "user id",
                 },
               },
             },
@@ -195,20 +190,21 @@ const swagger: SwaggerDefinition = {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -219,13 +215,11 @@ const swagger: SwaggerDefinition = {
         url: "/appinstance-details/:appIdentityHash",
         opts: {
           schema: {
-            // description: "post some data",
             params: {
               type: "object",
               properties: {
-                id: {
+                appIdentityHash: {
                   type: "string",
-                  // description: "user id",
                 },
               },
             },
@@ -233,20 +227,21 @@ const swagger: SwaggerDefinition = {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -257,34 +252,25 @@ const swagger: SwaggerDefinition = {
         url: "/transfer-history",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -297,34 +283,25 @@ const swagger: SwaggerDefinition = {
         url: "/create",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -335,34 +312,25 @@ const swagger: SwaggerDefinition = {
         url: "/connect",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -373,34 +341,25 @@ const swagger: SwaggerDefinition = {
         url: "/mnemonic",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -411,34 +370,25 @@ const swagger: SwaggerDefinition = {
         url: "/onchain-transfer",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -449,34 +399,25 @@ const swagger: SwaggerDefinition = {
         url: "/hashlock-transfer",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -487,34 +428,25 @@ const swagger: SwaggerDefinition = {
         url: "/hashlock-resolve",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -525,34 +457,25 @@ const swagger: SwaggerDefinition = {
         url: "/linked-transfer",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -563,34 +486,25 @@ const swagger: SwaggerDefinition = {
         url: "/linked-resolve",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -601,34 +515,25 @@ const swagger: SwaggerDefinition = {
         url: "/deposit",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -639,34 +544,25 @@ const swagger: SwaggerDefinition = {
         url: "/swap",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -677,34 +573,25 @@ const swagger: SwaggerDefinition = {
         url: "/withdraw",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -715,34 +602,25 @@ const swagger: SwaggerDefinition = {
         url: "/subscribe",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -753,34 +631,25 @@ const swagger: SwaggerDefinition = {
         url: "/subscribe/batch",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -793,34 +662,25 @@ const swagger: SwaggerDefinition = {
         url: "/subscribe",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -831,34 +691,25 @@ const swagger: SwaggerDefinition = {
         url: "/subscribe/batch",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
@@ -869,34 +720,25 @@ const swagger: SwaggerDefinition = {
         url: "/subscribe/all",
         opts: {
           schema: {
-            // description: "post some data",
-            params: {
-              type: "object",
-              properties: {
-                id: {
-                  type: "string",
-                  // description: "user id",
-                },
-              },
-            },
             body: {
               type: "object",
               properties: {
                 hello: { type: "string" },
-                obj: {
-                  type: "object",
-                  properties: {
-                    some: { type: "string" },
-                  },
-                },
               },
             },
             response: {
               200: {
-                // description: "Successful response",
                 type: "object",
                 properties: {
                   hello: { type: "string" },
+                },
+              },
+              500: {
+                type: "object",
+                properties: {
+                  message: {
+                    type: "string",
+                  },
                 },
               },
             },
