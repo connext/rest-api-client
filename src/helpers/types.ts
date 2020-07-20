@@ -92,7 +92,7 @@ export interface PostTransactionResponse {
 }
 
 export type PostWithdrawRequestParams = PublicParams.Withdraw;
-export type PostWithdrawResponse = PublicResults.Withdraw;
+export type PostWithdrawResponse = { txhash: string };
 
 export type PostSwapRequestParams = PublicParams.Swap;
 export type PostSwapResponse = { fromAssetIdBalance: string; toAssetIdBalance: string };
