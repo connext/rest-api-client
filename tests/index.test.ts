@@ -38,6 +38,7 @@ describe("Server", () => {
       const res = await app.inject({
         method: "POST",
         url: "/create",
+        payload: {},
       });
       const json = safeJsonParse(res.body);
       expect(res.statusCode).to.equal(200);

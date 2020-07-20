@@ -22,7 +22,7 @@
     "start": "npm run build && npm run prod",
     "lint": "eslint -c './.eslintrc' --fix './src/**/*.ts'",
     "start:dev": "ts-node src/index.ts --watch",
-    "test": "mocha --timeout 10000 --require ts-node/register 'tests/**/*.test.ts'"
+    "test": "mocha --timeout 20000 --require ts-node/register 'tests/**/*.test.ts'"
   },
   "dependencies": {
     "@connext/client": "7.0.0-alpha.19",
