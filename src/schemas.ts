@@ -1,4 +1,5 @@
 import pkg from "../package.json";
+import config from "./config";
 
 export const swaggerOptions = {
   urlPrefix: "/documentation",
@@ -12,7 +13,7 @@ export const swaggerOptions = {
       url: "https://docs.connext.network/",
       description: "Find more documentation here",
     },
-    host: "localhost",
+    host: config.docsHost,
     schemes: ["http"],
     consumes: ["application/json"],
     produces: ["application/json"],
