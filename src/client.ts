@@ -49,7 +49,7 @@ import {
 } from "./helpers";
 import Subscriber from "./subscriber";
 
-const { AddressZero } = constants;
+const { AddressZero, HashZero } = constants;
 
 export default class Client {
   public static async init(logger: any) {
@@ -175,8 +175,9 @@ export default class Client {
     const client = this.getClient();
     const response = await client.resolveCondition({
       conditionType: ConditionalTransferTypes.HashLockTransfer,
-      preImage: params.preImage,
+      preImage: params.preImage || HashZero,
       assetId: params.assetId,
+      paymentId: params.paymentId,
     } as PublicParams.ResolveHashLockTransfer);
     return response;
   }
