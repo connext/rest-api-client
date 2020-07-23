@@ -1,7 +1,6 @@
-import { getFileStore } from "@connext/store";
+import { IStoreService } from "@connext/types";
 
 import Client from "./client";
-import config from "./config";
 import {
   ConnectOptions,
   fetchAll,
@@ -15,22 +14,21 @@ export interface ClientSettings extends PersistedClientSettings {
 }
 
 class MultiClient {
-  static store = getFileStore(config.storeDir);
-
-  static async init(logger: any): Promise<MultiClient> {
-    const persisted = await fetchAll(this.store);
+  static async init(logger: any, store: IStoreService): Promise<MultiClient> {
+    const persisted = await fetchAll(store);
     const mnemonic = persisted.mnemonic || getRandomMnemonic();
-    await storeMnemonic(mnemonic, this.store);
-    const multiClient = new MultiClient(mnemonic, logger);
+    await storeMnemonic(mnemonic, store);
+    const multiClient = new MultiClient(mnemonic, logger, store);
     return multiClient;
   }
 
   public clients: ClientSettings[] = [];
   public pending: number[] = [];
 
-  constructor(public mnemonic: string, public logger: any) {
+  constructor(public mnemonic: string, public logger: any, public store: IStoreService) {
     this.mnemonic = mnemonic;
     this.logger = logger;
+    this.store = store;
   }
 
   public async connectClient(opts?: Partial<ConnectOptions>): Promise<Client> {
@@ -41,7 +39,7 @@ class MultiClient {
     const client = new Client({
       mnemonic,
       logger: this.logger,
-      store: MultiClient.store,
+      store: this.store,
     });
     opts = { ...opts, index };
     await client.connect(opts);
@@ -64,7 +62,7 @@ class MultiClient {
 
   public async setMnemonic(mnemonic: string) {
     this.mnemonic = mnemonic;
-    await storeMnemonic(this.mnemonic, MultiClient.store);
+    await storeMnemonic(this.mnemonic, this.store);
   }
 
   // -- Private ---------------------------------------------------------------- //

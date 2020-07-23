@@ -1,27 +1,26 @@
-import pkg from "../package.json";
-import config from "./config";
-
-export const swaggerOptions = {
-  urlPrefix: "/documentation",
-  swagger: {
-    info: {
-      title: "Connext Rest API Client",
-      description: "testing the fastify swagger api",
-      version: pkg.version,
+export function getSwaggerOptions(docsHost: string, version: string) {
+  return {
+    urlPrefix: "/documentation",
+    swagger: {
+      info: {
+        title: "Connext Rest API Client",
+        description: "testing the fastify swagger api",
+        version: version,
+      },
+      externalDocs: {
+        url: "https://docs.connext.network/",
+        description: "Find more documentation here",
+      },
+      host: docsHost,
+      schemes: ["http"],
+      consumes: ["application/json"],
+      produces: ["application/json"],
+      // tags: [
+      // ],
     },
-    externalDocs: {
-      url: "https://docs.connext.network/",
-      description: "Find more documentation here",
-    },
-    host: config.docsHost,
-    schemes: ["http"],
-    consumes: ["application/json"],
-    produces: ["application/json"],
-    // tags: [
-    // ],
-  },
-  exposeRoute: true,
-};
+    exposeRoute: true,
+  };
+}
 
 export const ChannelConfigResponseSchema = {
   type: "object",

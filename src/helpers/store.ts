@@ -1,6 +1,14 @@
+import { IStoreService } from "@connext/types";
+import { getFileStore } from "@connext/store";
+
 import { CONNEXT_MNEMONIC_KEY, CONNEXT_CLIENTS_KEY, CONNEXT_SUBSCRIPTIONS_KEY } from "./constants";
 import { EventSubscription, ConnectOptions, PersistedData } from "./types";
-import { IStoreService } from "@connext/types";
+
+export async function getStore(storeDir: string) {
+  const store = getFileStore(storeDir);
+  await store.init();
+  return store;
+}
 
 export function storeMnemonic(mnemonic: string, store: IStoreService): Promise<void> {
   return (store as any).setItem(CONNEXT_MNEMONIC_KEY, mnemonic);

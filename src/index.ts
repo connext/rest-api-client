@@ -1,9 +1,7 @@
 import fastify, { RequestGenericInterface } from "fastify";
 
-import pkg from "../package.json";
-
 import config from "./config";
-import { swaggerOptions, Routes } from "./schemas";
+import { getSwaggerOptions, Routes } from "./schemas";
 import MultiClient from "./multiClient";
 import {
   requireParam,
@@ -44,6 +42,7 @@ import {
   PostSwapResponse,
   PostSubscribeRequestParams,
   GetConfigRequestParams,
+  getStore,
 } from "./helpers";
 
 const app = fastify({
@@ -54,10 +53,11 @@ const app = fastify({
 let multiClient: MultiClient;
 
 app.register(require("fastify-helmet"));
-app.register(require("fastify-swagger"), swaggerOptions as any);
+app.register(require("fastify-swagger"), getSwaggerOptions(config.docsHost, config.version) as any);
 
 app.addHook("onReady", async () => {
-  multiClient = await MultiClient.init(app.log);
+  const store = await getStore(config.storeDir);
+  multiClient = await MultiClient.init(app.log, store);
 });
 
 const loggingBlacklist = ["/balance"];
@@ -92,7 +92,7 @@ app.get(Routes.get.hello.url, Routes.get.hello.opts, (req, res) => {
 
 app.get(Routes.get.version.url, Routes.get.version.opts, (req, res) => {
   try {
-    res.status(200).send<GetVersionResponse>({ version: pkg.version });
+    res.status(200).send<GetVersionResponse>({ version: config.version });
   } catch (error) {
     app.log.error(error);
     res.status(500).send<GenericErrorResponse>({ message: error.message });
