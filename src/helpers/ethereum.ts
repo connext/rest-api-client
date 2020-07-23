@@ -3,6 +3,12 @@ import { IConnextClient } from "@connext/types";
 import { ERC20 } from "@connext/contracts";
 import { Wallet, Contract, providers, constants } from "ethers";
 
+export const ETH_STANDARD_PATH = "m/44'/60'/0'/0";
+
+export function getPath(index = 0) {
+  return `${ETH_STANDARD_PATH}/${index}`;
+}
+
 export function getRandomMnemonic(): string {
   return Wallet.createRandom().mnemonic.phrase;
 }

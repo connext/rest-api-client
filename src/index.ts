@@ -4,11 +4,10 @@ import pkg from "../package.json";
 
 import config from "./config";
 import { swaggerOptions, Routes } from "./schemas";
-import Client from "./client";
+import MultiClient from "./multiClient";
 import {
   requireParam,
   isNotIncluded,
-  getRandomMnemonic,
   ConnectOptions,
   GenericErrorResponse,
   GetBalanceResponse,
@@ -35,13 +34,16 @@ import {
   BatchSubscriptionResponse,
   GetLinkedStatusRequestParams,
   GetLinkedStatusResponse,
-  GetTransferHistory,
+  GetTransferHistoryRequestParams,
+  GetTransferHistoryResponse,
   PostLinkedTransferRequestParams,
   PostLinkedTransferResponse,
   PostLinkedResolveRequestParams,
   PostLinkedResolveResponse,
   PostSwapRequestParams,
   PostSwapResponse,
+  PostSubscribeRequestParams,
+  GetConfigRequestParams,
 } from "./helpers";
 
 const app = fastify({
@@ -49,13 +51,13 @@ const app = fastify({
   disableRequestLogging: true,
 });
 
-let client: Client;
+let multiClient: MultiClient;
 
 app.register(require("fastify-helmet"));
 app.register(require("fastify-swagger"), swaggerOptions as any);
 
 app.addHook("onReady", async () => {
-  client = await Client.init(app.log);
+  multiClient = await MultiClient.init(app.log);
 });
 
 const loggingBlacklist = ["/balance"];
@@ -104,6 +106,10 @@ interface GetBalanceRequest extends RequestGenericInterface {
 app.get<GetBalanceRequest>(Routes.get.balance.url, Routes.get.balance.opts, async (req, res) => {
   try {
     await requireParam(req.params, "assetId");
+    if (!config.singleClient) {
+      await requireParam(req.body, "publicIdentifier");
+    }
+    const client = multiClient.getClient(req.params.publicIdentifier);
     res.status(200).send<GetBalanceResponse>(await client.balance(req.params.assetId));
   } catch (error) {
     app.log.error(error);
@@ -111,8 +117,16 @@ app.get<GetBalanceRequest>(Routes.get.balance.url, Routes.get.balance.opts, asyn
   }
 });
 
-app.get(Routes.get.config.url, Routes.get.config.opts, async (req, res) => {
+interface GetConfigRequest extends RequestGenericInterface {
+  Params: GetConfigRequestParams;
+}
+
+app.get<GetConfigRequest>(Routes.get.config.url, Routes.get.config.opts, async (req, res) => {
   try {
+    if (!config.singleClient) {
+      await requireParam(req.body, "publicIdentifier");
+    }
+    const client = multiClient.getClient(req.params.publicIdentifier);
     res.status(200).send<GetConfigResponse>(await client.getConfig());
   } catch (error) {
     app.log.error(error);
@@ -132,6 +146,10 @@ app.get<GetHashLockStatusRequest>(
       await requireParam(req.params, "lockHash");
       await requireParam(req.params, "assetId");
       const { lockHash, assetId } = req.params;
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.params.publicIdentifier);
       res
         .status(200)
         .send<GetHashLockStatusResponse>(await client.hashLockStatus(lockHash, assetId));
@@ -153,6 +171,10 @@ app.get<GetLinkedStatusRequest>(
     try {
       await requireParam(req.params, "paymentId");
       const { paymentId } = req.params;
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.params.publicIdentifier);
       res.status(200).send<GetLinkedStatusResponse>(await client.linkedStatus(paymentId));
     } catch (error) {
       app.log.error(error);
@@ -171,6 +193,10 @@ app.get<GetAppInstanceDetailsRequest>(
   async (req, res) => {
     try {
       await requireParam(req.params, "appIdentityHash");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.params.publicIdentifier);
       res
         .status(200)
         .send<GetAppInstanceDetailsResponse>(
@@ -183,34 +209,28 @@ app.get<GetAppInstanceDetailsRequest>(
   },
 );
 
-app.get(Routes.get.transferHistory.url, Routes.get.transferHistory.opts, async (req, res) => {
-  try {
-    res.status(200).send<GetTransferHistory>(await client.getTransferHistory());
-  } catch (error) {
-    app.log.error(error);
-    res.status(500).send<GenericErrorResponse>({ message: error.message });
-  }
-});
-
-// -- POST ---------------------------------------------------------------- //
-
-interface PostCreateRequest extends RequestGenericInterface {
-  Body: Partial<ConnectOptions>;
+interface GetTransferHistoryRequest extends RequestGenericInterface {
+  Params: GetTransferHistoryRequestParams;
 }
 
-app.post<PostCreateRequest>(Routes.post.create.url, Routes.post.create.opts, async (req, res) => {
-  try {
-    const opts = { ...req.body };
-    if (!client.mnemonic && !opts.mnemonic) {
-      opts.mnemonic = getRandomMnemonic();
+app.get<GetTransferHistoryRequest>(
+  Routes.get.transferHistory.url,
+  Routes.get.transferHistory.opts,
+  async (req, res) => {
+    try {
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.params.publicIdentifier);
+      res.status(200).send<GetTransferHistoryResponse>(await client.getTransferHistory());
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
     }
-    await client.connect(opts);
-    res.status(200).send<GetConfigResponse>(await client.getConfig());
-  } catch (error) {
-    app.log.error(error);
-    res.status(500).send<GenericErrorResponse>({ message: error.message });
-  }
-});
+  },
+);
+
+// -- POST ---------------------------------------------------------------- //
 
 interface PostConnectRequest extends RequestGenericInterface {
   Body: Partial<ConnectOptions>;
@@ -221,10 +241,7 @@ app.post<PostConnectRequest>(
   Routes.post.connect.opts,
   async (req, res) => {
     try {
-      if (!client.mnemonic) {
-        await requireParam(req.body, "mnemonic");
-      }
-      await client.connect(req.body);
+      const client = await multiClient.connectClient(req.body);
       const config = await client.getConfig();
       res.status(200).send<GetConfigResponse>(config);
     } catch (error) {
@@ -244,7 +261,7 @@ app.post<PostMnemonicRequest>(
   async (req, res) => {
     try {
       await requireParam(req.body, "mnemonic");
-      await client.setMnemonic(req.body.mnemonic);
+      await multiClient.setMnemonic(req.body.mnemonic);
       res.status(200).send<GenericSuccessResponse>({ success: true });
     } catch (error) {
       app.log.error(error);
@@ -265,6 +282,10 @@ app.post<PostTransactionRequest>(
       await requireParam(req.body, "amount");
       await requireParam(req.body, "assetId");
       await requireParam(req.body, "recipient");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<PostTransactionResponse>(await client.transferOnChain(req.body));
     } catch (error) {
       app.log.error(error);
@@ -287,6 +308,10 @@ app.post<PostHashLockTransferRequest>(
       await requireParam(req.body, "lockHash");
       await requireParam(req.body, "timelock");
       await requireParam(req.body, "recipient");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<PostHashLockTransferResponse>(await client.hashLockTransfer(req.body));
     } catch (error) {
       app.log.error(error);
@@ -306,6 +331,10 @@ app.post<PostHashLockResolveRequest>(
     try {
       await requireParam(req.body, "preImage");
       await requireParam(req.body, "assetId");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<PostHashLockResolveResponse>(await client.hashLockResolve(req.body));
     } catch (error) {
       app.log.error(error);
@@ -326,6 +355,10 @@ app.post<PostLinkedTransferRequest>(
       await requireParam(req.body, "amount");
       await requireParam(req.body, "assetId");
       await requireParam(req.body, "preImage");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<PostLinkedTransferResponse>(await client.linkedTransfer(req.body));
     } catch (error) {
       app.log.error(error);
@@ -345,6 +378,10 @@ app.post<PostLinkedResolveRequest>(
     try {
       await requireParam(req.body, "preImage");
       await requireParam(req.body, "paymentId");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<PostLinkedResolveResponse>(await client.linkedResolve(req.body));
     } catch (error) {
       app.log.error(error);
@@ -364,6 +401,10 @@ app.post<PostDepositRequest>(
     try {
       await requireParam(req.body, "amount");
       await requireParam(req.body, "assetId");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<GetBalanceResponse>(await client.deposit(req.body));
     } catch (error) {
       app.log.error(error);
@@ -382,6 +423,10 @@ app.post<PostSwapRequest>(Routes.post.swap.url, Routes.post.swap.opts, async (re
     await requireParam(req.body, "fromAssetId");
     await requireParam(req.body, "swapRate");
     await requireParam(req.body, "toAssetId");
+    if (!config.singleClient) {
+      await requireParam(req.body, "publicIdentifier");
+    }
+    const client = multiClient.getClient(req.body.publicIdentifier);
     res.status(200).send<PostSwapResponse>(await client.swap(req.body));
   } catch (error) {
     app.log.error(error);
@@ -400,6 +445,10 @@ app.post<PostWithdrawRequest>(
     try {
       await requireParam(req.body, "amount");
       await requireParam(req.body, "assetId");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<PostWithdrawResponse>(await client.withdraw(req.body));
     } catch (error) {
       app.log.error(error);
@@ -409,7 +458,7 @@ app.post<PostWithdrawRequest>(
 );
 
 interface PostSubscribeRequest extends RequestGenericInterface {
-  Body: EventSubscriptionParams;
+  Body: PostSubscribeRequestParams;
 }
 
 app.post<PostSubscribeRequest>(
@@ -419,6 +468,10 @@ app.post<PostSubscribeRequest>(
     try {
       await requireParam(req.body, "event");
       await requireParam(req.body, "webhook");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<SubscriptionResponse>(await client.subscribe(req.body));
     } catch (error) {
       app.log.error(error);
@@ -429,6 +482,7 @@ app.post<PostSubscribeRequest>(
 
 interface PostBatchSubscribeRequest extends RequestGenericInterface {
   Body: {
+    publicIdentifier?: string;
     params: EventSubscriptionParams[];
   };
 }
@@ -439,6 +493,10 @@ app.post<PostBatchSubscribeRequest>(
   async (req, res) => {
     try {
       await requireParam(req.body, "params", "array");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<BatchSubscriptionResponse>(await client.subscribeBatch(req.body.params));
     } catch (error) {
       app.log.error(error);
@@ -451,6 +509,7 @@ app.post<PostBatchSubscribeRequest>(
 
 interface DeleteSubscribeRequest extends RequestGenericInterface {
   Body: {
+    publicIdentifier?: string;
     id: string;
   };
 }
@@ -461,6 +520,10 @@ app.delete<DeleteSubscribeRequest>(
   async (req, res) => {
     try {
       await requireParam(req.body, "id");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<GenericSuccessResponse>(await client.unsubscribe(req.body.id));
     } catch (error) {
       app.log.error(error);
@@ -471,6 +534,7 @@ app.delete<DeleteSubscribeRequest>(
 
 interface DeleteBatchSubscribeRequest extends RequestGenericInterface {
   Body: {
+    publicIdentifier?: string;
     ids: string[];
   };
 }
@@ -481,6 +545,10 @@ app.delete<DeleteBatchSubscribeRequest>(
   async (req, res) => {
     try {
       await requireParam(req.body, "ids", "array");
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<GenericSuccessResponse>(await client.unsubscribeBatch(req.body.ids));
     } catch (error) {
       app.log.error(error);
@@ -489,14 +557,28 @@ app.delete<DeleteBatchSubscribeRequest>(
   },
 );
 
-app.delete(Routes.delete.subscribeAll.url, Routes.delete.subscribeAll.opts, async (req, res) => {
-  try {
-    res.status(200).send<GenericSuccessResponse>(await client.unsubscribeAll());
-  } catch (error) {
-    app.log.error(error);
-    res.status(500).send<GenericErrorResponse>({ message: error.message });
-  }
-});
+interface DeleteSubscribeAllRequest extends RequestGenericInterface {
+  Body: {
+    publicIdentifier?: string;
+  };
+}
+
+app.delete<DeleteSubscribeAllRequest>(
+  Routes.delete.subscribeAll.url,
+  Routes.delete.subscribeAll.opts,
+  async (req, res) => {
+    try {
+      if (!config.singleClient) {
+        await requireParam(req.body, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.body.publicIdentifier);
+      res.status(200).send<GenericSuccessResponse>(await client.unsubscribeAll());
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
+    }
+  },
+);
 
 // -- INIT ---------------------------------------------------------------- //
 

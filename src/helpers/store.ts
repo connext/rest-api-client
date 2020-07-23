@@ -1,8 +1,4 @@
-import {
-  CONNEXT_MNEMONIC_KEY,
-  CONNEXT_INIT_OPTIONS_KEY,
-  CONNEXT_SUBSCRIPTIONS_KEY,
-} from "./constants";
+import { CONNEXT_MNEMONIC_KEY, CONNEXT_CLIENTS_KEY, CONNEXT_SUBSCRIPTIONS_KEY } from "./constants";
 import { EventSubscription, ConnectOptions, PersistedData } from "./types";
 import { IStoreService } from "@connext/types";
 
@@ -27,26 +23,26 @@ export async function fetchSubscriptions(
   return (store as any).getItem(CONNEXT_SUBSCRIPTIONS_KEY);
 }
 
-export async function storeInitOptions(
+export async function storeIntiatedClients(
   initOptions: Partial<ConnectOptions>,
   store: IStoreService,
 ): Promise<void> {
-  return (store as any).setItem(CONNEXT_INIT_OPTIONS_KEY, initOptions);
+  return (store as any).setItem(CONNEXT_CLIENTS_KEY, initOptions);
 }
 
-export async function fetchInitOptions(
+export async function fetchInitiatedClients(
   store: IStoreService,
 ): Promise<Partial<ConnectOptions> | undefined> {
-  return (store as any).getItem(CONNEXT_INIT_OPTIONS_KEY);
+  return (store as any).getItem(CONNEXT_CLIENTS_KEY);
 }
 
 export async function fetchAll(store: IStoreService): Promise<PersistedData> {
   const mnemonic = await fetchMnemonic(store);
   const subscriptions = await fetchSubscriptions(store);
-  const initOptions = await fetchInitOptions(store);
+  const initiatedClients = await fetchInitiatedClients(store);
   return {
     mnemonic,
     subscriptions,
-    initOptions,
+    initiatedClients,
   };
 }

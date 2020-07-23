@@ -278,31 +278,6 @@ export const Routes = {
     },
   },
   post: {
-    create: {
-      url: "/create",
-      description: "Create random mnemonic and connect client's channel",
-      opts: {
-        schema: {
-          body: {
-            type: "object",
-            properties: {
-              mnemonic: { type: "string", nullable: true },
-              network: { type: "string", nullable: true },
-              nodeUrl: { type: "string", nullable: true },
-              ethProviderUrl: { type: "string", nullable: true },
-              messagingUrl: { type: "string", nullable: true },
-              logLevel: { type: "number", nullable: true },
-              skipSync: { type: "boolean", nullable: true },
-              skipInitStore: { type: "boolean", nullable: true },
-            },
-          },
-          response: {
-            200: ChannelConfigResponseSchema,
-            500: GenericErrorResponseSchema,
-          },
-        },
-      },
-    },
     connect: {
       url: "/connect",
       description: "Connect client channel for provided or persisted mnemonic",

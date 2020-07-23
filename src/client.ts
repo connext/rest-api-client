@@ -1,5 +1,3 @@
-import { getFileStore } from "@connext/store";
-
 import * as connext from "@connext/client";
 import {
   IConnextClient,
@@ -13,13 +11,11 @@ import config from "./config";
 
 import {
   storeMnemonic,
-  storeInitOptions,
   getClientBalance,
   getFreeBalanceOnChain,
   EventSubscriptionParams,
   InitClientManagerOptions,
   ConnectOptions,
-  EventSubscription,
   transferOnChain,
   GetBalanceResponse,
   PostTransactionResponse,
@@ -44,31 +40,21 @@ import {
   GetLinkedStatusResponse,
   PostLinkedResolveRequestParams,
   PostLinkedResolveResponse,
-  GetTransferHistory,
-  fetchAll,
+  GetTransferHistoryResponse,
+  getPath,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
 const { AddressZero } = constants;
 
 export default class Client {
-  public static async init(logger: any) {
-    const store = getFileStore(config.storeDir);
-    await store.init();
-    const { mnemonic, initOptions } = await fetchAll(store);
-    const client = new Client({ mnemonic, logger, store });
-    if (initOptions && Object.keys(initOptions).length) {
-      await client.connect(initOptions);
-    }
-    return client;
-  }
-
   private _client: IConnextClient | undefined;
   private _logger: any;
-  private _mnemonic: string | undefined;
+  private _mnemonic: string;
   private _subscriber: Subscriber;
   private _store: IStoreService;
   private _initializing = false;
+  private _index = 0;
 
   constructor(opts: InitClientManagerOptions) {
     this._logger = opts.logger;
@@ -77,16 +63,13 @@ export default class Client {
     this._store = opts.store;
   }
 
-  get mnemonic(): string {
-    return this._mnemonic || config.mnemonic;
-  }
-
-  set mnemonic(value: string) {
-    this._mnemonic = value;
+  get client(): IConnextClient | undefined {
+    return this._client;
   }
 
   public async connect(opts?: Partial<ConnectOptions>): Promise<IConnextClient> {
-    const mnemonic = opts?.mnemonic || this.mnemonic;
+    const mnemonic = opts?.mnemonic || this._mnemonic;
+    const index = opts?.index || this._index;
     if (!mnemonic) {
       throw new Error("Cannot init Connext client without mnemonic");
     }
@@ -106,7 +89,7 @@ export default class Client {
     const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
     const nodeUrl = opts?.nodeUrl || config.nodeUrl;
     const logLevel = opts?.logLevel || config.logLevel;
-    const signer = Wallet.fromMnemonic(mnemonic).privateKey;
+    const signer = Wallet.fromMnemonic(mnemonic, getPath(index)).privateKey;
     const clientOpts = { signer, store: this._store, ethProviderUrl, nodeUrl, logLevel };
     try {
       const client = await connext.connect(network, clientOpts);
@@ -130,7 +113,7 @@ export default class Client {
     return config;
   }
 
-  public async getTransferHistory(): Promise<GetTransferHistory> {
+  public async getTransferHistory(): Promise<GetTransferHistoryResponse> {
     const client = this.getClient();
     const transferHistory = await client.getTransferHistory();
     return transferHistory;
@@ -285,7 +268,7 @@ export default class Client {
   ): Promise<PostTransactionResponse> {
     const client = this.getClient();
     const txhash = await transferOnChain({
-      mnemonic: this.mnemonic,
+      mnemonic: this._mnemonic,
       ethProvider: client.ethProvider,
       assetId: params.assetId,
       amount: params.amount,
@@ -333,25 +316,5 @@ export default class Client {
       throw new Error("Client is not initialized");
     }
     return this._client;
-  }
-
-  private async updateClient(
-    client: IConnextClient,
-    initOpts: Partial<ConnectOptions>,
-    subscriptions?: EventSubscription[],
-  ) {
-    if (this._client) {
-      await this._subscriber.clearAllSubscriptions(this._client);
-    }
-    this._client = client;
-    await this.initSubscriptions(subscriptions);
-    await storeInitOptions(initOpts, this._store);
-  }
-
-  private async initSubscriptions(subscriptions?: EventSubscription[]) {
-    if (subscriptions && subscriptions.length) {
-      const client = this.getClient();
-      await this._subscriber.batchResubscribe(client, subscriptions);
-    }
   }
 }

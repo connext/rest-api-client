@@ -7,6 +7,8 @@ const debug = env !== "production";
 const port = process.env.PORT || (debug ? 5040 : 5000);
 const host = process.env.HOST || `0.0.0.0:${port}`;
 
+const singleClient = process.env.SINGLE_CLIENT_MODE || true;
+
 const network = process.env.CONNEXT_NETWORK || `rinkeby`;
 const ethProviderUrl = process.env.CONNEXT_ETH_PROVIDER_URL || undefined;
 const nodeUrl = process.env.CONNEXT_NODE_URL || undefined;
@@ -19,10 +21,11 @@ export default {
   debug: debug,
   port,
   host,
-  logLevel,
+  singleClient,
   network,
   ethProviderUrl,
   nodeUrl,
   mnemonic,
   storeDir,
+  logLevel,
 };
