@@ -286,7 +286,7 @@ export const Routes = {
           body: {
             type: "object",
             properties: {
-              mnemonic: { type: "string" },
+              mnemonic: { type: "string", nullable: true },
               network: { type: "string", nullable: true },
               nodeUrl: { type: "string", nullable: true },
               ethProviderUrl: { type: "string", nullable: true },
