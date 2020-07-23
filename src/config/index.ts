@@ -15,6 +15,7 @@ const nodeUrl = process.env.CONNEXT_NODE_URL || undefined;
 const mnemonic = process.env.CONNEXT_MNEMONIC || "";
 const storeDir = process.env.CONNEXT_STORE_DIR || "./connext-store";
 const logLevel = parseInt(process.env.CONNEXT_LOG_LEVEL || "3", 10);
+const docsHost = process.env.DOCS_HOST || "localhost";
 
 export default {
   env: env,
@@ -28,4 +29,5 @@ export default {
   mnemonic,
   storeDir,
   logLevel,
+  docsHost,
 };
