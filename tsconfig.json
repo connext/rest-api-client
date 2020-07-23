@@ -26,6 +26,7 @@
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "strictPropertyInitialization": true,
+    "typeRoots": ["./node_modules/@types", "./types"],
 
     "outDir": "./build",
     "rootDir": ".",
