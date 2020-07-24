@@ -3,10 +3,12 @@ import { IStoreService } from "@connext/types";
 import Client from "./client";
 import {
   ConnectOptions,
-  fetchAll,
+  fetchPersistedData,
   getRandomMnemonic,
   storeMnemonic,
   PersistedClientSettings,
+  updateInitiatedClients,
+  deleteInitiatedClients,
 } from "./helpers";
 
 export interface ClientSettings extends PersistedClientSettings {
@@ -14,37 +16,50 @@ export interface ClientSettings extends PersistedClientSettings {
 }
 
 class MultiClient {
-  static async init(logger: any, store: IStoreService): Promise<MultiClient> {
-    const persisted = await fetchAll(store);
+  static async init(
+    logger: any,
+    store: IStoreService,
+    singleClientMode: boolean,
+  ): Promise<MultiClient> {
+    const persisted = await fetchPersistedData(store);
     const mnemonic = persisted.mnemonic || getRandomMnemonic();
     await storeMnemonic(mnemonic, store);
-    const multiClient = new MultiClient(mnemonic, logger, store);
+    const multiClient = new MultiClient(mnemonic, logger, store, singleClientMode);
+    if (persisted.initiatedClients) {
+      await Promise.all(
+        persisted.initiatedClients.map((initiatedClient) =>
+          multiClient.connectClient(initiatedClient.opts),
+        ),
+      );
+    }
     return multiClient;
   }
 
   public clients: ClientSettings[] = [];
   public pending: number[] = [];
 
-  constructor(public mnemonic: string, public logger: any, public store: IStoreService) {
+  constructor(
+    public mnemonic: string,
+    public logger: any,
+    public store: IStoreService,
+    public singleClientMode: boolean,
+  ) {
     this.mnemonic = mnemonic;
     this.logger = logger;
     this.store = store;
   }
 
   public async connectClient(opts?: Partial<ConnectOptions>): Promise<Client> {
+    const mnemonic = opts?.mnemonic || this.mnemonic;
+    if (this.mnemonic && mnemonic !== this.mnemonic) {
+      this.removeAllClients();
+    }
+    await this.setMnemonic(mnemonic);
     const index = this.getNextIndex();
     this.setPendingIndex(index);
-    const mnemonic = opts?.mnemonic || this.mnemonic;
-    await this.setMnemonic(mnemonic);
-    const client = new Client({
-      mnemonic,
-      logger: this.logger,
-      store: this.store,
-    });
-    opts = { ...opts, index };
-    await client.connect(opts);
+    const client = await this.createClient(mnemonic, index, opts);
     this.removePendingIndex(index);
-    this.setClient(client, opts);
+    await this.setClient(client, index, opts);
     return client;
   }
 
@@ -82,14 +97,44 @@ class MultiClient {
     this.pending = this.pending.filter((idx) => idx === index);
   }
 
-  private setClient(client: Client, opts: Partial<ConnectOptions>): void {
+  private async createClient(
+    mnemonic: string,
+    index: number,
+    opts?: Partial<ConnectOptions>,
+  ): Promise<Client> {
+    const client = new Client({
+      mnemonic,
+      logger: this.logger,
+      store: this.store,
+    });
+    opts = { ...opts, index };
+    await client.connect(opts);
+    return client;
+  }
+
+  private async setClient(
+    client: Client,
+    index: number,
+    opts?: Partial<ConnectOptions>,
+  ): Promise<void> {
     if (!client.client) return;
-    const settings: PersistedClientSettings = {
-      index: 0,
+    const initiatedClient: PersistedClientSettings = {
+      index,
       publicIdentifier: client.client.publicIdentifier,
       opts,
     };
-    this.clients.push({ ...settings, client });
+    this.clients.push({ ...initiatedClient, client });
+    await updateInitiatedClients(initiatedClient, this.store);
+  }
+
+  private async removeAllClients() {
+    await Promise.all(
+      this.clients.map(async ({ client }) => {
+        await client.unsubscribeAll();
+      }),
+    );
+    this.clients = [];
+    await deleteInitiatedClients(this.store);
   }
 }
 

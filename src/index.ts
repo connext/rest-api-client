@@ -69,7 +69,7 @@ app.register(fastifySwagger, getSwaggerOptions(config.docsHost, config.version) 
 
 app.addHook("onReady", async () => {
   const store = await getStore(config.storeDir);
-  multiClient = await MultiClient.init(app.log, store);
+  multiClient = await MultiClient.init(app.log, store, config.singleClientMode);
 });
 
 const loggingBlacklist = ["/balance"];
@@ -93,7 +93,7 @@ app.addHook("onResponse", (req, reply, done) => {
 });
 
 app.after(() => {
-  const Routes = getRoutes(app.auth([app.verifyApiKey]), config.singleClient);
+  const Routes = getRoutes(app.auth([app.verifyApiKey]), config.singleClientMode);
 
   // -- GET ---------------------------------------------------------------- //
 
@@ -121,7 +121,7 @@ app.after(() => {
   app.get<GetBalanceRequest>(Routes.get.balance.url, Routes.get.balance.opts, async (req, res) => {
     try {
       await requireParam(req.params, "assetId");
-      if (!config.singleClient) {
+      if (!config.singleClientMode) {
         await requireParam(req.body, "publicIdentifier");
       }
       const client = multiClient.getClient(req.params.publicIdentifier);
@@ -138,7 +138,7 @@ app.after(() => {
 
   app.get<GetConfigRequest>(Routes.get.config.url, Routes.get.config.opts, async (req, res) => {
     try {
-      if (!config.singleClient) {
+      if (!config.singleClientMode) {
         await requireParam(req.body, "publicIdentifier");
       }
       const client = multiClient.getClient(req.params.publicIdentifier);
@@ -161,7 +161,7 @@ app.after(() => {
         await requireParam(req.params, "lockHash");
         await requireParam(req.params, "assetId");
         const { lockHash, assetId } = req.params;
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
@@ -186,7 +186,7 @@ app.after(() => {
       try {
         await requireParam(req.params, "paymentId");
         const { paymentId } = req.params;
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
@@ -208,7 +208,7 @@ app.after(() => {
     async (req, res) => {
       try {
         await requireParam(req.params, "appIdentityHash");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
@@ -233,7 +233,7 @@ app.after(() => {
     Routes.get.transferHistory.opts,
     async (req, res) => {
       try {
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
@@ -297,7 +297,7 @@ app.after(() => {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
         await requireParam(req.body, "recipient");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -323,7 +323,7 @@ app.after(() => {
         await requireParam(req.body, "lockHash");
         await requireParam(req.body, "timelock");
         await requireParam(req.body, "recipient");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -346,7 +346,7 @@ app.after(() => {
       try {
         await requireParam(req.body, "preImage");
         await requireParam(req.body, "assetId");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -370,7 +370,7 @@ app.after(() => {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
         await requireParam(req.body, "preImage");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -393,7 +393,7 @@ app.after(() => {
       try {
         await requireParam(req.body, "preImage");
         await requireParam(req.body, "paymentId");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -416,7 +416,7 @@ app.after(() => {
       try {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -438,7 +438,7 @@ app.after(() => {
       await requireParam(req.body, "fromAssetId");
       await requireParam(req.body, "swapRate");
       await requireParam(req.body, "toAssetId");
-      if (!config.singleClient) {
+      if (!config.singleClientMode) {
         await requireParam(req.body, "publicIdentifier");
       }
       const client = multiClient.getClient(req.body.publicIdentifier);
@@ -460,7 +460,7 @@ app.after(() => {
       try {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -483,7 +483,7 @@ app.after(() => {
       try {
         await requireParam(req.body, "event");
         await requireParam(req.body, "webhook");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -508,7 +508,7 @@ app.after(() => {
     async (req, res) => {
       try {
         await requireParam(req.body, "params", "array");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -537,7 +537,7 @@ app.after(() => {
     async (req, res) => {
       try {
         await requireParam(req.body, "id");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -562,7 +562,7 @@ app.after(() => {
     async (req, res) => {
       try {
         await requireParam(req.body, "ids", "array");
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -585,7 +585,7 @@ app.after(() => {
     Routes.delete.subscribeAll.opts,
     async (req, res) => {
       try {
-        if (!config.singleClient) {
+        if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);

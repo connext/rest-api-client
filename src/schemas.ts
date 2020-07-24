@@ -102,7 +102,7 @@ export const GenericErrorResponseSchema = {
   },
 };
 
-export const getRoutes = (authHandler: any, singleClient: boolean) => ({
+export const getRoutes = (authHandler: any, singleClientMode: boolean) => ({
   get: {
     health: {
       url: "/health",
@@ -144,7 +144,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
       },
     },
     balance: {
-      url: singleClient ? "/balance/:assetId" : "/balance/:assetId/:publicIdentifier",
+      url: singleClientMode ? "/balance/:assetId" : "/balance/:assetId/:publicIdentifier",
       description: "Get on-chain and off-chain balances for specific asset",
       opts: {
         preHandler: authHandler,
@@ -153,7 +153,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
             type: "object",
             properties: {
               assetId: { type: "string" },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -164,11 +164,11 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
       },
     },
     config: {
-      url: singleClient ? "/config" : "/config/:publicIdentifier",
+      url: singleClientMode ? "/config" : "/config/:publicIdentifier",
       description: "Get channel configuration if client is initialized",
       opts: {
         preHandler: authHandler,
-        params: !singleClient
+        params: !singleClientMode
           ? {
               type: "object",
               properties: {
@@ -185,7 +185,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
       },
     },
     hashLockStatus: {
-      url: singleClient
+      url: singleClientMode
         ? "/hashlock-status/:lockHash/:assetId"
         : "/hashlock-status/:lockHash/:assetId/:publicIdentifier",
       description: "Get hash lock transfer status and details",
@@ -197,7 +197,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
             properties: {
               lockHash: { type: "string" },
               assetId: { type: "string" },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -220,7 +220,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
       },
     },
     linkedStatus: {
-      url: singleClient
+      url: singleClientMode
         ? "/linked-status/:paymentId"
         : "/linked-status/:paymentId/:publicIdentifier",
       description: "Get linked transfer status and details",
@@ -231,7 +231,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
             type: "object",
             properties: {
               paymentId: { type: "string" },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -254,7 +254,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
       },
     },
     appinstanceDetails: {
-      url: singleClient
+      url: singleClientMode
         ? "/appinstance-details/:appIdentityHash"
         : "/appinstance-details/:appIdentityHash/:publicIdentifier",
       description: "Get app instance details",
@@ -265,7 +265,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
             type: "object",
             properties: {
               appIdentityHash: { type: "string" },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -276,12 +276,12 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
       },
     },
     transferHistory: {
-      url: singleClient ? "/transfer-history" : "/transfer-history/:publicIdentifier",
+      url: singleClientMode ? "/transfer-history" : "/transfer-history/:publicIdentifier",
       description: "Get all channel transfer history",
       opts: {
         preHandler: authHandler,
         schema: {
-          params: !singleClient
+          params: !singleClientMode
             ? {
                 type: "object",
                 properties: {
@@ -368,7 +368,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
               amount: { type: "string" },
               assetId: { type: "string" },
               recipient: { type: "string" },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -397,7 +397,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
               lockHash: { type: "string" },
               timelock: { type: "string" },
               recipient: { type: "string" },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -432,7 +432,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
               preImage: { type: "string" },
               assetId: { type: "string" },
               paymentId: { type: "string", nullable: true },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -464,7 +464,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
               preImage: { type: "string", nullable: true },
               paymentId: { type: "string", nullable: true },
               recipient: { type: "string", nullable: true },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -498,7 +498,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
             properties: {
               preImage: { type: "string" },
               paymentId: { type: "string" },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -528,7 +528,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
             properties: {
               amount: { type: "string" },
               assetId: { type: "string" },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -551,7 +551,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
               fromAssetId: { type: "string" },
               swapRate: { type: "string" },
               toAssetId: { type: "string" },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -575,7 +575,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
             properties: {
               amount: { type: "string" },
               assetId: { type: "string" },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -596,7 +596,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
       opts: {
         preHandler: authHandler,
         schema: {
-          body: singleClient
+          body: singleClientMode
             ? EventSubscriptionParamsSchema
             : {
                 type: "object",
@@ -622,7 +622,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
             type: "object",
             properties: {
               params: { type: "array", items: EventSubscriptionParamsSchema },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -649,7 +649,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
             type: "object",
             properties: {
               id: { type: "string" },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -669,7 +669,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
             type: "object",
             properties: {
               ids: { type: "array", items: { type: "string" } },
-              publicIdentifier: singleClient ? { type: "string" } : undefined,
+              publicIdentifier: singleClientMode ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -685,7 +685,7 @@ export const getRoutes = (authHandler: any, singleClient: boolean) => ({
       opts: {
         preHandler: authHandler,
         schema: {
-          body: !singleClient
+          body: !singleClientMode
             ? {
                 type: "object",
                 properties: {

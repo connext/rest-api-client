@@ -23,11 +23,11 @@ export interface ConnectOptions extends ClientOptions {
 export interface PersistedData {
   mnemonic: string | undefined;
   subscriptions: EventSubscription[] | undefined;
-  initiatedClients: Partial<ConnectOptions> | undefined;
+  initiatedClients: PersistedClientSettings[] | undefined;
 }
 
 export interface PersistedClientSettings {
-  index: 0;
+  index: number;
   publicIdentifier: string;
   opts?: Partial<ConnectOptions>;
 }

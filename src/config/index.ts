@@ -10,7 +10,7 @@ const port = process.env.PORT || (debug ? 5040 : 5000);
 const host = process.env.HOST || `0.0.0.0:${port}`;
 const apiKey = process.env.API_KEY;
 
-const singleClient = Boolean(process.env.SINGLE_CLIENT_MODE) || true;
+const singleClientMode = Boolean(process.env.SINGLE_CLIENT_MODE) || true;
 const version = pkg.version;
 
 const network = process.env.CONNEXT_NETWORK || `rinkeby`;
@@ -26,7 +26,7 @@ export default {
   debug,
   port,
   host,
-  singleClient,
+  singleClientMode,
   version,
   apiKey,
   network,
