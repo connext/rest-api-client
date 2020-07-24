@@ -62,7 +62,11 @@ export type SubscriptionResponse = {
   id: string;
 };
 
-export type EventSubscription = { id: string; params: EventSubscriptionParams };
+export type EventSubscription = {
+  id: string;
+  publicIdentifier: string;
+  params: EventSubscriptionParams;
+};
 export type EventSubscriptionParams = { event: string; webhook: string };
 
 export type GetAppInstanceDetailsParams = MultiClientRequestParams & { appIdentityHash: string };

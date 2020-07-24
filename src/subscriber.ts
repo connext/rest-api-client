@@ -24,7 +24,7 @@ export default class Subscriber {
     if (match) {
       return match;
     }
-    const subscription = this.formatSubscription(params);
+    const subscription = this.formatSubscription(client.publicIdentifier, params);
     await this.saveSubscription(subscription);
     this.subscribeOnClient(client, subscription);
     return subscription;
@@ -139,7 +139,10 @@ export default class Subscriber {
     );
   }
 
-  private formatSubscription(params: EventSubscriptionParams): EventSubscription {
-    return { id: uuid(), params };
+  private formatSubscription(
+    publicIdentifier: string,
+    params: EventSubscriptionParams,
+  ): EventSubscription {
+    return { id: uuid(), publicIdentifier, params };
   }
 }
