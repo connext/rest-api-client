@@ -296,6 +296,26 @@ const routes = () => {
     },
   );
 
+  interface PostLinkedTransferRequest extends RequestGenericInterface {
+    Body: PostLinkedTransferRequestParams;
+  }
+
+  app.post<PostLinkedTransferRequest>(
+    Routes.post.linkedTransfer.url,
+    Routes.post.linkedTransfer.opts,
+    async (req, res) => {
+      try {
+        await requireParam(req.body, "amount");
+        await requireParam(req.body, "assetId");
+        // await requireParam(req.body, "preImage");
+        res.status(200).send<PostLinkedTransferResponse>(await client.linkedTransfer(req.body));
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
   interface PostHashLockTransferRequest extends RequestGenericInterface {
     Body: PostHashLockTransferRequestParams;
   }
@@ -330,26 +350,6 @@ const routes = () => {
         await requireParam(req.body, "preImage");
         await requireParam(req.body, "assetId");
         res.status(200).send<PostHashLockResolveResponse>(await client.hashLockResolve(req.body));
-      } catch (error) {
-        app.log.error(error);
-        res.status(500).send<GenericErrorResponse>({ message: error.message });
-      }
-    },
-  );
-
-  interface PostLinkedTransferRequest extends RequestGenericInterface {
-    Body: PostLinkedTransferRequestParams;
-  }
-
-  app.post<PostLinkedTransferRequest>(
-    Routes.post.linkedTransfer.url,
-    { ...Routes.post.linkedTransfer.opts, preHandler: app.auth([app.verifyApiKey]) },
-    async (req, res) => {
-      try {
-        await requireParam(req.body, "amount");
-        await requireParam(req.body, "assetId");
-        await requireParam(req.body, "preImage");
-        res.status(200).send<PostLinkedTransferResponse>(await client.linkedTransfer(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
