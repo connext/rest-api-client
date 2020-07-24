@@ -7,6 +7,7 @@ import {
   ConditionalTransferTypes,
   PublicParams,
 } from "@connext/types";
+import { getRandomBytes32 } from "@connext/utils";
 import { Wallet, constants } from "ethers";
 
 import config from "./config";
@@ -216,7 +217,8 @@ export default class Client {
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       amount: params.amount,
       recipient: params.recipient,
-      preImage: params.preImage,
+      preImage: params.preImage || getRandomBytes32(),
+      paymentId: params.paymentId || getRandomBytes32(),
       assetId: params.assetId,
       meta: params.meta,
     } as PublicParams.ConditionalTransfer);
