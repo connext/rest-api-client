@@ -1,4 +1,5 @@
 import * as connext from "@connext/client";
+import { getRandomBytes32 } from "@connext/utils";
 import {
   IConnextClient,
   IStoreService,
@@ -195,11 +196,14 @@ export default class Client {
     if (params.assetId === AddressZero) {
       delete params.assetId;
     }
+    const paymentId = params.paymentId || getRandomBytes32();
+    const preImage = params.preImage || getRandomBytes32();
     const response = await client.conditionalTransfer({
       conditionType: ConditionalTransferTypes.LinkedTransfer,
       amount: params.amount,
       recipient: params.recipient,
-      preImage: params.preImage,
+      preImage,
+      paymentId,
       assetId: params.assetId,
       meta: params.meta,
     } as PublicParams.ConditionalTransfer);
