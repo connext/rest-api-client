@@ -7,7 +7,6 @@ import {
   ConditionalTransferTypes,
   PublicParams,
 } from "@connext/types";
-import { getRandomBytes32 } from "@connext/utils";
 import { Wallet, constants } from "ethers";
 
 import config from "./config";
