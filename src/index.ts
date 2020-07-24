@@ -93,7 +93,7 @@ app.addHook("onResponse", (req, reply, done) => {
 });
 
 app.after(() => {
-  const Routes = getRoutes(app.auth([app.verifyApiKey]));
+  const Routes = getRoutes(app.auth([app.verifyApiKey]), config.singleClient);
 
   // -- GET ---------------------------------------------------------------- //
 
