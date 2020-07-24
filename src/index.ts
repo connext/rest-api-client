@@ -4,7 +4,7 @@ import fastifySwagger from "fastify-swagger";
 import fastifyHelmet from "fastify-helmet";
 
 import config from "./config";
-import { getSwaggerOptions, Routes } from "./schemas";
+import { getSwaggerOptions, getRoutes } from "./schemas";
 import MultiClient from "./multiClient";
 import {
   requireParam,
@@ -93,10 +93,8 @@ app.addHook("onResponse", (req, reply, done) => {
 });
 
 app.after(() => {
-  routes();
-});
+  const Routes = getRoutes(app.auth([app.verifyApiKey]));
 
-const routes = () => {
   // -- GET ---------------------------------------------------------------- //
 
   app.get(Routes.get.health.url, Routes.get.health.opts, (req, res) => {
@@ -598,7 +596,8 @@ const routes = () => {
       }
     },
   );
-};
+});
+
 // -- INIT ---------------------------------------------------------------- //
 
 const [host, port] = config.host.split(":");

@@ -102,7 +102,7 @@ export const GenericErrorResponseSchema = {
   },
 };
 
-export const Routes = {
+export const getRoutes = (authHandler: any, singleClient: boolean) => ({
   get: {
     health: {
       url: "/health",
@@ -144,14 +144,16 @@ export const Routes = {
       },
     },
     balance: {
-      url: "/balance/:assetId",
+      url: singleClient ? "/balance/:assetId" : "/balance/:assetId/:publicIdentifier",
       description: "Get on-chain and off-chain balances for specific asset",
       opts: {
+        preHandler: authHandler,
         schema: {
           params: {
             type: "object",
             properties: {
               assetId: { type: "string" },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -162,9 +164,18 @@ export const Routes = {
       },
     },
     config: {
-      url: "/config",
+      url: singleClient ? "/config" : "/config/:publicIdentifier",
       description: "Get channel configuration if client is initialized",
       opts: {
+        preHandler: authHandler,
+        params: !singleClient
+          ? {
+              type: "object",
+              properties: {
+                publicIdentifier: { type: "string" },
+              },
+            }
+          : undefined,
         schema: {
           response: {
             200: ChannelConfigResponseSchema,
@@ -174,15 +185,19 @@ export const Routes = {
       },
     },
     hashLockStatus: {
-      url: "/hashlock-status/:lockHash/:assetId",
+      url: singleClient
+        ? "/hashlock-status/:lockHash/:assetId"
+        : "/hashlock-status/:lockHash/:assetId/:publicIdentifier",
       description: "Get hash lock transfer status and details",
       opts: {
+        preHandler: authHandler,
         schema: {
           params: {
             type: "object",
             properties: {
               lockHash: { type: "string" },
               assetId: { type: "string" },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -205,14 +220,18 @@ export const Routes = {
       },
     },
     linkedStatus: {
-      url: "/linked-status/:paymentId",
+      url: singleClient
+        ? "/linked-status/:paymentId"
+        : "/linked-status/:paymentId/:publicIdentifier",
       description: "Get linked transfer status and details",
       opts: {
+        preHandler: authHandler,
         schema: {
           params: {
             type: "object",
             properties: {
               paymentId: { type: "string" },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -235,14 +254,18 @@ export const Routes = {
       },
     },
     appinstanceDetails: {
-      url: "/appinstance-details/:appIdentityHash",
+      url: singleClient
+        ? "/appinstance-details/:appIdentityHash"
+        : "/appinstance-details/:appIdentityHash/:publicIdentifier",
       description: "Get app instance details",
       opts: {
+        preHandler: authHandler,
         schema: {
           params: {
             type: "object",
             properties: {
               appIdentityHash: { type: "string" },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -253,10 +276,19 @@ export const Routes = {
       },
     },
     transferHistory: {
-      url: "/transfer-history",
+      url: singleClient ? "/transfer-history" : "/transfer-history/:publicIdentifier",
       description: "Get all channel transfer history",
       opts: {
+        preHandler: authHandler,
         schema: {
+          params: !singleClient
+            ? {
+                type: "object",
+                properties: {
+                  publicIdentifier: { type: "string" },
+                },
+              }
+            : undefined,
           response: {
             200: {
               type: "array",
@@ -282,6 +314,7 @@ export const Routes = {
       url: "/connect",
       description: "Connect client channel for provided or persisted mnemonic",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
@@ -295,6 +328,7 @@ export const Routes = {
               skipSync: { type: "boolean", nullable: true },
               skipInitStore: { type: "boolean", nullable: true },
             },
+            nullable: true,
           },
           response: {
             200: ChannelConfigResponseSchema,
@@ -307,11 +341,12 @@ export const Routes = {
       url: "/mnemonic",
       description: "Provide or update client's mnemonic",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
             properties: {
-              hello: { type: "string" },
+              mnemonic: { type: "string" },
             },
           },
           response: {
@@ -325,6 +360,7 @@ export const Routes = {
       url: "/onchain-transfer",
       description: "Submit on-chain transaction",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
@@ -332,6 +368,7 @@ export const Routes = {
               amount: { type: "string" },
               assetId: { type: "string" },
               recipient: { type: "string" },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -350,6 +387,7 @@ export const Routes = {
       url: "/hashlock-transfer",
       description: "Create hash lock transfer",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
@@ -359,6 +397,7 @@ export const Routes = {
               lockHash: { type: "string" },
               timelock: { type: "string" },
               recipient: { type: "string" },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -385,6 +424,7 @@ export const Routes = {
       url: "/hashlock-resolve",
       description: "Resolve hash lock transfer",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
@@ -392,6 +432,7 @@ export const Routes = {
               preImage: { type: "string" },
               assetId: { type: "string" },
               paymentId: { type: "string", nullable: true },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -413,6 +454,7 @@ export const Routes = {
       url: "/linked-transfer",
       description: "Create linked transfer",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
@@ -422,6 +464,7 @@ export const Routes = {
               preImage: { type: "string", nullable: true },
               paymentId: { type: "string", nullable: true },
               recipient: { type: "string", nullable: true },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -448,12 +491,14 @@ export const Routes = {
       url: "/linked-resolve",
       description: "Resolve linked transfer",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
             properties: {
               preImage: { type: "string" },
               paymentId: { type: "string" },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -476,12 +521,14 @@ export const Routes = {
       url: "/deposit",
       description: "Deposit asset on channel",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
             properties: {
               amount: { type: "string" },
               assetId: { type: "string" },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -495,6 +542,7 @@ export const Routes = {
       url: "/swap",
       description: "Swap asset on channel",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
@@ -503,6 +551,7 @@ export const Routes = {
               fromAssetId: { type: "string" },
               swapRate: { type: "string" },
               toAssetId: { type: "string" },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -519,12 +568,14 @@ export const Routes = {
       url: "/withdraw",
       description: "Withdraw asset from channel",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
             properties: {
               amount: { type: "string" },
               assetId: { type: "string" },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -543,8 +594,17 @@ export const Routes = {
       url: "/subscribe",
       description: "Subscribe to client event",
       opts: {
+        preHandler: authHandler,
         schema: {
-          body: EventSubscriptionParamsSchema,
+          body: singleClient
+            ? EventSubscriptionParamsSchema
+            : {
+                type: "object",
+                propertiers: {
+                  ...EventSubscriptionParamsSchema.properties,
+                  publicIdentifier: { type: "string" },
+                },
+              },
           response: {
             200: EventSubscriptionResponseSchema,
             500: GenericErrorResponseSchema,
@@ -556,11 +616,13 @@ export const Routes = {
       url: "/subscribe/batch",
       description: "Batch subscribe to client events",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
             properties: {
               params: { type: "array", items: EventSubscriptionParamsSchema },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -581,11 +643,13 @@ export const Routes = {
       url: "/subscribe",
       description: "Unsubscribe to client event",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
             properties: {
               id: { type: "string" },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -599,11 +663,13 @@ export const Routes = {
       url: "/subscribe/batch",
       description: "Batch unsubscribe to client events",
       opts: {
+        preHandler: authHandler,
         schema: {
           body: {
             type: "object",
             properties: {
               ids: { type: "array", items: { type: "string" } },
+              publicIdentifier: singleClient ? { type: "string" } : undefined,
             },
           },
           response: {
@@ -617,7 +683,16 @@ export const Routes = {
       url: "/subscribe/all",
       description: "Unsuscribe all client events",
       opts: {
+        preHandler: authHandler,
         schema: {
+          body: !singleClient
+            ? {
+                type: "object",
+                properties: {
+                  publicIdentifier: { type: "string" },
+                },
+              }
+            : undefined,
           response: {
             200: GenericSuccessResponseSchema,
             500: GenericErrorResponseSchema,
@@ -626,4 +701,4 @@ export const Routes = {
       },
     },
   },
-};
+});
