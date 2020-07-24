@@ -25,13 +25,18 @@ class MultiClient {
     const mnemonic = persisted.mnemonic || getRandomMnemonic();
     await storeMnemonic(mnemonic, store);
     const multiClient = new MultiClient(mnemonic, logger, store, singleClientMode);
-    if (persisted.initiatedClients) {
-      logger.info(`Connecting all persisted clients`);
-      await Promise.all(
-        persisted.initiatedClients.map((initiatedClient) =>
-          multiClient.connectClient(initiatedClient.opts),
-        ),
-      );
+    if (persisted.initiatedClients && persisted.initiatedClients.length) {
+      if (singleClientMode) {
+        logger.info(`Connecting a single persisted client`);
+        multiClient.connectClient(persisted.initiatedClients[0].opts);
+      } else {
+        logger.info(`Connecting all persisted clients`);
+        await Promise.all(
+          persisted.initiatedClients.map((initiatedClient) =>
+            multiClient.connectClient(initiatedClient.opts),
+          ),
+        );
+      }
     }
     return multiClient;
   }
