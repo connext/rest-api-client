@@ -325,7 +325,7 @@ app.post<PostLinkedTransferRequest>(
     try {
       await requireParam(req.body, "amount");
       await requireParam(req.body, "assetId");
-      await requireParam(req.body, "preImage");
+      // await requireParam(req.body, "preImage");
       res.status(200).send<PostLinkedTransferResponse>(await client.linkedTransfer(req.body));
     } catch (error) {
       app.log.error(error);
