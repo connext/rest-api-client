@@ -45,14 +45,14 @@ export async function getClientBalance(
 }
 
 export async function transferOnChain(params: {
-  mnemonic: string;
+  wallet: Wallet;
   ethProvider: providers.Provider;
   assetId: string;
   amount: string;
   recipient: string;
 }): Promise<string> {
   let tx: providers.TransactionResponse;
-  const wallet = Wallet.fromMnemonic(params.mnemonic).connect(params.ethProvider);
+  const wallet = params.wallet.connect(params.ethProvider);
   if (params.assetId === constants.AddressZero) {
     tx = await wallet.sendTransaction({
       to: params.recipient,

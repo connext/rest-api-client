@@ -11,7 +11,6 @@ import { Wallet, constants } from "ethers";
 import config from "./config";
 
 import {
-  storeMnemonic,
   getClientBalance,
   getFreeBalanceOnChain,
   EventSubscriptionParams,
@@ -49,56 +48,57 @@ import Subscriber from "./subscriber";
 const { AddressZero } = constants;
 
 export default class Client {
-  private _client: IConnextClient | undefined;
-  private _logger: any;
-  private _mnemonic: string;
-  private _subscriber: Subscriber;
-  private _store: IStoreService;
-  private _initializing = false;
-  private _index = 0;
+  public wallet: Wallet | undefined;
+  public client: IConnextClient | undefined;
+
+  private logger: any;
+  private subscriber: Subscriber;
+  private store: IStoreService;
+  private initializing = false;
 
   constructor(opts: InitClientManagerOptions) {
-    this._logger = opts.logger;
-    this._mnemonic = opts.mnemonic;
-    this._subscriber = new Subscriber(opts.logger, opts.store);
-    this._store = opts.store;
-  }
-
-  get client(): IConnextClient | undefined {
-    return this._client;
+    this.subscriber = new Subscriber(opts.logger, opts.store);
+    this.logger = opts.logger;
+    this.store = opts.store;
   }
 
   public async connect(opts?: Partial<ConnectOptions>): Promise<IConnextClient> {
-    const mnemonic = opts?.mnemonic || this._mnemonic;
-    const index = opts?.index || this._index;
-    if (!mnemonic) {
+    const mnemonic = opts?.mnemonic;
+    const index = opts?.index;
+    if (typeof mnemonic === "undefined") {
       throw new Error("Cannot init Connext client without mnemonic");
     }
 
-    if (this._initializing) {
+    if (typeof index === "undefined") {
+      throw new Error("Cannot init Connext client without index");
+    }
+
+    if (this.initializing) {
       throw new Error(`Client is initializing`);
     }
 
-    if (this._client) {
-      this._logger.info("Client is already connected - skipping connect logic");
-      return this._client;
+    if (this.client) {
+      this.logger.info("Client is already connected - skipping connect logic");
+      return this.client;
     }
 
-    this._initializing = true;
-    this.setMnemonic(mnemonic);
+    this.initializing = true;
     const network = opts?.network || config.network;
-    const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
-    const nodeUrl = opts?.nodeUrl || config.nodeUrl;
-    const logLevel = opts?.logLevel || config.logLevel;
-    const signer = Wallet.fromMnemonic(mnemonic, getPath(index)).privateKey;
-    const clientOpts = { signer, store: this._store, ethProviderUrl, nodeUrl, logLevel };
+    this.wallet = Wallet.fromMnemonic(mnemonic, getPath(index));
+    const clientOpts = {
+      signer: this.wallet.privateKey,
+      store: this.store,
+      ethProviderUrl: opts?.ethProviderUrl || config.ethProviderUrl,
+      nodeUrl: opts?.nodeUrl || config.nodeUrl,
+      logLevel: opts?.logLevel || config.logLevel,
+    };
     try {
       const client = await connext.connect(network, clientOpts);
-      this._client = client;
-      this._logger.info("Client initialized successfully");
+      this.client = client;
+      this.logger.info("Client initialized successfully");
       return client;
     } finally {
-      this._initializing = false;
+      this.initializing = false;
     }
   }
 
@@ -230,12 +230,6 @@ export default class Client {
     return getClientBalance(client, assetId);
   }
 
-  public async setMnemonic(mnemonic: string): Promise<void> {
-    await storeMnemonic(mnemonic, this._store);
-    this._mnemonic = mnemonic;
-    this._logger.info("Mnemonic set successfully");
-  }
-
   public async deposit(params: PostDepositRequestParams): Promise<GetBalanceResponse> {
     const client = this.getClient();
     const assetId = params.assetId || AddressZero;
@@ -271,8 +265,11 @@ export default class Client {
     params: PostTransactionRequestParams,
   ): Promise<PostTransactionResponse> {
     const client = this.getClient();
+    if (!this.wallet) {
+      throw new Error("Client signer wallet is not initialized");
+    }
     const txhash = await transferOnChain({
-      mnemonic: this._mnemonic,
+      wallet: this.wallet,
       ethProvider: client.ethProvider,
       assetId: params.assetId,
       amount: params.amount,
@@ -283,7 +280,7 @@ export default class Client {
 
   public async subscribe(params: EventSubscriptionParams): Promise<SubscriptionResponse> {
     const client = this.getClient();
-    const subscription = await this._subscriber.subscribe(client, params);
+    const subscription = await this.subscriber.subscribe(client, params);
     return { id: subscription.id };
   }
 
@@ -291,34 +288,34 @@ export default class Client {
     paramsArr: EventSubscriptionParams[],
   ): Promise<BatchSubscriptionResponse> {
     const client = this.getClient();
-    const subscriptions = await this._subscriber.batchSubscribe(client, paramsArr);
+    const subscriptions = await this.subscriber.batchSubscribe(client, paramsArr);
     return { subscriptions };
   }
 
   public async unsubscribe(id: string): Promise<GenericSuccessResponse> {
     const client = this.getClient();
-    await this._subscriber.unsubscribe(client, id);
+    await this.subscriber.unsubscribe(client, id);
     return { success: true };
   }
 
   public async unsubscribeBatch(idsArr: string[]): Promise<GenericSuccessResponse> {
     const client = this.getClient();
-    await this._subscriber.batchUnsubscribe(client, idsArr);
+    await this.subscriber.batchUnsubscribe(client, idsArr);
     return { success: true };
   }
 
   public async unsubscribeAll(): Promise<GenericSuccessResponse> {
     const client = this.getClient();
-    await this._subscriber.clearAllSubscriptions(client);
+    await this.subscriber.clearAllSubscriptions(client);
     return { success: true };
   }
 
   // -- Private ---------------------------------------------------------------- //
 
   private getClient(): IConnextClient {
-    if (!this._client) {
+    if (!this.client) {
       throw new Error("Client is not initialized");
     }
-    return this._client;
+    return this.client;
   }
 }

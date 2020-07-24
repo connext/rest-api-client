@@ -11,8 +11,6 @@ import {
 export interface InitClientManagerOptions {
   logger: any;
   store: IStoreService;
-  mnemonic: string;
-  index?: number;
 }
 export interface ConnectOptions extends ClientOptions {
   mnemonic: string;
