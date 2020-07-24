@@ -2,7 +2,7 @@ import { IStoreService } from "@connext/types";
 import { getFileStore } from "@connext/store";
 
 import { CONNEXT_MNEMONIC_KEY, CONNEXT_CLIENTS_KEY, CONNEXT_SUBSCRIPTIONS_KEY } from "./constants";
-import { EventSubscription, ConnectOptions, PersistedData, PersistedClientSettings } from "./types";
+import { EventSubscription, PersistedData, PersistedClientSettings } from "./types";
 
 export async function getStore(storeDir: string) {
   const store = getFileStore(storeDir);
