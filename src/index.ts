@@ -46,6 +46,7 @@ import {
   PostSubscribeRequestParams,
   GetConfigRequestParams,
   getStore,
+  GetClientsResponse,
 } from "./helpers";
 
 const app = fastify({
@@ -108,6 +109,17 @@ app.after(() => {
   app.get(Routes.get.version.url, Routes.get.version.opts, (req, res) => {
     try {
       res.status(200).send<GetVersionResponse>({ version: config.version });
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
+    }
+  });
+
+  app.get(Routes.get.clients.url, Routes.get.clients.opts, async (req, res) => {
+    try {
+      res
+        .status(200)
+        .send<GetClientsResponse>({ publicIdentifiers: multiClient.getAllClientIds() });
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });

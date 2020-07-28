@@ -9,6 +9,7 @@ import {
   PersistedClientSettings,
   updateInitiatedClients,
   deleteInitiatedClients,
+  GetConfigResponse,
 } from "./helpers";
 
 export interface ClientSettings extends PersistedClientSettings {
@@ -73,16 +74,20 @@ class MultiClient {
   }
 
   public getClient(pubId?: string): Client {
-    const publicIdentifier = pubId || this.clients[0].client.client?.publicIdentifier;
+    const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
     this.logger.info(`Getting client for publicIdentifier: ${publicIdentifier}`);
     if (!publicIdentifier) throw new Error("No client initialized");
     const matches = this.clients.filter(
-      (c) => c.client.client?.publicIdentifier === publicIdentifier,
+      (c) => c.client.getClient().publicIdentifier === publicIdentifier,
     );
     if (matches && matches.length) {
       return matches[0].client;
     }
     throw new Error(`No client found matching publicIdentifier: ${publicIdentifier}`);
+  }
+
+  public getAllClientIds(): string[] {
+    return this.clients.map(({ client }) => client.getClient().publicIdentifier);
   }
 
   public async setMnemonic(mnemonic: string) {

@@ -146,6 +146,24 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
           },
         },
       },
+      clients: {
+        url: "/clients",
+        description: "Get array of initialized clients' public identifiers",
+        opts: {
+          preHandler: authHandler,
+          schema: {
+            response: {
+              200: {
+                type: "object",
+                properties: {
+                  publicIdentifiers: { type: "array", items: { type: "string" } },
+                },
+              },
+              500: GenericErrorResponseSchema,
+            },
+          },
+        },
+      },
       balance: {
         url: !singleClientMode ? "/balance/:assetId/:publicIdentifier" : "/balance/:assetId",
         description: "Get on-chain and off-chain balances for specific asset",

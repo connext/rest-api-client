@@ -53,6 +53,10 @@ export type GetVersionResponse = {
   version: string;
 };
 
+export type GetClientsResponse = {
+  publicIdentifiers: string[];
+};
+
 export type BatchSubscriptionResponse = {
   subscriptions: EventSubscription[];
 };

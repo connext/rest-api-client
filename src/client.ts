@@ -310,9 +310,7 @@ export default class Client {
     return { success: true };
   }
 
-  // -- Private ---------------------------------------------------------------- //
-
-  private getClient(): IConnextClient {
+  public getClient(): IConnextClient {
     if (!this.client) {
       throw new Error("Client is not initialized");
     }
