@@ -122,7 +122,7 @@ app.after(() => {
     try {
       await requireParam(req.params, "assetId");
       if (!config.singleClientMode) {
-        await requireParam(req.body, "publicIdentifier");
+        await requireParam(req.params, "publicIdentifier");
       }
       const client = multiClient.getClient(req.params.publicIdentifier);
       res.status(200).send<GetBalanceResponse>(await client.balance(req.params.assetId));
@@ -139,7 +139,7 @@ app.after(() => {
   app.get<GetConfigRequest>(Routes.get.config.url, Routes.get.config.opts, async (req, res) => {
     try {
       if (!config.singleClientMode) {
-        await requireParam(req.body, "publicIdentifier");
+        await requireParam(req.params, "publicIdentifier");
       }
       const client = multiClient.getClient(req.params.publicIdentifier);
       res.status(200).send<GetConfigResponse>(await client.getConfig());
@@ -187,7 +187,7 @@ app.after(() => {
         await requireParam(req.params, "paymentId");
         const { paymentId } = req.params;
         if (!config.singleClientMode) {
-          await requireParam(req.body, "publicIdentifier");
+          await requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
         res.status(200).send<GetLinkedStatusResponse>(await client.linkedStatus(paymentId));
@@ -209,7 +209,7 @@ app.after(() => {
       try {
         await requireParam(req.params, "appIdentityHash");
         if (!config.singleClientMode) {
-          await requireParam(req.body, "publicIdentifier");
+          await requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
         res
