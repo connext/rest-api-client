@@ -358,6 +358,28 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
           },
         },
       },
+      disconnect: {
+        url: "/disconnect",
+        description: "Disconnect client channel for provided public identifier",
+        opts: {
+          preHandler: authHandler,
+          schema: {
+            body: !singleClientMode
+              ? {
+                  type: "object",
+                  properties: {
+                    publicIdentifier: { type: "string" },
+                  },
+                }
+              : undefined,
+            response: {
+              200: ChannelConfigResponseSchema,
+              500: GenericErrorResponseSchema,
+            },
+          },
+        },
+      },
+
       mnemonic: {
         url: "/mnemonic",
         description: "Provide or update client's mnemonic",

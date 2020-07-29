@@ -251,7 +251,7 @@ app.after(() => {
     async (req, res) => {
       try {
         if (!config.singleClientMode) {
-          await requireParam(req.body, "publicIdentifier");
+          await requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
         res.status(200).send<GetTransferHistoryResponse>(await client.getTransferHistory());
@@ -276,6 +276,27 @@ app.after(() => {
         const client = await multiClient.connectClient(req.body);
         const config = await client.getConfig();
         res.status(200).send<GetConfigResponse>(config);
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
+  interface PostDisconnectRequest extends RequestGenericInterface {
+    Body: { publicIdentifier?: string };
+  }
+
+  app.post<PostDisconnectRequest>(
+    Routes.post.disconnect.url,
+    Routes.post.disconnect.opts,
+    async (req, res) => {
+      try {
+        if (!config.singleClientMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        await multiClient.disconnectClient(req.body.publicIdentifier);
+        res.status(200).send<GenericSuccessResponse>({ success: true });
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
