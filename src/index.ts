@@ -70,7 +70,7 @@ app.register(fastifySwagger, getSwaggerOptions(config.docsHost, config.version) 
 
 app.addHook("onReady", async () => {
   const store = await getStore(config.storeDir);
-  multiClient = await MultiClient.init(app.log, store, config.singleClientMode);
+  multiClient = await MultiClient.init(app.log, store, config.singleClientMode, config.storeDir);
 });
 
 const loggingBlacklist = ["/balance"];

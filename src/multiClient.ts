@@ -5,12 +5,14 @@ import {
   ConnectOptions,
   fetchPersistedData,
   getRandomMnemonic,
-  storeMnemonic,
+  storeMnemonics,
   PersistedClientSettings,
   updateInitiatedClients,
   deleteInitiatedClients,
   GetConfigResponse,
+  getStore,
 } from "./helpers";
+import { Wallet } from "ethers";
 
 export interface ClientSettings extends PersistedClientSettings {
   client: Client;
@@ -21,20 +23,21 @@ class MultiClient {
     logger: any,
     store: IStoreService,
     singleClientMode: boolean,
+    storeDir: string,
   ): Promise<MultiClient> {
     const persisted = await fetchPersistedData(store);
-    const mnemonic = persisted.mnemonic || getRandomMnemonic();
-    await storeMnemonic(mnemonic, store);
-    const multiClient = new MultiClient(mnemonic, logger, store, singleClientMode);
+    const mnemonics = persisted.mnemonics || [getRandomMnemonic()];
+    await storeMnemonics(mnemonics, store);
+    const multiClient = new MultiClient(mnemonics, logger, store, singleClientMode);
     if (persisted.initiatedClients && persisted.initiatedClients.length) {
       if (singleClientMode) {
         logger.info(`Connecting a single persisted client`);
-        multiClient.connectClient(persisted.initiatedClients[0].opts);
+        multiClient.connectClient(storeDir, persisted.initiatedClients[0].opts);
       } else {
         logger.info(`Connecting all persisted clients`);
         await Promise.all(
           persisted.initiatedClients.map((initiatedClient) =>
-            multiClient.connectClient(initiatedClient.opts),
+            multiClient.connectClient(storeDir, initiatedClient.opts),
           ),
         );
       }
@@ -46,19 +49,19 @@ class MultiClient {
   public pending: number[] = [];
 
   constructor(
-    public mnemonic: string,
+    public mnemonics: string[],
     public logger: any,
     public store: IStoreService,
     public singleClientMode: boolean,
   ) {
-    this.mnemonic = mnemonic;
+    this.mnemonics = mnemonics;
     this.logger = logger;
     this.store = store;
   }
 
-  public async connectClient(opts?: Partial<ConnectOptions>): Promise<Client> {
-    const mnemonic = opts?.mnemonic || this.mnemonic;
-    if (this.mnemonic && mnemonic !== this.mnemonic) {
+  public async connectClient(storeDir: string, opts?: Partial<ConnectOptions>): Promise<Client> {
+    const mnemonic = opts?.mnemonic || this.mnemonics[0];
+    if (mnemonic !== this.mnemonics[0]) {
       this.removeAllClients();
     }
     this.shouldConnectClient();
@@ -67,7 +70,7 @@ class MultiClient {
     this.logger.info(`Connecting client with mnemonic: ${mnemonic}`);
     this.logger.info(`Connecting client with index: ${index}`);
     this.setPendingIndex(index);
-    const client = await this.createClient(mnemonic, index, opts);
+    const client = await this.createClient(storeDir, mnemonic, index, opts);
     this.removePendingIndex(index);
     await this.setClient(client, index, opts);
     return client;
@@ -91,8 +94,10 @@ class MultiClient {
   }
 
   public async setMnemonic(mnemonic: string) {
-    this.mnemonic = mnemonic;
-    await storeMnemonic(this.mnemonic, this.store);
+    if (!this.mnemonics.includes(mnemonic)) {
+      this.mnemonics.push(mnemonic);
+    }
+    await storeMnemonics([mnemonic], this.store);
     this.logger.info("Mnemonic set successfully");
   }
 
@@ -121,11 +126,14 @@ class MultiClient {
   }
 
   private async createClient(
+    storeDir: string,
     mnemonic: string,
     index: number,
     opts?: Partial<ConnectOptions>,
   ): Promise<Client> {
-    const client = new Client({ logger: this.logger, store: this.store });
+    const addr = Wallet.fromMnemonic(mnemonic).address;
+    const store = await getStore(storeDir, addr);
+    const client = new Client({ logger: this.logger, store });
     await client.connect({ ...opts, mnemonic, index });
     return client;
   }
@@ -150,6 +158,9 @@ class MultiClient {
     await Promise.all(
       this.clients.map(async ({ client }) => {
         await client.unsubscribeAll();
+        if (client.client) {
+          await client.client!.store.clear();
+        }
       }),
     );
     this.clients = [];

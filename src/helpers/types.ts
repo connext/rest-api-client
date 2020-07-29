@@ -19,7 +19,7 @@ export interface ConnectOptions extends ClientOptions {
 }
 
 export interface PersistedData {
-  mnemonic: string | undefined;
+  mnemonics: string[];
   subscriptions: EventSubscription[] | undefined;
   initiatedClients: PersistedClientSettings[] | undefined;
 }

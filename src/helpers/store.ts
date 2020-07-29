@@ -4,18 +4,27 @@ import { getFileStore } from "@connext/store";
 import { CONNEXT_MNEMONIC_KEY, CONNEXT_CLIENTS_KEY, CONNEXT_SUBSCRIPTIONS_KEY } from "./constants";
 import { EventSubscription, PersistedData, PersistedClientSettings } from "./types";
 
-export async function getStore(storeDir: string) {
-  const store = getFileStore(storeDir);
+export async function getStore(storeDir: string, prefix?: string) {
+  const opts = prefix ? { prefix } : undefined;
+  const store = getFileStore(storeDir, opts);
   await store.init();
   return store;
 }
 
-export function storeMnemonic(mnemonic: string, store: IStoreService): Promise<void> {
-  return (store as any).setItem(CONNEXT_MNEMONIC_KEY, mnemonic);
+export async function storeMnemonics(mnemonics: string[], store: IStoreService): Promise<void> {
+  const stored = await fetchMnemonics(store);
+  mnemonics.forEach((m) => {
+    if (stored.includes(m)) {
+      return;
+    }
+    stored.push(m);
+  });
+  return (store as any).setItem(CONNEXT_MNEMONIC_KEY, JSON.stringify(stored));
 }
 
-export function fetchMnemonic(store: IStoreService): Promise<string | undefined> {
-  return (store as any).getItem(CONNEXT_MNEMONIC_KEY);
+export function fetchMnemonics(store: IStoreService): Promise<string[]> {
+  const stored = (store as any).getItem(CONNEXT_MNEMONIC_KEY) || "[]";
+  return JSON.parse(stored);
 }
 
 export async function storeSubscriptions(
@@ -57,11 +66,11 @@ export async function deleteInitiatedClients(store: IStoreService): Promise<void
 }
 
 export async function fetchPersistedData(store: IStoreService): Promise<PersistedData> {
-  const mnemonic = await fetchMnemonic(store);
+  const mnemonics = await fetchMnemonics(store);
   const subscriptions = await fetchSubscriptions(store);
   const initiatedClients = await fetchInitiatedClients(store);
   return {
-    mnemonic,
+    mnemonics,
     subscriptions,
     initiatedClients,
   };
