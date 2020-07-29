@@ -10,8 +10,6 @@ import {
   updateInitiatedClients,
   deleteInitiatedClients,
   storeIntiatedClients,
-  storeLastIndex,
-  removeLastIndex,
 } from "./helpers";
 
 export interface ClientSettings extends PersistedClientSettings {
@@ -28,15 +26,7 @@ class MultiClient {
     const persisted = await fetchPersistedData(store);
     const mnemonic = persisted.mnemonic || getRandomMnemonic();
     await storeMnemonic(mnemonic, store);
-    const lastIndex = persisted.lastIndex;
-    const multiClient = new MultiClient(
-      mnemonic,
-      logger,
-      store,
-      singleClientMode,
-      rootStoreDir,
-      lastIndex,
-    );
+    const multiClient = new MultiClient(mnemonic, logger, store, singleClientMode, rootStoreDir);
     if (persisted.initiatedClients && persisted.initiatedClients.length) {
       if (singleClientMode) {
         logger.info(`Connecting a single persisted client`);
@@ -45,7 +35,7 @@ class MultiClient {
         logger.info(`Connecting all persisted clients`);
         await Promise.all(
           persisted.initiatedClients.map((initiatedClient) =>
-            multiClient.connectClient(initiatedClient.opts),
+            multiClient.connectClient(initiatedClient.opts, initiatedClient.index),
           ),
         );
       }
@@ -54,6 +44,7 @@ class MultiClient {
   }
 
   public clients: ClientSettings[] = [];
+  public lastIndex: number | undefined;
 
   constructor(
     public mnemonic: string,
@@ -61,16 +52,17 @@ class MultiClient {
     public store: IStoreService,
     public singleClientMode: boolean,
     public rootStoreDir: string,
-    public lastIndex: number | undefined,
   ) {
     this.mnemonic = mnemonic;
     this.logger = logger;
     this.store = store;
     this.rootStoreDir = rootStoreDir;
-    this.lastIndex = lastIndex;
   }
 
-  public async connectClient(opts?: Partial<ConnectOptions>): Promise<Client> {
+  public async connectClient(
+    opts?: Partial<ConnectOptions>,
+    overrideIndex?: number,
+  ): Promise<Client> {
     const mnemonic = opts?.mnemonic || this.mnemonic;
     if (this.mnemonic && mnemonic !== this.mnemonic) {
       this.removeAllClients();
@@ -79,8 +71,13 @@ class MultiClient {
       return this.clients[0].client;
     }
     await this.setMnemonic(mnemonic);
-    const index = typeof this.lastIndex !== "undefined" ? this.lastIndex + 1 : 0;
-    await this.setLastIndex(index);
+    const index =
+      typeof overrideIndex !== "undefined" && overrideIndex >= (this.lastIndex || 0)
+        ? overrideIndex
+        : typeof this.lastIndex !== "undefined"
+        ? this.lastIndex + 1
+        : 0;
+    this.lastIndex = index;
     this.logger.info(`Connecting client with mnemonic: ${mnemonic}`);
     this.logger.info(`Connecting client with index: ${index}`);
     const client = await this.createClient(mnemonic, index, opts);
@@ -138,16 +135,6 @@ class MultiClient {
     return client;
   }
 
-  private async setLastIndex(index: number) {
-    this.lastIndex = index;
-    await storeLastIndex(index, this.store);
-  }
-
-  private async removeLastIndex() {
-    this.lastIndex = undefined;
-    await removeLastIndex(this.store);
-  }
-
   private async setClient(
     client: Client,
     index: number,
@@ -176,7 +163,7 @@ class MultiClient {
       this.store,
     );
     if (!this.clients.length) {
-      this.removeLastIndex();
+      this.lastIndex = undefined;
     }
   }
 
@@ -189,7 +176,7 @@ class MultiClient {
     );
     this.clients = [];
     await deleteInitiatedClients(this.store);
-    this.removeLastIndex();
+    this.lastIndex = undefined;
   }
 }
 

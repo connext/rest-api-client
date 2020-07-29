@@ -38,18 +38,6 @@ export async function fetchSubscriptions(
   return (store as any).getItem(CONNEXT_SUBSCRIPTIONS_KEY);
 }
 
-export async function storeLastIndex(lastIndex: number, store: IStoreService): Promise<void> {
-  return (store as any).setItem(CONNEXT_LAST_INDEX_KEY, lastIndex);
-}
-
-export async function fetchLastIndex(store: IStoreService): Promise<number | undefined> {
-  return (store as any).getItem(CONNEXT_LAST_INDEX_KEY);
-}
-
-export async function removeLastIndex(store: IStoreService): Promise<void> {
-  return (store as any).removeItem(CONNEXT_LAST_INDEX_KEY);
-}
-
 export async function storeIntiatedClients(
   initiatedClients: PersistedClientSettings[],
   store: IStoreService,
@@ -76,12 +64,10 @@ export async function deleteInitiatedClients(store: IStoreService): Promise<void
 }
 
 export async function fetchPersistedData(store: IStoreService): Promise<PersistedData> {
-  const lastIndex = await fetchLastIndex(store);
   const mnemonic = await fetchMnemonic(store);
   const subscriptions = await fetchSubscriptions(store);
   const initiatedClients = await fetchInitiatedClients(store);
   return {
-    lastIndex,
     mnemonic,
     subscriptions,
     initiatedClients,
