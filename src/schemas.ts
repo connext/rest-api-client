@@ -415,7 +415,7 @@ export const Routes = {
           body: {
             type: "object",
             properties: {
-              preImage: { type: "string" },
+              preImage: { type: "string", nullable: true },
               assetId: { type: "string" },
               paymentId: { type: "string", nullable: true },
             },

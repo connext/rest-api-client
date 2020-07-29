@@ -347,7 +347,6 @@ const routes = () => {
     { ...Routes.post.hashLockResolve.opts, preHandler: app.auth([app.verifyApiKey]) },
     async (req, res) => {
       try {
-        await requireParam(req.body, "preImage");
         await requireParam(req.body, "assetId");
         res.status(200).send<PostHashLockResolveResponse>(await client.hashLockResolve(req.body));
       } catch (error) {
