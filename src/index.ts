@@ -295,7 +295,7 @@ app.after(() => {
         if (!config.singleClientMode) {
           await requireParam(req.body, "publicIdentifier");
         }
-        await multiClient.disconnectClient(req.body.publicIdentifier);
+        await multiClient.disconnectClient(req.body?.publicIdentifier);
         res.status(200).send<GenericSuccessResponse>({ success: true });
       } catch (error) {
         app.log.error(error);

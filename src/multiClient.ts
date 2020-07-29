@@ -53,7 +53,7 @@ class MultiClient {
     return multiClient;
   }
 
-  public active: ClientSettings[] = [];
+  public clients: ClientSettings[] = [];
 
   constructor(
     public mnemonic: string,
@@ -76,11 +76,11 @@ class MultiClient {
       this.removeAllClients();
     }
     if (!this.shouldConnectClient()) {
-      return this.active[0].client;
+      return this.clients[0].client;
     }
     await this.setMnemonic(mnemonic);
-    const index = this.lastIndex ? this.lastIndex + 1 : 0;
-    this.setLastIndex(index);
+    const index = typeof this.lastIndex !== "undefined" ? this.lastIndex + 1 : 0;
+    await this.setLastIndex(index);
     this.logger.info(`Connecting client with mnemonic: ${mnemonic}`);
     this.logger.info(`Connecting client with index: ${index}`);
     const client = await this.createClient(mnemonic, index, opts);
@@ -89,10 +89,10 @@ class MultiClient {
   }
 
   public getClient(pubId?: string): Client {
-    const publicIdentifier = pubId || this.active[0].client.getClient().publicIdentifier;
+    const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
     this.logger.info(`Getting client for publicIdentifier: ${publicIdentifier}`);
     if (!publicIdentifier) throw new Error("No client initialized");
-    const matches = this.active.filter(
+    const matches = this.clients.filter(
       (c) => c.client.getClient().publicIdentifier === publicIdentifier,
     );
     if (matches && matches.length) {
@@ -102,12 +102,12 @@ class MultiClient {
   }
 
   public getAllClientIds(): string[] {
-    return this.active.map(({ client }) => client.getClient().publicIdentifier);
+    return this.clients.map(({ client }) => client.getClient().publicIdentifier);
   }
 
   public async disconnectClient(pubId?: string) {
-    const publicIdentifier = pubId || this.active[0].client.getClient().publicIdentifier;
-    const client = this.active.filter(
+    const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
+    const client = this.clients.filter(
       (c) => c.client.getClient().publicIdentifier === publicIdentifier,
     )[0];
     await client.client.unsubscribeAll();
@@ -159,16 +159,23 @@ class MultiClient {
       publicIdentifier: client.client.publicIdentifier,
       opts,
     };
-    this.active.push({ ...initiatedClient, client });
+    this.clients.push({ ...initiatedClient, client });
     await updateInitiatedClients(initiatedClient, this.store);
   }
 
   private async removeClient(publicIdentifier: string) {
-    this.active = this.active.filter(
+    this.clients = this.clients.filter(
       (c) => c.client.getClient().publicIdentifier !== publicIdentifier,
     );
-    await storeIntiatedClients(this.active, this.store);
-    if (!this.active.length) {
+    await storeIntiatedClients(
+      this.clients.map((x) => {
+        const _client = { ...x };
+        delete _client.client;
+        return _client;
+      }),
+      this.store,
+    );
+    if (!this.clients.length) {
       this.removeLastIndex();
     }
   }
@@ -176,11 +183,11 @@ class MultiClient {
   private async removeAllClients() {
     this.logger.info(`Removing all initiated clients`);
     await Promise.all(
-      this.active.map(async ({ client }) => {
+      this.clients.map(async ({ client }) => {
         await client.unsubscribeAll();
       }),
     );
-    this.active = [];
+    this.clients = [];
     await deleteInitiatedClients(this.store);
     this.removeLastIndex();
   }
