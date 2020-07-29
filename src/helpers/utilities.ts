@@ -63,12 +63,3 @@ export function cleanDeep(object: any) {
     result[key] = value;
   });
 }
-
-export function findInactiveIndexes(persistedClients: PersistedClientSettings[]) {
-  const indexes = persistedClients.map(({ index }) => index);
-  const expected: number[] = [];
-  for (let i = 0; i <= Math.max(...indexes); i++) {
-    expected.push(i);
-  }
-  return expected.filter((x) => !indexes.includes(x));
-}

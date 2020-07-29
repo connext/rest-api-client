@@ -10,7 +10,8 @@ import {
   updateInitiatedClients,
   deleteInitiatedClients,
   storeIntiatedClients,
-  findInactiveIndexes,
+  storeLastIndex,
+  removeLastIndex,
 } from "./helpers";
 
 export interface ClientSettings extends PersistedClientSettings {
@@ -27,16 +28,14 @@ class MultiClient {
     const persisted = await fetchPersistedData(store);
     const mnemonic = persisted.mnemonic || getRandomMnemonic();
     await storeMnemonic(mnemonic, store);
-    const inactive = persisted.initiatedClients
-      ? findInactiveIndexes(persisted.initiatedClients)
-      : [];
+    const lastIndex = persisted.lastIndex;
     const multiClient = new MultiClient(
       mnemonic,
       logger,
       store,
       singleClientMode,
       rootStoreDir,
-      inactive,
+      lastIndex,
     );
     if (persisted.initiatedClients && persisted.initiatedClients.length) {
       if (singleClientMode) {
@@ -55,7 +54,6 @@ class MultiClient {
   }
 
   public active: ClientSettings[] = [];
-  public pending: number[] = [];
 
   constructor(
     public mnemonic: string,
@@ -63,13 +61,13 @@ class MultiClient {
     public store: IStoreService,
     public singleClientMode: boolean,
     public rootStoreDir: string,
-    public inactive: number[] = [],
+    public lastIndex: number | undefined,
   ) {
     this.mnemonic = mnemonic;
     this.logger = logger;
     this.store = store;
     this.rootStoreDir = rootStoreDir;
-    this.inactive = inactive;
+    this.lastIndex = lastIndex;
   }
 
   public async connectClient(opts?: Partial<ConnectOptions>): Promise<Client> {
@@ -81,12 +79,11 @@ class MultiClient {
       return this.active[0].client;
     }
     await this.setMnemonic(mnemonic);
-    const index = this.getNextIndex();
+    const index = this.lastIndex ? this.lastIndex + 1 : 0;
+    this.setLastIndex(index);
     this.logger.info(`Connecting client with mnemonic: ${mnemonic}`);
     this.logger.info(`Connecting client with index: ${index}`);
-    this.setPendingIndex(index);
     const client = await this.createClient(mnemonic, index, opts);
-    this.removePendingIndex(index);
     await this.setClient(client, index, opts);
     return client;
   }
@@ -113,12 +110,8 @@ class MultiClient {
     const client = this.active.filter(
       (c) => c.client.getClient().publicIdentifier === publicIdentifier,
     )[0];
-    this.active = this.active.filter(
-      (c) => c.client.getClient().publicIdentifier !== publicIdentifier,
-    );
-    await storeIntiatedClients(this.active, this.store);
     await client.client.unsubscribeAll();
-    this.inactive.push(client.index);
+    this.removeClient(publicIdentifier);
   }
 
   public async setMnemonic(mnemonic: string) {
@@ -129,26 +122,10 @@ class MultiClient {
 
   // -- Private ---------------------------------------------------------------- //
 
-  private getLastIndex(): number {
-    return this.pending.length || this.inactive.length
-      ? Math.max(...[...this.pending, ...this.inactive])
-      : this.active.length - 1;
-  }
-
-  private getNextIndex(): number {
-    return this.getLastIndex() + 1;
-  }
-
-  private setPendingIndex(index: number): void {
-    this.pending.push(index);
-  }
-
-  private removePendingIndex(index: number): void {
-    this.pending = this.pending.filter((idx) => idx === index);
-  }
-
   private shouldConnectClient(): boolean {
-    return !this.singleClientMode || (this.singleClientMode && this.getNextIndex() === 0);
+    return (
+      !this.singleClientMode || (this.singleClientMode && typeof this.lastIndex === "undefined")
+    );
   }
 
   private async createClient(
@@ -159,6 +136,16 @@ class MultiClient {
     const client = new Client({ logger: this.logger, store: this.store });
     await client.connect(this.rootStoreDir, { ...opts, mnemonic, index });
     return client;
+  }
+
+  private async setLastIndex(index: number) {
+    this.lastIndex = index;
+    await storeLastIndex(index, this.store);
+  }
+
+  private async removeLastIndex() {
+    this.lastIndex = undefined;
+    await removeLastIndex(this.store);
   }
 
   private async setClient(
@@ -176,6 +163,16 @@ class MultiClient {
     await updateInitiatedClients(initiatedClient, this.store);
   }
 
+  private async removeClient(publicIdentifier: string) {
+    this.active = this.active.filter(
+      (c) => c.client.getClient().publicIdentifier !== publicIdentifier,
+    );
+    await storeIntiatedClients(this.active, this.store);
+    if (!this.active.length) {
+      this.removeLastIndex();
+    }
+  }
+
   private async removeAllClients() {
     this.logger.info(`Removing all initiated clients`);
     await Promise.all(
@@ -184,9 +181,8 @@ class MultiClient {
       }),
     );
     this.active = [];
-    this.inactive = [];
-    this.pending = [];
     await deleteInitiatedClients(this.store);
+    this.removeLastIndex();
   }
 }
 
