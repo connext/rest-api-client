@@ -14,7 +14,7 @@
   "homepage": "https://github.com/ConnextProject/rest-api-client#readme",
   "scripts": {
     "clean:build": "rm -rf ./build",
-    "clean:store": "rm -rf ./connext-store",
+    "clean:store": "rm -rf ./connext-store*",
     "clean:all": "npm run clean:build && npm run clean:store",
     "compile": "tsc -p tsconfig.json",
     "build": "npm run clean:build && npm run compile",
