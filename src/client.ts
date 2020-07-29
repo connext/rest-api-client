@@ -42,6 +42,7 @@ import {
   PostLinkedResolveResponse,
   GetTransferHistoryResponse,
   getPath,
+  getStore,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
@@ -62,7 +63,10 @@ export default class Client {
     this.store = opts.store;
   }
 
-  public async connect(opts?: Partial<ConnectOptions>): Promise<IConnextClient> {
+  public async connect(
+    rootStoreDir: string,
+    opts?: Partial<ConnectOptions>,
+  ): Promise<IConnextClient> {
     const mnemonic = opts?.mnemonic;
     const index = opts?.index;
     if (typeof mnemonic === "undefined") {
@@ -85,9 +89,10 @@ export default class Client {
     this.initializing = true;
     const network = opts?.network || config.network;
     this.wallet = Wallet.fromMnemonic(mnemonic, getPath(index));
+    const store = await getStore(rootStoreDir, this.wallet);
     const clientOpts = {
       signer: this.wallet.privateKey,
-      store: this.store,
+      store,
       ethProviderUrl: opts?.ethProviderUrl || config.ethProviderUrl,
       nodeUrl: opts?.nodeUrl || config.nodeUrl,
       logLevel: opts?.logLevel || config.logLevel,

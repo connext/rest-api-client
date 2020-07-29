@@ -9,6 +9,7 @@ import {
   PersistedClientSettings,
   updateInitiatedClients,
   deleteInitiatedClients,
+  getStore,
 } from "./helpers";
 
 export interface ClientSettings extends PersistedClientSettings {
@@ -20,11 +21,12 @@ class MultiClient {
     logger: any,
     store: IStoreService,
     singleClientMode: boolean,
+    rootStoreDir: string,
   ): Promise<MultiClient> {
     const persisted = await fetchPersistedData(store);
     const mnemonic = persisted.mnemonic || getRandomMnemonic();
     await storeMnemonic(mnemonic, store);
-    const multiClient = new MultiClient(mnemonic, logger, store, singleClientMode);
+    const multiClient = new MultiClient(mnemonic, logger, store, singleClientMode, rootStoreDir);
     if (persisted.initiatedClients && persisted.initiatedClients.length) {
       if (singleClientMode) {
         logger.info(`Connecting a single persisted client`);
@@ -49,10 +51,12 @@ class MultiClient {
     public logger: any,
     public store: IStoreService,
     public singleClientMode: boolean,
+    public rootStoreDir: string,
   ) {
     this.mnemonic = mnemonic;
     this.logger = logger;
     this.store = store;
+    this.rootStoreDir = rootStoreDir;
   }
 
   public async connectClient(opts?: Partial<ConnectOptions>): Promise<Client> {
@@ -125,7 +129,7 @@ class MultiClient {
     opts?: Partial<ConnectOptions>,
   ): Promise<Client> {
     const client = new Client({ logger: this.logger, store: this.store });
-    await client.connect({ ...opts, mnemonic, index });
+    await client.connect(this.rootStoreDir, { ...opts, mnemonic, index });
     return client;
   }
 

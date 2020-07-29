@@ -3,9 +3,11 @@ import { getFileStore } from "@connext/store";
 
 import { CONNEXT_MNEMONIC_KEY, CONNEXT_CLIENTS_KEY, CONNEXT_SUBSCRIPTIONS_KEY } from "./constants";
 import { EventSubscription, PersistedData, PersistedClientSettings } from "./types";
+import { Wallet } from "ethers";
 
-export async function getStore(storeDir: string) {
-  const store = getFileStore(storeDir);
+export async function getStore(storeDir: string, wallet?: Wallet) {
+  const dir = wallet ? `${storeDir}-${wallet.address}` : storeDir;
+  const store = getFileStore(dir);
   await store.init();
   return store;
 }
