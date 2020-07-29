@@ -4,12 +4,10 @@ import Client from "./client";
 import {
   ConnectOptions,
   fetchPersistedData,
-  getRandomMnemonic,
   storeMnemonics,
   PersistedClientSettings,
   updateInitiatedClients,
   deleteInitiatedClients,
-  GetConfigResponse,
   getStore,
 } from "./helpers";
 import { Wallet } from "ethers";
@@ -26,7 +24,7 @@ class MultiClient {
     storeDir: string,
   ): Promise<MultiClient> {
     const persisted = await fetchPersistedData(store);
-    const mnemonics = persisted.mnemonics || [getRandomMnemonic()];
+    const mnemonics = persisted.mnemonics || [];
     await storeMnemonics(mnemonics, store);
     const multiClient = new MultiClient(mnemonics, logger, store, singleClientMode);
     if (persisted.initiatedClients && persisted.initiatedClients.length) {
@@ -60,7 +58,6 @@ class MultiClient {
   }
 
   public async connectClient(storeDir: string, opts?: Partial<ConnectOptions>): Promise<Client> {
-    console.log("connecting client with opts", opts);
     const mnemonic = opts?.mnemonic || this.mnemonics[0];
     if (mnemonic !== this.mnemonics[0]) {
       this.removeAllClients();
@@ -160,7 +157,7 @@ class MultiClient {
       this.clients.map(async ({ client }) => {
         await client.unsubscribeAll();
         if (client.client) {
-          await client.client!.store.clear();
+          await client.client.store.clear();
         }
       }),
     );

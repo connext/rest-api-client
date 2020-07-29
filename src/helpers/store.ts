@@ -19,7 +19,6 @@ export async function storeMnemonics(mnemonics: string[], store: IStoreService):
     }
     stored.push(m);
   });
-  console.log("**** storing mnemonics", stored);
   return (store as any).setItem(CONNEXT_MNEMONIC_KEY, JSON.stringify(stored));
 }
 
