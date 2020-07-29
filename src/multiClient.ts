@@ -9,7 +9,6 @@ import {
   PersistedClientSettings,
   updateInitiatedClients,
   deleteInitiatedClients,
-  GetConfigResponse,
 } from "./helpers";
 
 export interface ClientSettings extends PersistedClientSettings {
@@ -61,7 +60,9 @@ class MultiClient {
     if (this.mnemonic && mnemonic !== this.mnemonic) {
       this.removeAllClients();
     }
-    this.shouldConnectClient();
+    if (!this.shouldConnectClient()) {
+      return this.clients[0].client;
+    }
     await this.setMnemonic(mnemonic);
     const index = this.getNextIndex();
     this.logger.info(`Connecting client with mnemonic: ${mnemonic}`);
@@ -114,10 +115,8 @@ class MultiClient {
     this.pending = this.pending.filter((idx) => idx === index);
   }
 
-  private shouldConnectClient() {
-    if (this.singleClientMode && this.getNextIndex() !== 0) {
-      throw new Error("Cannot connect more than one client in single-client mode");
-    }
+  private shouldConnectClient(): boolean {
+    return !this.singleClientMode || (this.singleClientMode && this.getNextIndex() === 0);
   }
 
   private async createClient(
