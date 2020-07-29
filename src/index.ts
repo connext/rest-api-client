@@ -251,7 +251,7 @@ app.after(() => {
     async (req, res) => {
       try {
         if (!config.singleClientMode) {
-          await requireParam(req.body, "publicIdentifier");
+          await requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
         res.status(200).send<GetTransferHistoryResponse>(await client.getTransferHistory());
