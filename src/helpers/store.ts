@@ -5,8 +5,8 @@ import { CONNEXT_MNEMONIC_KEY, CONNEXT_CLIENTS_KEY, CONNEXT_SUBSCRIPTIONS_KEY } 
 import { EventSubscription, PersistedData, PersistedClientSettings } from "./types";
 
 export async function getStore(storeDir: string, prefix?: string) {
-  const opts = prefix ? { prefix } : undefined;
-  const store = getFileStore(storeDir, opts);
+  const dir = prefix ? `${storeDir}-${prefix}` : storeDir;
+  const store = getFileStore(dir);
   await store.init();
   return store;
 }
