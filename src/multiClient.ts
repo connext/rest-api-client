@@ -1,4 +1,5 @@
 import { IStoreService } from "@connext/types";
+import { getPublicIdentifierFromPublicKey } from "@connext/utils";
 
 import Client from "./client";
 import {
@@ -63,6 +64,16 @@ class MultiClient {
       this.removeAllClients();
     }
     this.shouldConnectClient();
+    const publicIdentifier = getPublicIdentifierFromPublicKey(
+      Wallet.fromMnemonic(mnemonic).publicKey,
+    );
+    const existing = this.clients.find(
+      (client) => client.client.getClient().publicIdentifier === publicIdentifier,
+    );
+    if (existing) {
+      this.logger.info(`Found existing connected client`);
+      return existing.client;
+    }
     await this.setMnemonic(mnemonic);
     const index = this.getNextIndex();
     this.logger.info(`Connecting client with mnemonic: ${mnemonic}`);
