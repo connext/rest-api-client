@@ -60,6 +60,7 @@ class MultiClient {
   }
 
   public async connectClient(storeDir: string, opts?: Partial<ConnectOptions>): Promise<Client> {
+    console.log("connecting client with opts", opts);
     const mnemonic = opts?.mnemonic || this.mnemonics[0];
     if (mnemonic !== this.mnemonics[0]) {
       this.removeAllClients();
