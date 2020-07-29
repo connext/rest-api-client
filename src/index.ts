@@ -268,9 +268,9 @@ app.after(() => {
     Routes.post.connect.opts,
     async (req, res) => {
       try {
-        const client = await multiClient.connectClient(req.body);
-        const config = await client.getConfig();
-        res.status(200).send<GetConfigResponse>(config);
+        const client = await multiClient.connectClient(config.storeDir, req.body);
+        const clientConfig = await client.getConfig();
+        res.status(200).send<GetConfigResponse>(clientConfig);
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
