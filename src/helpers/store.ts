@@ -22,8 +22,8 @@ export async function storeMnemonics(mnemonics: string[], store: IStoreService):
   return (store as any).setItem(CONNEXT_MNEMONIC_KEY, JSON.stringify(stored));
 }
 
-export function fetchMnemonics(store: IStoreService): Promise<string[]> {
-  const stored = (store as any).getItem(CONNEXT_MNEMONIC_KEY) || "[]";
+export async function fetchMnemonics(store: IStoreService): Promise<string[]> {
+  const stored = (await (store as any).getItem(CONNEXT_MNEMONIC_KEY)) || "[]";
   return JSON.parse(stored);
 }
 
