@@ -38,12 +38,12 @@ class MultiClient {
           `Connecting ${max} persisted clients out of ${persisted.initiatedClients.length}`,
         );
         for (let i = 0; i < max; i++) {
-          logger.info(`Connecting client at index ${persisted.initiatedClients[0].index}`);
+          logger.info(`Connecting client at index ${persisted.initiatedClients[i].index}`);
           await multiClient.connectClient(
-            persisted.initiatedClients[0].opts,
-            persisted.initiatedClients[0].index,
+            persisted.initiatedClients[i].opts,
+            persisted.initiatedClients[i].index,
           );
-          logger.info(`Connected client at index ${persisted.initiatedClients[0].index}!`);
+          logger.info(`Connected client at index ${persisted.initiatedClients[i].index}!`);
         }
       }
     }
