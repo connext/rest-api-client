@@ -69,13 +69,13 @@ app.register(fastifyHelmet);
 app.register(fastifySwagger, getSwaggerOptions(config.docsHost, config.version) as any);
 
 app.addHook("onReady", async () => {
-  // const rootStore = await getStore(config.storeDir);
-  // multiClient = await MultiClient.init(
-  //   app.log,
-  //   rootStore,
-  //   config.singleClientMode,
-  //   config.storeDir,
-  // );
+  const rootStore = await getStore(config.storeDir);
+  multiClient = await MultiClient.init(
+    app.log,
+    rootStore,
+    config.singleClientMode,
+    config.storeDir,
+  );
 });
 
 const loggingBlacklist = ["/balance"];
@@ -639,15 +639,8 @@ app.after(() => {
 // -- INIT ---------------------------------------------------------------- //
 
 const [host, port] = config.host.split(":");
-app.listen(+port, host, async (err) => {
+app.listen(+port, host, (err) => {
   if (err) throw err;
-  const rootStore = await getStore(config.storeDir);
-  multiClient = await MultiClient.init(
-    app.log,
-    rootStore,
-    config.singleClientMode,
-    config.storeDir,
-  );
 });
 
 export default app;
