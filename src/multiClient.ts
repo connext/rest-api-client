@@ -32,12 +32,17 @@ class MultiClient {
         logger.info(`Connecting a single persisted client`);
         multiClient.connectClient(persisted.initiatedClients[0].opts);
       } else {
+        // TODO: this is a hack because rest client is having trouble starting up with too many clients
         logger.info(`Connecting all persisted clients`);
-        await Promise.all(
-          persisted.initiatedClients.map((initiatedClient) =>
-            multiClient.connectClient(initiatedClient.opts, initiatedClient.index),
-          ),
-        );
+        const max = Math.max(3, persisted.initiatedClients.length);
+        for (let i = 0; i < max; i++) {
+          logger.info(`Connecting client at index ${persisted.initiatedClients[0].index}`);
+          await multiClient.connectClient(
+            persisted.initiatedClients[0].opts,
+            persisted.initiatedClients[0].index,
+          );
+          logger.info(`Connected client at index ${persisted.initiatedClients[0].index}!`);
+        }
       }
     }
     return multiClient;
