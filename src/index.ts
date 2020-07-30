@@ -52,6 +52,7 @@ import {
 const app = fastify({
   logger: { prettyPrint: config.debug } as any,
   disableRequestLogging: true,
+  pluginTimeout: 120_000,
 });
 
 let multiClient: MultiClient;
@@ -79,7 +80,6 @@ app.addHook("onReady", async () => {
 });
 
 const loggingBlacklist = ["/balance"];
-
 app.addHook("onRequest", (req, reply, done) => {
   if (config.debug && req.url) {
     if (isNotIncluded(req.url, loggingBlacklist)) {
