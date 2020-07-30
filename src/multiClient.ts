@@ -16,6 +16,8 @@ export interface ClientSettings extends PersistedClientSettings {
   client: Client;
 }
 
+const MAX_CLIENTS = 5;
+
 class MultiClient {
   static async init(
     logger: any,
@@ -33,7 +35,7 @@ class MultiClient {
         multiClient.connectClient(persisted.initiatedClients[0].opts);
       } else {
         // TODO: this is a hack because rest client is having trouble starting up with too many clients
-        const max = Math.max(3, persisted.initiatedClients.length);
+        const max = Math.min(MAX_CLIENTS, persisted.initiatedClients.length);
         logger.info(
           `Connecting ${max} persisted clients out of ${persisted.initiatedClients.length}`,
         );
