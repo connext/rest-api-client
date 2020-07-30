@@ -24,7 +24,7 @@
     "start:dev": "ts-node src/index.ts --watch"
   },
   "dependencies": {
-    "@connext/client": "7.0.0",
+    "@connext/client": "7.0.3-alpha.0",
     "axios": "^0.19.2",
     "core-js": "^3.6.5",
     "dotenv": "^8.2.0",
