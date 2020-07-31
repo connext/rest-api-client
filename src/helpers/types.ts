@@ -57,6 +57,19 @@ export type GetClientsResponse = {
   publicIdentifiers: string[];
 };
 
+export type ClientSummary = {
+  publicIdentifier: string;
+  multisig: string;
+  signer: string;
+  chainId: number;
+  token: string | undefined;
+  tokenBalance: string | undefined;
+  channelNonce: number | undefined;
+  proposedApps: number | undefined;
+  installedApps: number | undefined;
+};
+export type GetClientsStatsResponse = ClientSummary[];
+
 export type BatchSubscriptionResponse = {
   subscriptions: EventSubscription[];
 };

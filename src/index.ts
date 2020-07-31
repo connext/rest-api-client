@@ -47,6 +47,7 @@ import {
   GetConfigRequestParams,
   getStore,
   GetClientsResponse,
+  GetClientsStatsResponse,
 } from "./helpers";
 
 const app = fastify({
@@ -125,6 +126,17 @@ app.after(() => {
       res
         .status(200)
         .send<GetClientsResponse>({ publicIdentifiers: multiClient.getAllClientIds() });
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
+    }
+  });
+
+  app.get(Routes.get.clientStats.url, Routes.get.clientStats.opts, async (req, res) => {
+    try {
+      const stats = await multiClient.getClientsStats();
+      console.log("returning", stats);
+      res.status(200).send<GetClientsStatsResponse>(stats);
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });

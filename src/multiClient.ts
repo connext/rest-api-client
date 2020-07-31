@@ -1,4 +1,4 @@
-import { IStoreService } from "@connext/types";
+import { IStoreService, StateChannelJSON } from "@connext/types";
 
 import Client from "./client";
 import {
@@ -10,7 +10,10 @@ import {
   updateInitiatedClients,
   deleteInitiatedClients,
   storeIntiatedClients,
+  ClientSummary,
 } from "./helpers";
+import { BigNumber } from "ethers";
+import { stat } from "fs";
 
 export interface ClientSettings extends PersistedClientSettings {
   client: Client;
@@ -124,6 +127,49 @@ class MultiClient {
     this.mnemonic = mnemonic;
     await storeMnemonic(this.mnemonic, this.store);
     this.logger.info("Mnemonic set successfully");
+  }
+
+  public async getClientsStats() {
+    const stats = await Promise.all(
+      this.clients.map(async ({ client }) => {
+        const channel = client.getClient();
+        const basicInfo = {
+          publicIdentifier: channel.publicIdentifier,
+          multisig: channel.multisigAddress,
+          signer: channel.signerAddress,
+          chainId: channel.chainId,
+          token: channel.config.contractAddresses[channel.chainId].Token,
+        };
+        let tokenBalance: BigNumber | undefined;
+        try {
+          const freeBalance = await channel.getFreeBalance(basicInfo.token);
+          tokenBalance = freeBalance[basicInfo.signer];
+        } catch (e) {
+          this.logger.warn(`Failed to fetch free balance for ${basicInfo.token}: ${e.message}`);
+        }
+        let stateChannel: StateChannelJSON | undefined;
+        try {
+          stateChannel = (await channel.getStateChannel()).data;
+        } catch (e) {
+          this.logger.warn(`Failed to fetch state channel for ${basicInfo.multisig}: ${e.message}`);
+        }
+        return {
+          ...basicInfo,
+          tokenBalance: tokenBalance?.toString(),
+          channelNonce: stateChannel?.monotonicNumProposedApps,
+          proposedApps: stateChannel?.proposedAppInstances.length,
+          installedApps: stateChannel?.appInstances.length,
+        };
+      }),
+    );
+    const deduped: ClientSummary[] = [];
+    stats.forEach((stat) => {
+      if (deduped.find((info) => info.publicIdentifier === stat.publicIdentifier)) {
+        return;
+      }
+      deduped.push(stat);
+    });
+    return deduped;
   }
 
   // -- Private ---------------------------------------------------------------- //

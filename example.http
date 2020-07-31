@@ -2,7 +2,16 @@ GET http://localhost:5040/hello
 
 ###
 
+GET http://localhost:5040/clients
+
+###
+
+GET http://localhost:5040/client-stats
+
+###
+
 GET http://localhost:5040/config
+
 
 ###
 

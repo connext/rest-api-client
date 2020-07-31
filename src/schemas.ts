@@ -164,6 +164,35 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
           },
         },
       },
+      clientStats: {
+        url: "/client-stats",
+        description: "Get summary of running clients",
+        opts: {
+          preHandler: authHandler,
+          schema: {
+            response: {
+              200: {
+                type: "array",
+                items: {
+                  typeof: "object",
+                  properties: {
+                    publicIdentifier: { type: "string" },
+                    multisig: { type: "string" },
+                    signer: { type: "string" },
+                    chainId: { type: "number" },
+                    token: { type: "string" },
+                    tokenBalance: { type: "string" },
+                    channelNonce: { type: "number" },
+                    proposedApps: { type: "number" },
+                    installedApps: { type: "number" },
+                  },
+                },
+              },
+              500: GenericErrorResponseSchema,
+            },
+          },
+        },
+      },
       balance: {
         url: !singleClientMode ? "/balance/:assetId/:publicIdentifier" : "/balance/:assetId",
         description: "Get on-chain and off-chain balances for specific asset",
