@@ -197,6 +197,7 @@ export const Routes = {
                 lockHash: { type: "string" },
                 status: { type: "string" },
                 preImage: { type: "string" },
+                paymentId: { type: "string" },
                 expiry: { type: "string" },
               },
             },
