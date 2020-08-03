@@ -11,43 +11,14 @@ import {
   isNotIncluded,
   ConnectOptions,
   GenericErrorResponse,
-  GetBalanceResponse,
   GenericSuccessResponse,
-  GetBalanceRequestParams,
-  GetHashLockStatusRequestParams,
-  GetHashLockStatusResponse,
-  PostMnemonicRequestParams,
-  PostTransactionRequestParams,
-  PostTransactionResponse,
-  PostHashLockTransferRequestParams,
-  PostHashLockTransferResponse,
-  PostHashLockResolveResponse,
-  PostHashLockResolveRequestParams,
-  PostDepositRequestParams,
-  PostWithdrawRequestParams,
-  EventSubscriptionParams,
-  SubscriptionResponse,
-  GetAppInstanceDetailsParams,
-  GetAppInstanceDetailsResponse,
-  GetConfigResponse,
-  GetVersionResponse,
-  PostWithdrawResponse,
-  BatchSubscriptionResponse,
-  GetLinkedStatusRequestParams,
-  GetLinkedStatusResponse,
-  GetTransferHistoryRequestParams,
-  GetTransferHistoryResponse,
-  PostLinkedTransferRequestParams,
-  PostLinkedTransferResponse,
-  PostLinkedResolveRequestParams,
-  PostLinkedResolveResponse,
-  PostSwapRequestParams,
-  PostSwapResponse,
-  PostSubscribeRequestParams,
-  GetConfigRequestParams,
+  RouteMethods,
   getStore,
-  GetClientsResponse,
-  GetClientsStatsResponse,
+  fetchPersistedData,
+  storeMnemonic,
+  EventSubscriptionParams,
+  BatchSubscriptionResponse,
+  SubscriptionResponse,
 } from "./helpers";
 
 const app = fastify({
@@ -72,11 +43,21 @@ app.register(fastifySwagger, getSwaggerOptions(config.docsHost, config.version) 
 
 app.addHook("onReady", async () => {
   const rootStore = await getStore(config.storeDir);
+  const persisted = await fetchPersistedData(rootStore);
+  const mnemonic = persisted.mnemonic || config.mnemonic;
+  if (mnemonic && persisted.mnemonic !== mnemonic) {
+    await storeMnemonic(mnemonic, rootStore);
+  }
   multiClient = await MultiClient.init(
+    mnemonic,
+    config.ethProviderUrl,
+    config.nodeUrl,
     app.log,
     rootStore,
     config.singleClientMode,
     config.storeDir,
+    config.logLevel,
+    persisted.initiatedClients,
   );
 });
 
@@ -114,7 +95,7 @@ app.after(() => {
 
   app.get(Routes.get.version.url, Routes.get.version.opts, (req, res) => {
     try {
-      res.status(200).send<GetVersionResponse>({ version: config.version });
+      res.status(200).send<RouteMethods.GetVersionResponse>({ version: config.version });
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -123,9 +104,9 @@ app.after(() => {
 
   app.get(Routes.get.clients.url, Routes.get.clients.opts, async (req, res) => {
     try {
-      res
-        .status(200)
-        .send<GetClientsResponse>({ publicIdentifiers: multiClient.getAllClientIds() });
+      res.status(200).send<RouteMethods.GetClientsResponse>({
+        publicIdentifiers: multiClient.getAllClientIds(),
+      });
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -136,7 +117,7 @@ app.after(() => {
     try {
       const stats = await multiClient.getClientsStats();
       console.log("returning", stats);
-      res.status(200).send<GetClientsStatsResponse>(stats);
+      res.status(200).send<RouteMethods.GetClientsStatsResponse>(stats);
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -144,7 +125,7 @@ app.after(() => {
   });
 
   interface GetBalanceRequest extends RequestGenericInterface {
-    Params: GetBalanceRequestParams;
+    Params: RouteMethods.GetBalanceRequestParams;
   }
 
   app.get<GetBalanceRequest>(Routes.get.balance.url, Routes.get.balance.opts, async (req, res) => {
@@ -154,7 +135,9 @@ app.after(() => {
         await requireParam(req.params, "publicIdentifier");
       }
       const client = multiClient.getClient(req.params.publicIdentifier);
-      res.status(200).send<GetBalanceResponse>(await client.balance(req.params.assetId));
+      res
+        .status(200)
+        .send<RouteMethods.GetBalanceResponse>(await client.balance(req.params.assetId));
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -162,7 +145,7 @@ app.after(() => {
   });
 
   interface GetConfigRequest extends RequestGenericInterface {
-    Params: GetConfigRequestParams;
+    Params: RouteMethods.GetConfigRequestParams;
   }
 
   app.get<GetConfigRequest>(Routes.get.config.url, Routes.get.config.opts, async (req, res) => {
@@ -171,7 +154,7 @@ app.after(() => {
         await requireParam(req.params, "publicIdentifier");
       }
       const client = multiClient.getClient(req.params.publicIdentifier);
-      res.status(200).send<GetConfigResponse>(await client.getConfig());
+      res.status(200).send<RouteMethods.GetConfigResponse>(await client.getConfig());
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -179,7 +162,7 @@ app.after(() => {
   });
 
   interface GetHashLockStatusRequest extends RequestGenericInterface {
-    Params: GetHashLockStatusRequestParams;
+    Params: RouteMethods.GetHashLockStatusRequestParams;
   }
 
   app.get<GetHashLockStatusRequest>(
@@ -196,7 +179,9 @@ app.after(() => {
         const client = multiClient.getClient(req.params.publicIdentifier);
         res
           .status(200)
-          .send<GetHashLockStatusResponse>(await client.hashLockStatus(lockHash, assetId));
+          .send<RouteMethods.GetHashLockStatusResponse>(
+            await client.hashLockStatus(lockHash, assetId),
+          );
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -205,7 +190,7 @@ app.after(() => {
   );
 
   interface GetLinkedStatusRequest extends RequestGenericInterface {
-    Params: GetLinkedStatusRequestParams;
+    Params: RouteMethods.GetLinkedStatusRequestParams;
   }
 
   app.get<GetLinkedStatusRequest>(
@@ -219,7 +204,9 @@ app.after(() => {
           await requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
-        res.status(200).send<GetLinkedStatusResponse>(await client.linkedStatus(paymentId));
+        res
+          .status(200)
+          .send<RouteMethods.GetLinkedStatusResponse>(await client.linkedStatus(paymentId));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -228,7 +215,7 @@ app.after(() => {
   );
 
   interface GetAppInstanceDetailsRequest extends RequestGenericInterface {
-    Params: GetAppInstanceDetailsParams;
+    Params: RouteMethods.GetAppInstanceDetailsParams;
   }
 
   app.get<GetAppInstanceDetailsRequest>(
@@ -243,7 +230,7 @@ app.after(() => {
         const client = multiClient.getClient(req.params.publicIdentifier);
         res
           .status(200)
-          .send<GetAppInstanceDetailsResponse>(
+          .send<RouteMethods.GetAppInstanceDetailsResponse>(
             await client.getAppInstanceDetails(req.params.appIdentityHash),
           );
       } catch (error) {
@@ -254,7 +241,7 @@ app.after(() => {
   );
 
   interface GetTransferHistoryRequest extends RequestGenericInterface {
-    Params: GetTransferHistoryRequestParams;
+    Params: RouteMethods.GetTransferHistoryRequestParams;
   }
 
   app.get<GetTransferHistoryRequest>(
@@ -266,7 +253,9 @@ app.after(() => {
           await requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
-        res.status(200).send<GetTransferHistoryResponse>(await client.getTransferHistory());
+        res
+          .status(200)
+          .send<RouteMethods.GetTransferHistoryResponse>(await client.getTransferHistory());
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -287,7 +276,7 @@ app.after(() => {
       try {
         const client = await multiClient.connectClient(req.body);
         const config = await client.getConfig();
-        res.status(200).send<GetConfigResponse>(config);
+        res.status(200).send<RouteMethods.GetConfigResponse>(config);
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -317,7 +306,7 @@ app.after(() => {
   );
 
   interface PostMnemonicRequest extends RequestGenericInterface {
-    Body: PostMnemonicRequestParams;
+    Body: RouteMethods.PostMnemonicRequestParams;
   }
 
   app.post<PostMnemonicRequest>(
@@ -336,7 +325,7 @@ app.after(() => {
   );
 
   interface PostTransactionRequest extends RequestGenericInterface {
-    Body: PostTransactionRequestParams;
+    Body: RouteMethods.PostTransactionRequestParams;
   }
 
   app.post<PostTransactionRequest>(
@@ -351,7 +340,9 @@ app.after(() => {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
-        res.status(200).send<PostTransactionResponse>(await client.transferOnChain(req.body));
+        res
+          .status(200)
+          .send<RouteMethods.PostTransactionResponse>(await client.transferOnChain(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -360,7 +351,7 @@ app.after(() => {
   );
 
   interface PostHashLockTransferRequest extends RequestGenericInterface {
-    Body: PostHashLockTransferRequestParams;
+    Body: RouteMethods.PostHashLockTransferRequestParams;
   }
 
   app.post<PostHashLockTransferRequest>(
@@ -377,7 +368,9 @@ app.after(() => {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
-        res.status(200).send<PostHashLockTransferResponse>(await client.hashLockTransfer(req.body));
+        res
+          .status(200)
+          .send<RouteMethods.PostHashLockTransferResponse>(await client.hashLockTransfer(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -386,7 +379,7 @@ app.after(() => {
   );
 
   interface PostHashLockResolveRequest extends RequestGenericInterface {
-    Body: PostHashLockResolveRequestParams;
+    Body: RouteMethods.PostHashLockResolveRequestParams;
   }
 
   app.post<PostHashLockResolveRequest>(
@@ -400,7 +393,9 @@ app.after(() => {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
-        res.status(200).send<PostHashLockResolveResponse>(await client.hashLockResolve(req.body));
+        res
+          .status(200)
+          .send<RouteMethods.PostHashLockResolveResponse>(await client.hashLockResolve(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -409,7 +404,7 @@ app.after(() => {
   );
 
   interface PostLinkedTransferRequest extends RequestGenericInterface {
-    Body: PostLinkedTransferRequestParams;
+    Body: RouteMethods.PostLinkedTransferRequestParams;
   }
 
   app.post<PostLinkedTransferRequest>(
@@ -424,7 +419,9 @@ app.after(() => {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
-        res.status(200).send<PostLinkedTransferResponse>(await client.linkedTransfer(req.body));
+        res
+          .status(200)
+          .send<RouteMethods.PostLinkedTransferResponse>(await client.linkedTransfer(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -433,7 +430,7 @@ app.after(() => {
   );
 
   interface PostLinkedResolveRequest extends RequestGenericInterface {
-    Body: PostLinkedResolveRequestParams;
+    Body: RouteMethods.PostLinkedResolveRequestParams;
   }
 
   app.post<PostLinkedResolveRequest>(
@@ -447,7 +444,9 @@ app.after(() => {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
-        res.status(200).send<PostLinkedResolveResponse>(await client.linkedResolve(req.body));
+        res
+          .status(200)
+          .send<RouteMethods.PostLinkedResolveResponse>(await client.linkedResolve(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -456,7 +455,7 @@ app.after(() => {
   );
 
   interface PostDepositRequest extends RequestGenericInterface {
-    Body: PostDepositRequestParams;
+    Body: RouteMethods.PostDepositRequestParams;
   }
 
   app.post<PostDepositRequest>(
@@ -470,7 +469,7 @@ app.after(() => {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
-        res.status(200).send<GetBalanceResponse>(await client.deposit(req.body));
+        res.status(200).send<RouteMethods.GetBalanceResponse>(await client.deposit(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -479,7 +478,7 @@ app.after(() => {
   );
 
   interface PostSwapRequest extends RequestGenericInterface {
-    Body: PostSwapRequestParams;
+    Body: RouteMethods.PostSwapRequestParams;
   }
 
   app.post<PostSwapRequest>(Routes.post.swap.url, Routes.post.swap.opts, async (req, res) => {
@@ -492,7 +491,7 @@ app.after(() => {
         await requireParam(req.body, "publicIdentifier");
       }
       const client = multiClient.getClient(req.body.publicIdentifier);
-      res.status(200).send<PostSwapResponse>(await client.swap(req.body));
+      res.status(200).send<RouteMethods.PostSwapResponse>(await client.swap(req.body));
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -500,7 +499,7 @@ app.after(() => {
   });
 
   interface PostWithdrawRequest extends RequestGenericInterface {
-    Body: PostWithdrawRequestParams;
+    Body: RouteMethods.PostWithdrawRequestParams;
   }
 
   app.post<PostWithdrawRequest>(
@@ -514,7 +513,7 @@ app.after(() => {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
-        res.status(200).send<PostWithdrawResponse>(await client.withdraw(req.body));
+        res.status(200).send<RouteMethods.PostWithdrawResponse>(await client.withdraw(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -523,7 +522,7 @@ app.after(() => {
   );
 
   interface PostSubscribeRequest extends RequestGenericInterface {
-    Body: PostSubscribeRequestParams;
+    Body: RouteMethods.PostSubscribeRequestParams;
   }
 
   app.post<PostSubscribeRequest>(

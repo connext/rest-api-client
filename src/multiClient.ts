@@ -1,99 +1,112 @@
+import { BigNumber } from "ethers";
 import { IStoreService, StateChannelJSON } from "@connext/types";
 
 import Client from "./client";
 import {
   ConnectOptions,
-  fetchPersistedData,
-  getRandomMnemonic,
   storeMnemonic,
   PersistedClientSettings,
   updateInitiatedClients,
   deleteInitiatedClients,
   storeIntiatedClients,
   ClientSummary,
+  fetchInitiatedClients,
 } from "./helpers";
-import { BigNumber } from "ethers";
-import { stat } from "fs";
 
 export interface ClientSettings extends PersistedClientSettings {
   client: Client;
 }
 
-const MAX_CLIENTS = 5;
-
 class MultiClient {
   static async init(
+    mnemonic: string | undefined,
+    ethProviderUrl: string | undefined,
+    nodeUrl: string | undefined,
     logger: any,
     store: IStoreService,
     singleClientMode: boolean,
     rootStoreDir: string,
+    logLevel: number,
+    persistedClients?: PersistedClientSettings[],
   ): Promise<MultiClient> {
-    const persisted = await fetchPersistedData(store);
-    const mnemonic = persisted.mnemonic || getRandomMnemonic();
-    await storeMnemonic(mnemonic, store);
-    const multiClient = new MultiClient(mnemonic, logger, store, singleClientMode, rootStoreDir);
-    if (persisted.initiatedClients && persisted.initiatedClients.length) {
-      if (singleClientMode) {
-        logger.info(`Connecting a single persisted client`);
-        multiClient.connectClient(persisted.initiatedClients[0].opts);
-      } else {
-        // TODO: this is a hack because rest client is having trouble starting up with too many clients
-        const max = Math.min(MAX_CLIENTS, persisted.initiatedClients.length);
-        logger.info(
-          `Connecting ${max} persisted clients out of ${persisted.initiatedClients.length}`,
-        );
-        for (let i = 0; i < max; i++) {
-          logger.info(`Connecting client at index ${persisted.initiatedClients[i].index}`);
-          await multiClient.connectClient(
-            persisted.initiatedClients[i].opts,
-            persisted.initiatedClients[i].index,
-          );
-          logger.info(`Connected client at index ${persisted.initiatedClients[i].index}!`);
-        }
-      }
+    const multiClient = new MultiClient(
+      mnemonic,
+      ethProviderUrl,
+      nodeUrl,
+      logger,
+      store,
+      singleClientMode,
+      rootStoreDir,
+      logLevel,
+    );
+    if (singleClientMode && persistedClients && persistedClients.length) {
+      logger.info(`Connecting a single persisted client`);
+      multiClient.connectClient(persistedClients[0].opts);
     }
     return multiClient;
   }
 
   public clients: ClientSettings[] = [];
-  public lastIndex: number | undefined;
 
   constructor(
-    public mnemonic: string,
+    public mnemonic: string | undefined,
+    public ethProviderUrl: string | undefined,
+    public nodeUrl: string | undefined,
     public logger: any,
     public store: IStoreService,
     public singleClientMode: boolean,
     public rootStoreDir: string,
+    public logLevel: number,
   ) {
     this.mnemonic = mnemonic;
+    this.ethProviderUrl = ethProviderUrl;
+    this.nodeUrl = nodeUrl;
     this.logger = logger;
     this.store = store;
+    this.singleClientMode = singleClientMode;
     this.rootStoreDir = rootStoreDir;
+    this.logLevel = logLevel;
   }
 
-  public async connectClient(
-    opts?: Partial<ConnectOptions>,
-    overrideIndex?: number,
-  ): Promise<Client> {
+  public async connectClient(opts?: Partial<ConnectOptions>): Promise<Client> {
     const mnemonic = opts?.mnemonic || this.mnemonic;
-    if (this.mnemonic && mnemonic !== this.mnemonic) {
-      this.removeAllClients();
+    if (typeof mnemonic === "undefined") {
+      throw new Error("Cannot connect Connext client without mnemonic");
     }
-    if (!this.shouldConnectClient()) {
+    if (mnemonic !== this.mnemonic) {
+      await this.setMnemonic(mnemonic);
+    }
+
+    if (typeof opts?.index !== "undefined") {
+      const match = this.getClientByIndex(opts?.index);
+      if (match) return match.client;
+    }
+
+    if (this.singleClientMode && this.clients.length !== 0) {
       return this.clients[0].client;
     }
-    await this.setMnemonic(mnemonic);
-    const index =
-      typeof overrideIndex !== "undefined" && overrideIndex >= (this.lastIndex || 0)
-        ? overrideIndex
-        : typeof this.lastIndex !== "undefined"
-        ? this.lastIndex + 1
-        : 0;
-    this.lastIndex = index;
+
+    const index = this.getNewIndex(opts?.index);
     this.logger.info(`Connecting client with mnemonic: ${mnemonic}`);
     this.logger.info(`Connecting client with index: ${index}`);
-    const client = await this.createClient(mnemonic, index, opts);
-    await this.setClient(client, index, opts);
+
+    const persistedOpts = await this.getPersistedClientOptions(index);
+
+    const ethProviderUrl =
+      opts?.ethProviderUrl || persistedOpts?.ethProviderUrl || this.ethProviderUrl;
+    if (typeof ethProviderUrl === "undefined") {
+      throw new Error("Cannot connect Connext client without ethProviderUrl");
+    }
+
+    const nodeUrl = opts?.nodeUrl || persistedOpts?.nodeUrl || this.nodeUrl;
+    if (typeof nodeUrl === "undefined") {
+      throw new Error("Cannot connect Connext client without nodeUrl");
+    }
+
+    const connectOpts = { mnemonic, index, ethProviderUrl, nodeUrl };
+    const client = await this.createClient(connectOpts);
+    await this.setClient(client, connectOpts);
+
     return client;
   }
 
@@ -124,6 +137,9 @@ class MultiClient {
   }
 
   public async setMnemonic(mnemonic: string) {
+    if (this.mnemonic && mnemonic !== this.mnemonic) {
+      this.removeAllClients();
+    }
     this.mnemonic = mnemonic;
     await storeMnemonic(this.mnemonic, this.store);
     this.logger.info("Mnemonic set successfully");
@@ -174,30 +190,58 @@ class MultiClient {
 
   // -- Private ---------------------------------------------------------------- //
 
-  private shouldConnectClient(): boolean {
-    return (
-      !this.singleClientMode || (this.singleClientMode && typeof this.lastIndex === "undefined")
-    );
+  private getNewIndex(index?: number): number {
+    if (typeof index !== "undefined") {
+      const match = this.getClientByIndex(index);
+      console.log("[getNewIndex]", "match", match);
+      if (typeof match !== "undefined") {
+        throw new Error(`Client already connected with index: ${index}`);
+      }
+      return Number(index);
+    }
+    let result = 0;
+    console.log("[getNewIndex]", "this.clients.length", this.clients.length);
+    if (this.clients.length === 0) return result;
+    const indexes = this.clients.map((c) => c.opts.index);
+    console.log("[getNewIndex]", "indexes", indexes);
+    const maxIndex = Math.max(...indexes);
+    console.log("[getNewIndex]", "maxIndex", maxIndex);
+    for (let i = 0; i <= maxIndex; i++) {
+      if (!indexes.includes(i)) {
+        result = i;
+        break;
+      } else if (i === maxIndex) {
+        result = i + 1;
+      }
+    }
+    console.log("[getNewIndex]", "result", result);
+
+    return result;
   }
 
-  private async createClient(
-    mnemonic: string,
-    index: number,
-    opts?: Partial<ConnectOptions>,
-  ): Promise<Client> {
-    const client = new Client({ logger: this.logger, store: this.store });
-    await client.connect(this.rootStoreDir, { ...opts, mnemonic, index });
+  private getClientByIndex(index: number) {
+    return this.clients.find((c) => c.opts.index === index);
+  }
+
+  private async getPersistedClientOptions(index: number): Promise<ConnectOptions | undefined> {
+    let result: ConnectOptions | undefined;
+    const persistedClients = await fetchInitiatedClients(this.store);
+    const match = persistedClients?.find((c) => c.opts.index === index);
+    if (match) {
+      result = match.opts;
+    }
+    return result;
+  }
+
+  private async createClient(opts: ConnectOptions): Promise<Client> {
+    const client = new Client({ logger: this.logger, store: this.store, logLevel: this.logLevel });
+    await client.connect(this.rootStoreDir, opts);
     return client;
   }
 
-  private async setClient(
-    client: Client,
-    index: number,
-    opts?: Partial<ConnectOptions>,
-  ): Promise<void> {
+  private async setClient(client: Client, opts: ConnectOptions): Promise<void> {
     if (!client.client) return;
     const initiatedClient: PersistedClientSettings = {
-      index,
       publicIdentifier: client.client.publicIdentifier,
       opts,
     };
@@ -217,9 +261,6 @@ class MultiClient {
       }),
       this.store,
     );
-    if (!this.clients.length) {
-      this.lastIndex = undefined;
-    }
   }
 
   private async removeAllClients() {
@@ -231,7 +272,6 @@ class MultiClient {
     );
     this.clients = [];
     await deleteInitiatedClients(this.store);
-    this.lastIndex = undefined;
   }
 }
 

@@ -16,12 +16,13 @@ const singleClientMode =
     : true;
 const version = pkg.version;
 
-const network = process.env.CONNEXT_NETWORK || `rinkeby`;
 const ethProviderUrl = process.env.CONNEXT_ETH_PROVIDER_URL || undefined;
 const nodeUrl = process.env.CONNEXT_NODE_URL || undefined;
-const mnemonic = process.env.CONNEXT_MNEMONIC || "";
+const mnemonic = process.env.CONNEXT_MNEMONIC || undefined;
+
 const storeDir = process.env.CONNEXT_STORE_DIR || "./connext-store";
 const logLevel = parseInt(process.env.CONNEXT_LOG_LEVEL || "3", 10);
+
 const docsHost = process.env.DOCS_HOST || "localhost";
 
 export default {
@@ -32,7 +33,6 @@ export default {
   singleClientMode,
   version,
   apiKey,
-  network,
   ethProviderUrl,
   nodeUrl,
   mnemonic,

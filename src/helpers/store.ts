@@ -1,12 +1,7 @@
 import { IStoreService } from "@connext/types";
 import { getFileStore } from "@connext/store";
 
-import {
-  CONNEXT_MNEMONIC_KEY,
-  CONNEXT_CLIENTS_KEY,
-  CONNEXT_SUBSCRIPTIONS_KEY,
-  CONNEXT_LAST_INDEX_KEY,
-} from "./constants";
+import { CONNEXT_MNEMONIC_KEY, CONNEXT_CLIENTS_KEY, CONNEXT_SUBSCRIPTIONS_KEY } from "./constants";
 import { EventSubscription, PersistedData, PersistedClientSettings } from "./types";
 import { Wallet } from "ethers";
 
@@ -55,8 +50,12 @@ export async function updateInitiatedClients(
   initiatedClient: PersistedClientSettings,
   store: IStoreService,
 ): Promise<void> {
-  const initiatedClients = (await fetchInitiatedClients(store)) || [];
-  await storeIntiatedClients([...initiatedClients, initiatedClient], store);
+  let initiatedClients = (await fetchInitiatedClients(store)) || [];
+  initiatedClients = initiatedClients.filter(
+    (c) => c.publicIdentifier === initiatedClient.publicIdentifier,
+  );
+  initiatedClients.push(initiatedClient);
+  await storeIntiatedClients(initiatedClients, store);
 }
 
 export async function deleteInitiatedClients(store: IStoreService): Promise<void> {
