@@ -1,5 +1,4 @@
 import _ from "lodash";
-import { PersistedClientSettings } from "./types";
 
 export function safeJsonParse(value: any): any {
   try {

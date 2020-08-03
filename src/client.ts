@@ -1,48 +1,21 @@
 import * as connext from "@connext/client";
 import { getRandomBytes32 } from "@connext/utils";
-import {
-  IConnextClient,
-  IStoreService,
-  ConditionalTransferTypes,
-  PublicParams,
-} from "@connext/types";
+import { IConnextClient, ConditionalTransferTypes, PublicParams } from "@connext/types";
 import { Wallet, constants } from "ethers";
-
-import config from "./config";
 
 import {
   getClientBalance,
   getFreeBalanceOnChain,
   EventSubscriptionParams,
   InitClientManagerOptions,
-  ConnectOptions,
   transferOnChain,
-  GetBalanceResponse,
-  PostTransactionResponse,
-  PostHashLockTransferResponse,
   SubscriptionResponse,
   BatchSubscriptionResponse,
   GenericSuccessResponse,
-  GetAppInstanceDetailsResponse,
-  GetConfigResponse,
-  GetHashLockStatusResponse,
-  PostHashLockResolveResponse,
-  PostWithdrawResponse,
-  PostWithdrawRequestParams,
-  PostHashLockTransferRequestParams,
-  PostDepositRequestParams,
-  PostHashLockResolveRequestParams,
-  PostTransactionRequestParams,
-  PostSwapRequestParams,
-  PostSwapResponse,
-  PostLinkedTransferRequestParams,
-  PostLinkedTransferResponse,
-  GetLinkedStatusResponse,
-  PostLinkedResolveRequestParams,
-  PostLinkedResolveResponse,
-  GetTransferHistoryResponse,
+  RouteMethods,
   getPath,
   getStore,
+  ConnectOptions,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
@@ -54,31 +27,18 @@ export default class Client {
 
   private logger: any;
   private subscriber: Subscriber;
-  private store: IStoreService;
-  private initializing = false;
+  private connecting = false;
+  private logLevel: number;
 
   constructor(opts: InitClientManagerOptions) {
     this.subscriber = new Subscriber(opts.logger, opts.store);
     this.logger = opts.logger;
-    this.store = opts.store;
+    this.logLevel = opts.logLevel;
   }
 
-  public async connect(
-    rootStoreDir: string,
-    opts?: Partial<ConnectOptions>,
-  ): Promise<IConnextClient> {
-    const mnemonic = opts?.mnemonic;
-    const index = opts?.index;
-    if (typeof mnemonic === "undefined") {
-      throw new Error("Cannot init Connext client without mnemonic");
-    }
-
-    if (typeof index === "undefined") {
-      throw new Error("Cannot init Connext client without index");
-    }
-
-    if (this.initializing) {
-      throw new Error(`Client is initializing`);
+  public async connect(rootStoreDir: string, opts: ConnectOptions): Promise<IConnextClient> {
+    if (this.connecting) {
+      throw new Error(`Client is connecting`);
     }
 
     if (this.client) {
@@ -86,28 +46,28 @@ export default class Client {
       return this.client;
     }
 
-    this.initializing = true;
-    const network = opts?.network || config.network;
-    this.wallet = Wallet.fromMnemonic(mnemonic, getPath(index));
+    this.connecting = true;
+    this.wallet = Wallet.fromMnemonic(opts.mnemonic, getPath(opts.index));
+    const signer = this.wallet.privateKey;
     const store = await getStore(rootStoreDir, this.wallet);
     const clientOpts = {
-      signer: this.wallet.privateKey,
+      signer,
       store,
-      ethProviderUrl: opts?.ethProviderUrl || config.ethProviderUrl,
-      nodeUrl: opts?.nodeUrl || config.nodeUrl,
-      logLevel: opts?.logLevel || config.logLevel,
+      ethProviderUrl: opts.ethProviderUrl,
+      nodeUrl: opts.nodeUrl,
+      logLevel: this.logLevel,
     };
     try {
-      const client = await connext.connect(network, clientOpts);
+      const client = await connext.connect(clientOpts);
       this.client = client;
       this.logger.info("Client initialized successfully");
       return client;
     } finally {
-      this.initializing = false;
+      this.connecting = false;
     }
   }
 
-  public async getConfig(): Promise<GetConfigResponse> {
+  public async getConfig(): Promise<RouteMethods.GetConfigResponse> {
     const client = this.getClient();
     const config = {
       multisigAddress: undefined,
@@ -119,7 +79,7 @@ export default class Client {
     return config;
   }
 
-  public async getTransferHistory(): Promise<GetTransferHistoryResponse> {
+  public async getTransferHistory(): Promise<RouteMethods.GetTransferHistoryResponse> {
     const client = this.getClient();
     const transferHistory = await client.getTransferHistory();
     return transferHistory;
@@ -127,7 +87,7 @@ export default class Client {
 
   public async getAppInstanceDetails(
     appIdentityHash: string,
-  ): Promise<GetAppInstanceDetailsResponse> {
+  ): Promise<RouteMethods.GetAppInstanceDetailsResponse> {
     const client = this.getClient();
     const appDetails = await client.getAppInstance(appIdentityHash);
     if (typeof appDetails === "undefined") {
@@ -138,8 +98,8 @@ export default class Client {
   }
 
   public async hashLockTransfer(
-    params: PostHashLockTransferRequestParams,
-  ): Promise<PostHashLockTransferResponse> {
+    params: RouteMethods.PostHashLockTransferRequestParams,
+  ): Promise<RouteMethods.PostHashLockTransferResponse> {
     const client = this.getClient();
     if (params.assetId === AddressZero) {
       delete params.assetId;
@@ -159,8 +119,8 @@ export default class Client {
   }
 
   public async hashLockResolve(
-    params: PostHashLockResolveRequestParams,
-  ): Promise<PostHashLockResolveResponse> {
+    params: RouteMethods.PostHashLockResolveRequestParams,
+  ): Promise<RouteMethods.PostHashLockResolveResponse> {
     const client = this.getClient();
     const response = await client.resolveCondition({
       conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -173,7 +133,7 @@ export default class Client {
   public async hashLockStatus(
     lockHash: string,
     assetId: string,
-  ): Promise<GetHashLockStatusResponse> {
+  ): Promise<RouteMethods.GetHashLockStatusResponse> {
     const client = this.getClient();
     const response = await client.getHashLockTransfer(lockHash, assetId);
     if (!response) {
@@ -184,7 +144,7 @@ export default class Client {
     return response;
   }
 
-  public async linkedStatus(paymentId: string): Promise<GetLinkedStatusResponse> {
+  public async linkedStatus(paymentId: string): Promise<RouteMethods.GetLinkedStatusResponse> {
     const client = this.getClient();
     const response = await client.getLinkedTransfer(paymentId);
     if (!response) {
@@ -195,8 +155,8 @@ export default class Client {
   }
 
   public async linkedTransfer(
-    params: PostLinkedTransferRequestParams,
-  ): Promise<PostLinkedTransferResponse> {
+    params: RouteMethods.PostLinkedTransferRequestParams,
+  ): Promise<RouteMethods.PostLinkedTransferResponse> {
     const client = this.getClient();
     if (params.assetId === AddressZero) {
       delete params.assetId;
@@ -218,8 +178,8 @@ export default class Client {
   }
 
   public async linkedResolve(
-    params: PostLinkedResolveRequestParams,
-  ): Promise<PostLinkedResolveResponse> {
+    params: RouteMethods.PostLinkedResolveRequestParams,
+  ): Promise<RouteMethods.PostLinkedResolveResponse> {
     const client = this.getClient();
     const response = await client.resolveCondition({
       conditionType: ConditionalTransferTypes.LinkedTransfer,
@@ -230,12 +190,14 @@ export default class Client {
     return data;
   }
 
-  public async balance(assetId: string): Promise<GetBalanceResponse> {
+  public async balance(assetId: string): Promise<RouteMethods.GetBalanceResponse> {
     const client = this.getClient();
     return getClientBalance(client, assetId);
   }
 
-  public async deposit(params: PostDepositRequestParams): Promise<GetBalanceResponse> {
+  public async deposit(
+    params: RouteMethods.PostDepositRequestParams,
+  ): Promise<RouteMethods.GetBalanceResponse> {
     const client = this.getClient();
     const assetId = params.assetId || AddressZero;
     if (params.assetId === AddressZero) {
@@ -248,7 +210,9 @@ export default class Client {
     };
   }
 
-  public async swap(params: PostSwapRequestParams): Promise<PostSwapResponse> {
+  public async swap(
+    params: RouteMethods.PostSwapRequestParams,
+  ): Promise<RouteMethods.PostSwapResponse> {
     const client = this.getClient();
     await client.swap(params);
     return {
@@ -257,7 +221,9 @@ export default class Client {
     };
   }
 
-  public async withdraw(params: PostWithdrawRequestParams): Promise<PostWithdrawResponse> {
+  public async withdraw(
+    params: RouteMethods.PostWithdrawRequestParams,
+  ): Promise<RouteMethods.PostWithdrawResponse> {
     const client = this.getClient();
     if (params.assetId === AddressZero) {
       delete params.assetId;
@@ -267,8 +233,8 @@ export default class Client {
   }
 
   public async transferOnChain(
-    params: PostTransactionRequestParams,
-  ): Promise<PostTransactionResponse> {
+    params: RouteMethods.PostTransactionRequestParams,
+  ): Promise<RouteMethods.PostTransactionResponse> {
     const client = this.getClient();
     if (!this.wallet) {
       throw new Error("Client signer wallet is not initialized");

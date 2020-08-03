@@ -24,6 +24,17 @@ export function getSwaggerOptions(docsHost: string, version: string) {
   };
 }
 
+export const ConnectOptionsSchema = {
+  type: "object",
+  properties: {
+    mnemonic: { type: "string", nullable: true },
+    nodeUrl: { type: "string", nullable: true },
+    ethProviderUrl: { type: "string", nullable: true },
+    index: { type: "string", nullable: true },
+  },
+  nullable: true,
+};
+
 export const ChannelConfigResponseSchema = {
   type: "object",
   properties: {
@@ -366,20 +377,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
         opts: {
           preHandler: authHandler,
           schema: {
-            body: {
-              type: "object",
-              properties: {
-                mnemonic: { type: "string", nullable: true },
-                network: { type: "string", nullable: true },
-                nodeUrl: { type: "string", nullable: true },
-                ethProviderUrl: { type: "string", nullable: true },
-                messagingUrl: { type: "string", nullable: true },
-                logLevel: { type: "number", nullable: true },
-                skipSync: { type: "boolean", nullable: true },
-                skipInitStore: { type: "boolean", nullable: true },
-              },
-              nullable: true,
-            },
+            body: ConnectOptionsSchema,
             response: {
               200: ChannelConfigResponseSchema,
               500: GenericErrorResponseSchema,
