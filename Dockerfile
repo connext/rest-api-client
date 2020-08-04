@@ -2,13 +2,13 @@ FROM node:12
 
 WORKDIR /app
 
-COPY  package*.json /app
+COPY  ./ /app
 
 RUN npm install
 
-COPY  /app
+RUN /app/node_modules/.bin/tsc -p tsconfig.json
 
-RUN npm run start
+RUN node /app/build/src
 
 EXPOSE  5040
 
