@@ -68,6 +68,8 @@ export type GetTransferHistory = NodeResponses.GetTransferHistory;
 
 export type PostDepositRequestParams = PublicParams.Deposit;
 
+export type PostRequestCollateralRequestParams = { assetId: string };
+
 export type PostHashLockTransferRequestParams = PublicParams.HashLockTransfer;
 export interface PostHashLockTransferResponse
   extends PublicResults.ConditionalTransfer,

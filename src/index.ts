@@ -45,6 +45,7 @@ import {
   PostLinkedResolveResponse,
   PostSwapRequestParams,
   PostSwapResponse,
+  PostRequestCollateralRequestParams,
 } from "./helpers";
 
 const app = fastify({
@@ -387,6 +388,24 @@ const routes = () => {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
         res.status(200).send<GetBalanceResponse>(await client.deposit(req.body));
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
+  interface PostRequestCollateralRequest extends RequestGenericInterface {
+    Body: PostRequestCollateralRequestParams;
+  }
+
+  app.post<PostRequestCollateralRequest>(
+    Routes.post.requestCollateral.url,
+    { ...Routes.post.requestCollateral.opts, preHandler: app.auth([app.verifyApiKey]) },
+    async (req, res) => {
+      try {
+        await requireParam(req.body, "assetId");
+        res.status(200).send<void>(await client.requestCollateral(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
