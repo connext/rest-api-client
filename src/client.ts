@@ -49,6 +49,7 @@ export default class Client {
     }
 
     this.connecting = true;
+    this.wallet = new Wallet(opts.signer);
     const clientOpts = {
       store: await getStore(rootStoreDir, this.wallet),
       signer: opts.signer,
