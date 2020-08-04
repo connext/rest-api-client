@@ -171,7 +171,7 @@ app.after(() => {
         await requireParam(req.params, "assetId");
         const { lockHash, assetId } = req.params;
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          await requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
         res

@@ -16,10 +16,6 @@ GET http://localhost:5040/clients
 ###
 
 GET http://localhost:5040/wallets
-###
-
-GET http://localhost:5040/config
-
 
 ###
 
@@ -71,7 +67,7 @@ POST http://localhost:5040/create
 Content-Type: application/json
 
 {
-  "index": 0
+  "index": 1
 }
 ### publicIdentifier: indra6FHtEpVbRgT221fN95REhxXHqeZrV4fJiv9TbG5FuwjrhUfcZ9
 ### address: 0x098158D8B59327C5EcA50A299151D69182b36A4b
@@ -103,7 +99,7 @@ Content-Type: application/json
 ###
 
 
-GET http://localhost:5040/hashlock-status/0x7c0023168317e7010af1e8f5d583d2990bd0f7141f2068a9269ca92d9128c95a/0x0000000000000000000000000000000000000000
+GET http://localhost:5040/hashlock-status/0x7c0023168317e7010af1e8f5d583d2990bd0f7141f2068a9269ca92d9128c95a/0x0000000000000000000000000000000000000000/indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS
 
 ###
 
