@@ -153,6 +153,7 @@ class MultiClient {
 
   public async disconnectClient(pubId?: string) {
     const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
+    this.logger.info(`Disconnecting client with publicIdentifier: ${publicIdentifier}`);
     const client = this.clients.filter(
       (c) => c.client.getClient().publicIdentifier === publicIdentifier,
     )[0];
@@ -161,6 +162,7 @@ class MultiClient {
   }
 
   public async getClients() {
+    this.logger.info(`Getting summary of all connected clients`);
     const stats: ClientSummary[] = await Promise.all(
       this.clients.map(async ({ client }) => {
         const channel = client.getClient();
@@ -195,11 +197,12 @@ class MultiClient {
         };
       }),
     );
+
     return stats;
   }
 
   public async reset() {
-    this.logger.info(`Removing all initiated clients`);
+    this.logger.info(`Removing all connected clients`);
     await Promise.all(
       this.clients.map(async ({ client }) => {
         await client.unsubscribeAll();

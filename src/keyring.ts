@@ -55,6 +55,7 @@ class Keyring {
     }
     if (typeof wallet === "undefined") {
       this.setPending(index);
+      this.logger.info(`Creating wallet for index: ${index}`);
       wallet = Wallet.fromMnemonic(this.mnemonic, getPath(index));
       await this.setWallet(wallet, index);
       this.removePending(index);
@@ -67,6 +68,7 @@ class Keyring {
     if (!wallet) {
       throw new Error(`No wallet found for index: ${index}`);
     }
+    this.logger.info(`Getting wallet for index: ${index}`);
     return wallet;
   }
 
@@ -77,6 +79,7 @@ class Keyring {
     if (!wallet) {
       throw new Error(`No wallet found for publicIdentifier: ${publicIdentifier}`);
     }
+    this.logger.info(`Getting wallet for publicIdentifier: ${publicIdentifier}`);
     return wallet;
   }
 
