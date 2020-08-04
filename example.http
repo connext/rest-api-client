@@ -20,7 +20,8 @@ Content-Type: application/json
 
 {
   "mnemonic": "rich awful vocal decade chaos horse cheese sadness just equip equip dismiss",
-  "network": "localhost"
+  "nodeUrl": "http://localhost:3000",
+  "ethProviderUrl": "http://localhost:8545"
 }
 ### pk of mnemonic: 0xed2c48a36856528714ef63285fa7febe63423b6d205e6009cdfb81b87627503c
 ### addr: 0x44A0ac8eEaCa8D3B51CD3c6a2C23C618d3a2eB63
@@ -63,12 +64,17 @@ Content-Type: application/json
 
 {
   "mnemonic": "tragic robot dwarf ramp churn unusual flavor stairs choice noodle warm hello",
-  "network": "localhost"
+  "nodeUrl": "http://localhost:3000",
+  "ethProviderUrl": "http://localhost:8545"
 }
 
 ###
 
 GET http://localhost:5041/balance/0x0000000000000000000000000000000000000000
+
+###
+
+GET http://localhost:5041/hashlock-status/0x7c0023168317e7010af1e8f5d583d2990bd0f7141f2068a9269ca92d9128c95a/0x0000000000000000000000000000000000000000
 
 ###
 

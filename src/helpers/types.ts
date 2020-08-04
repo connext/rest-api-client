@@ -104,7 +104,7 @@ export namespace RouteMethods {
     lockHash: string;
     assetId: string;
   };
-  export type GetHashLockStatusResponse = NodeResponses.GetHashLockTransfer;
+  export type GetHashLockStatusResponse = NodeResponses.GetHashLockTransfer & { paymentId: string };
 
   export type GetLinkedStatusRequestParams = MultiClientRequestParams & { paymentId: string };
   export type GetLinkedStatusResponse = NodeResponses.GetLinkedTransfer;
@@ -148,6 +148,8 @@ export namespace RouteMethods {
 
   export type PostWithdrawRequestParams = MultiClientRequestParams & PublicParams.Withdraw;
   export type PostWithdrawResponse = { txhash: string };
+
+  export type PostRequestCollateralRequestParams = MultiClientRequestParams & { assetId: string };
 
   export type PostSwapRequestParams = MultiClientRequestParams & PublicParams.Swap;
   export type PostSwapResponse = { fromAssetIdBalance: string; toAssetIdBalance: string };

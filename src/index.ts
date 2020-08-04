@@ -432,7 +432,6 @@ app.after(() => {
     Routes.post.linkedTransfer.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
         await requireParam(req.body, "preImage");
         if (!config.legacyMode) {
@@ -490,6 +489,29 @@ app.after(() => {
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res.status(200).send<RouteMethods.GetBalanceResponse>(await client.deposit(req.body));
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
+  interface PostRequestCollateralRequest extends RequestGenericInterface {
+    Body: RouteMethods.PostRequestCollateralRequestParams;
+  }
+
+  app.post<PostRequestCollateralRequest>(
+    Routes.post.requestCollateral.url,
+    { ...Routes.post.requestCollateral.opts, preHandler: app.auth([app.verifyApiKey]) },
+    async (req, res) => {
+      try {
+        await requireParam(req.body, "assetId");
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        await client.requestCollateral(req.body);
+        res.status(200).send<GenericSuccessResponse>({ success: true });
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });

@@ -218,7 +218,12 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
               type: "object",
               properties: {
                 assetId: { type: "string" },
-                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
+                amount: { type: "string" },
+                lockHash: { type: "string" },
+                status: { type: "string" },
+                preImage: { type: "string" },
+                paymentId: { type: "string" },
+                expiry: { type: "string" },
               },
             },
             response: {
@@ -626,6 +631,24 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
             },
             response: {
               200: BalanceResponseSchema,
+              500: GenericErrorResponseSchema,
+            },
+          },
+        },
+      },
+      requestCollateral: {
+        url: "/request-collateral",
+        description: "Request collateral for an asset",
+        opts: {
+          schema: {
+            body: {
+              type: "object",
+              properties: {
+                assetId: { type: "string" },
+              },
+            },
+            response: {
+              200: GenericSuccessResponseSchema,
               500: GenericErrorResponseSchema,
             },
           },

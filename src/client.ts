@@ -18,7 +18,7 @@ import {
 } from "./helpers";
 import Subscriber from "./subscriber";
 
-const { AddressZero } = constants;
+const { AddressZero, HashZero } = constants;
 
 export default class Client {
   public wallet: Wallet | undefined;
@@ -123,8 +123,9 @@ export default class Client {
     const client = this.getClient();
     const response = await client.resolveCondition({
       conditionType: ConditionalTransferTypes.HashLockTransfer,
-      preImage: params.preImage,
+      preImage: params.preImage || HashZero,
       assetId: params.assetId,
+      paymentId: params.paymentId,
     } as PublicParams.ResolveHashLockTransfer);
     return response;
   }
@@ -140,7 +141,7 @@ export default class Client {
         `No HashLock Transfer found for lockHash: ${lockHash} and assetId: ${assetId}`,
       );
     }
-    return response;
+    return { ...response, paymentId: response.meta.paymentId };
   }
 
   public async linkedStatus(paymentId: string): Promise<RouteMethods.GetLinkedStatusResponse> {
@@ -207,6 +208,13 @@ export default class Client {
       freeBalanceOffChain: response.freeBalance[client.signerAddress].toString(),
       freeBalanceOnChain: await getFreeBalanceOnChain(client, assetId),
     };
+  }
+
+  public async requestCollateral(
+    params: RouteMethods.PostRequestCollateralRequestParams,
+  ): Promise<void> {
+    const client = this.getClient();
+    await client.requestCollateral(params.assetId);
   }
 
   public async swap(
