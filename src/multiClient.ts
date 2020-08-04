@@ -5,11 +5,12 @@ import Keyring from "./keyring";
 import {
   InternalConnectOptions,
   ConnectOptions,
-  updateInitiatedClients,
-  deleteInitiatedClients,
-  storeIntiatedClients,
+  updateClients,
+  deleteClients,
+  storeClients,
   ClientSummary,
-  fetchInitiatedClients,
+  fetchClients,
+  InternalWalletOptions,
 } from "./helpers";
 
 export interface ClientSettings extends InternalConnectOptions {
@@ -27,8 +28,9 @@ class MultiClient {
     rootStoreDir: string,
     logLevel: number,
     persistedClients?: InternalConnectOptions[],
+    persistedWallets?: InternalWalletOptions[],
   ): Promise<MultiClient> {
-    const keyring = new Keyring(mnemonic, logger, store);
+    const keyring = Keyring.init(mnemonic, logger, store, persistedWallets);
     const multiClient = new MultiClient(
       keyring,
       logger,
@@ -47,6 +49,7 @@ class MultiClient {
   }
 
   public clients: ClientSettings[] = [];
+  public pending: string[] = [];
 
   constructor(
     public keyring: Keyring,
@@ -75,7 +78,7 @@ class MultiClient {
       if (this.clients.length !== 0) {
         return this.clients[0].client;
       } else {
-        const wallet = this.keyring.createWallet(0);
+        const wallet = await this.keyring.createWallet(0);
         publicIdentifier = wallet.publicIdentifier;
       }
     }
@@ -84,8 +87,11 @@ class MultiClient {
       throw new Error("Cannot connect Connext client without publicIdentifier");
     }
 
+    if (this.pending.includes(publicIdentifier)) {
+      throw new Error(`Client already initializating for publicIdentifier: ${publicIdentifier}`);
+    }
+
     const signer = this.keyring.getWalletByPublicIdentifier(publicIdentifier).privateKey;
-    this.logger.info(`Connecting client with publicIdentifier: ${publicIdentifier}`);
 
     const persistedOpts = await this.getPersistedClientOptions(publicIdentifier);
 
@@ -100,6 +106,22 @@ class MultiClient {
       throw new Error("Cannot connect Connext client without nodeUrl");
     }
 
+    let match: ClientSettings | undefined;
+    try {
+      match = this.getClientSettings(publicIdentifier);
+    } catch {
+      // do nothing
+    }
+
+    if (typeof match !== "undefined") {
+      if (ethProviderUrl === match.ethProviderUrl && nodeUrl === match.nodeUrl) {
+        return match.client;
+      } else {
+        this.removeClient(publicIdentifier);
+      }
+    }
+    this.logger.info(`Connecting client with publicIdentifier: ${publicIdentifier}`);
+    this.setPending(publicIdentifier);
     const connectOpts: InternalConnectOptions = {
       publicIdentifier,
       signer,
@@ -107,11 +129,16 @@ class MultiClient {
       nodeUrl,
     };
     const client = await this.createClient(connectOpts);
+    this.removePending(publicIdentifier);
 
     return client;
   }
 
   public getClient(pubId?: string): Client {
+    return this.getClientSettings(pubId).client;
+  }
+
+  public getClientSettings(pubId?: string): ClientSettings {
     const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
     this.logger.info(`Getting client for publicIdentifier: ${publicIdentifier}`);
     if (!publicIdentifier) throw new Error("No client initialized");
@@ -119,7 +146,7 @@ class MultiClient {
       (c) => c.client.getClient().publicIdentifier === publicIdentifier,
     );
     if (matches && matches.length) {
-      return matches[0].client;
+      return matches[0];
     }
     throw new Error(`No client found matching publicIdentifier: ${publicIdentifier}`);
   }
@@ -179,7 +206,7 @@ class MultiClient {
       }),
     );
     this.clients = [];
-    await deleteInitiatedClients(this.store);
+    await deleteClients(this.store);
   }
 
   // -- Private ---------------------------------------------------------------- //
@@ -187,7 +214,7 @@ class MultiClient {
   private async getPersistedClientOptions(pubId?: string): Promise<ConnectOptions | undefined> {
     const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
     let result: ConnectOptions | undefined;
-    const persistedClients = await fetchInitiatedClients(this.store);
+    const persistedClients = await fetchClients(this.store);
     const match = persistedClients?.find((c) => c.publicIdentifier === publicIdentifier);
     if (match) {
       result = match;
@@ -206,14 +233,14 @@ class MultiClient {
     if (!client.client) return;
 
     this.clients.push({ ...opts, client });
-    await updateInitiatedClients(opts, this.store);
+    await updateClients(opts, this.store);
   }
 
   private async removeClient(publicIdentifier: string) {
     this.clients = this.clients.filter(
       (c) => c.client.getClient().publicIdentifier !== publicIdentifier,
     );
-    await storeIntiatedClients(
+    await storeClients(
       this.clients.map((x) => {
         const _client = { ...x };
         delete _client.client;
@@ -221,6 +248,14 @@ class MultiClient {
       }),
       this.store,
     );
+  }
+
+  private setPending(publicIdentifier: string) {
+    this.pending.push(publicIdentifier);
+  }
+
+  private removePending(publicIdentifier: string) {
+    this.pending = this.pending.filter((pubId) => pubId !== publicIdentifier);
   }
 }
 

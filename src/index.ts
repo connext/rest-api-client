@@ -57,7 +57,8 @@ app.addHook("onReady", async () => {
     config.legacyMode,
     config.storeDir,
     config.logLevel,
-    persisted.initiatedClients,
+    persisted.clients,
+    persisted.wallets,
   );
 });
 

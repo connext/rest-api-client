@@ -1,10 +1,31 @@
 import { IStoreService } from "@connext/types";
 import { getPublicIdentifierFromPublicKey } from "@connext/utils";
 
-import { storeMnemonic, getPath, getIndex, WalletSummary } from "./helpers";
+import {
+  storeMnemonic,
+  getPath,
+  getIndex,
+  WalletSummary,
+  deleteWallets,
+  InternalWalletOptions,
+  updateWallets,
+} from "./helpers";
 import { Wallet } from "ethers";
 
 class Keyring {
+  public static init(
+    mnemonic: string | undefined,
+    logger: any,
+    store: IStoreService,
+    persistedWallets?: InternalWalletOptions[],
+  ): Keyring {
+    const keyring = new Keyring(mnemonic, logger, store);
+    if (persistedWallets && persistedWallets.length) {
+      persistedWallets.forEach((w) => keyring.createWallet(w.index));
+    }
+    return keyring;
+  }
+
   public wallets: Wallet[] = [];
 
   constructor(
@@ -17,7 +38,7 @@ class Keyring {
     this.store = store;
   }
 
-  public createWallet(index: number): WalletSummary {
+  public async createWallet(index: number): Promise<WalletSummary> {
     if (typeof this.mnemonic === "undefined") {
       throw new Error("Cannot create wallet without mnemonic");
     }
@@ -29,7 +50,7 @@ class Keyring {
     }
     if (typeof wallet === "undefined") {
       wallet = Wallet.fromMnemonic(this.mnemonic, getPath(index));
-      this.wallets.push(wallet);
+      await this.setWallet(wallet, index);
     }
     return this.formatWalletSummary(wallet);
   }
@@ -57,9 +78,25 @@ class Keyring {
   }
 
   public async setMnemonic(mnemonic: string) {
+    if (this.mnemonic !== mnemonic) {
+      this.reset();
+    }
     this.mnemonic = mnemonic;
     await storeMnemonic(this.mnemonic, this.store);
     this.logger.info("Mnemonic set successfully");
+  }
+
+  public async reset() {
+    this.logger.info(`Removing all created wallets`);
+    this.wallets = [];
+    await deleteWallets(this.store);
+  }
+
+  // -- Private ---------------------------------------------------------------- //
+
+  private async setWallet(wallet: Wallet, index: number): Promise<void> {
+    this.wallets.push(wallet);
+    await updateWallets({ index }, this.store);
   }
 
   private formatWalletSummary(wallet: Wallet): WalletSummary {

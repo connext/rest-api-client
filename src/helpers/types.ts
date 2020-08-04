@@ -26,10 +26,15 @@ export interface ConnectOptions {
   publicIdentifier?: string;
 }
 
+export interface InternalWalletOptions {
+  index: number;
+}
+
 export interface PersistedData {
   mnemonic: string | undefined;
   subscriptions: EventSubscription[] | undefined;
-  initiatedClients: InternalConnectOptions[] | undefined;
+  clients: InternalConnectOptions[] | undefined;
+  wallets: InternalWalletOptions[] | undefined;
 }
 
 export type WalletSummary = {
