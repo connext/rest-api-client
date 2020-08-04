@@ -28,6 +28,7 @@ class Keyring {
   }
 
   public wallets: Wallet[] = [];
+  public pending: number[] = [];
 
   constructor(
     public mnemonic: string | undefined,
@@ -43,6 +44,9 @@ class Keyring {
     if (typeof this.mnemonic === "undefined") {
       throw new Error("Cannot create wallet without mnemonic");
     }
+    if (this.pending.includes(index)) {
+      throw new Error(`Wallet already being created for index: ${index}`);
+    }
     let wallet: Wallet | undefined;
     try {
       wallet = this.getWalletByIndex(index);
@@ -50,8 +54,10 @@ class Keyring {
       // do nothing
     }
     if (typeof wallet === "undefined") {
+      this.setPending(index);
       wallet = Wallet.fromMnemonic(this.mnemonic, getPath(index));
       await this.setWallet(wallet, index);
+      this.removePending(index);
     }
     return this.formatWalletSummary(wallet);
   }
@@ -103,6 +109,14 @@ class Keyring {
   private formatWalletSummary(wallet: Wallet): WalletSummary {
     const publicIdentifier = getPublicIdentifierFromPublicKey(wallet.publicKey);
     return { address: wallet.address, publicIdentifier };
+  }
+
+  private setPending(index: number) {
+    this.pending.push(index);
+  }
+
+  private removePending(index: number) {
+    this.pending = this.pending.filter((idx) => idx !== index);
   }
 }
 
