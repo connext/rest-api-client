@@ -4,7 +4,7 @@ import { getPublicIdentifierFromPublicKey } from "@connext/utils";
 import {
   storeMnemonic,
   getPath,
-  getIndex,
+  getIndexFromPath,
   WalletSummary,
   deleteWallets,
   InternalWalletOptions,
@@ -56,7 +56,7 @@ class Keyring {
   }
 
   public getWalletByIndex(index: number): Wallet {
-    const wallet = this.wallets.find((w) => getIndex(w.mnemonic.path) === index);
+    const wallet = this.wallets.find((w) => getIndexFromPath(w.mnemonic.path) === index);
     if (!wallet) {
       throw new Error(`No wallet found for index: ${index}`);
     }

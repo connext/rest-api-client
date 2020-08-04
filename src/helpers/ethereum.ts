@@ -10,7 +10,7 @@ export function getPath(index = 0) {
   return `${ETH_STANDARD_PATH}/${(String(index).match(/.{1,9}/gi) || [index]).join("/")}`;
 }
 
-export function getIndex(path: string): number {
+export function getIndexFromPath(path: string): number {
   return Number(path.replace(ETH_STANDARD_PATH, "").replace("/", ""));
 }
 
