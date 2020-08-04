@@ -46,6 +46,7 @@ import {
   PostLinkedResolveResponse,
   GetTransferHistory,
   fetchAll,
+  PostRequestCollateralRequestParams,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
@@ -264,6 +265,11 @@ export default class Client {
       freeBalanceOffChain: response.freeBalance[client.signerAddress].toString(),
       freeBalanceOnChain: await getFreeBalanceOnChain(client, assetId),
     };
+  }
+
+  public async requestCollateral(params: PostRequestCollateralRequestParams): Promise<void> {
+    const client = this.getClient();
+    await client.requestCollateral(params.assetId);
   }
 
   public async swap(params: PostSwapRequestParams): Promise<PostSwapResponse> {

@@ -517,6 +517,24 @@ export const Routes = {
         },
       },
     },
+    requestCollateral: {
+      url: "/request-collateral",
+      description: "Request collateral for an asset",
+      opts: {
+        schema: {
+          body: {
+            type: "object",
+            properties: {
+              assetId: { type: "string" },
+            },
+          },
+          response: {
+            200: {},
+            500: GenericErrorResponseSchema,
+          },
+        },
+      },
+    },
     swap: {
       url: "/swap",
       description: "Swap asset on channel",
