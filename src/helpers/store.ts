@@ -61,7 +61,7 @@ export async function updateClients(
   store: IStoreService,
 ): Promise<void> {
   let clients = (await fetchClients(store)) || [];
-  clients = clients.filter((c) => c.publicIdentifier === opts.publicIdentifier);
+  clients = clients.filter((c) => c.publicIdentifier !== opts.publicIdentifier);
   clients.push(opts);
   await storeClients(clients, store);
 }
@@ -88,7 +88,7 @@ export async function updateWallets(
   store: IStoreService,
 ): Promise<void> {
   let wallets = (await fetchWallets(store)) || [];
-  wallets = wallets.filter((c) => c.index === opts.index);
+  wallets = wallets.filter((c) => c.index !== opts.index);
   wallets.push(opts);
   await storeWallets(wallets, store);
 }

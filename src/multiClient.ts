@@ -30,7 +30,7 @@ class MultiClient {
     persistedClients?: InternalConnectOptions[],
     persistedWallets?: InternalWalletOptions[],
   ): Promise<MultiClient> {
-    const keyring = Keyring.init(mnemonic, logger, store, persistedWallets);
+    const keyring = await Keyring.init(mnemonic, logger, store, persistedWallets);
     const multiClient = new MultiClient(
       keyring,
       logger,

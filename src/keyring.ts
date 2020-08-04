@@ -13,15 +13,16 @@ import {
 import { Wallet } from "ethers";
 
 class Keyring {
-  public static init(
+  public static async init(
     mnemonic: string | undefined,
     logger: any,
     store: IStoreService,
     persistedWallets?: InternalWalletOptions[],
-  ): Keyring {
+  ): Promise<Keyring> {
     const keyring = new Keyring(mnemonic, logger, store);
     if (persistedWallets && persistedWallets.length) {
-      persistedWallets.forEach((w) => keyring.createWallet(w.index));
+      logger.info(`Creating ${persistedWallets.length} persisted wallets`);
+      await Promise.all(persistedWallets.map((w) => keyring.createWallet(w.index)));
     }
     return keyring;
   }
