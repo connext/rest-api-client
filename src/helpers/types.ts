@@ -59,7 +59,7 @@ export type GetAppInstanceDetailsResponse = MethodResults.GetAppInstanceDetails;
 export type GetConfigResponse = Partial<ChannelProviderConfig>;
 
 export type GetHashLockStatusRequestParams = { lockHash: string; assetId: string };
-export type GetHashLockStatusResponse = NodeResponses.GetHashLockTransfer;
+export type GetHashLockStatusResponse = NodeResponses.GetHashLockTransfer & { paymentId: string };
 
 export type GetLinkedStatusRequestParams = { paymentId: string };
 export type GetLinkedStatusResponse = NodeResponses.GetLinkedTransfer;

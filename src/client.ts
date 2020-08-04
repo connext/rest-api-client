@@ -194,7 +194,7 @@ export default class Client {
         `No HashLock Transfer found for lockHash: ${lockHash} and assetId: ${assetId}`,
       );
     }
-    return response;
+    return { ...response, paymentId: response.meta.paymentId };
   }
 
   public async linkedStatus(paymentId: string): Promise<GetLinkedStatusResponse> {
