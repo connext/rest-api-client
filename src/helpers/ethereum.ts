@@ -14,10 +14,6 @@ export function getIndexFromPath(path: string): number {
   return Number(path.replace(ETH_STANDARD_PATH, "").replace("/", ""));
 }
 
-export function getRandomMnemonic(): string {
-  return Wallet.createRandom().mnemonic.phrase;
-}
-
 export async function getFreeBalanceOffChain(
   client: IConnextClient,
   assetId: string,
