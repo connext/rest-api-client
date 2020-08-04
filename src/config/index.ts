@@ -13,7 +13,7 @@ const apiKey = process.env.API_KEY;
 const singleClientMode =
   typeof process.env.SINGLE_CLIENT_MODE !== "undefined"
     ? JSON.parse(process.env.SINGLE_CLIENT_MODE)
-    : true;
+    : false;
 const version = pkg.version;
 
 const ethProviderUrl = process.env.CONNEXT_ETH_PROVIDER_URL || undefined;
