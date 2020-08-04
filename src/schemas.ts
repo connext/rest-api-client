@@ -218,12 +218,7 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
               type: "object",
               properties: {
                 assetId: { type: "string" },
-                amount: { type: "string" },
-                lockHash: { type: "string" },
-                status: { type: "string" },
-                preImage: { type: "string" },
-                paymentId: { type: "string" },
-                expiry: { type: "string" },
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
