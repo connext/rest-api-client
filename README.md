@@ -7,7 +7,6 @@ REST API client for Connext
 1. Setup environment variables file at `.env`
 
 ```sh
-SINGLE_CLIENT_MODE=true
 CONNEXT_ETH_PROVIDER_URL=""
 CONNEXT_NODE_URL=""
 CONNEXT_MNEMONIC=""

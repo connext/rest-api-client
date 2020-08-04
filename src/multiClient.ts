@@ -1,4 +1,3 @@
-import { BigNumber } from "ethers";
 import { IStoreService, StateChannelJSON } from "@connext/types";
 
 import Client from "./client";
@@ -24,7 +23,7 @@ class MultiClient {
     store: IStoreService,
     ethProviderUrl: string | undefined,
     nodeUrl: string | undefined,
-    singleClientMode: boolean,
+    legacyMode: boolean,
     rootStoreDir: string,
     logLevel: number,
     persistedClients?: InternalConnectOptions[],
@@ -36,11 +35,11 @@ class MultiClient {
       store,
       ethProviderUrl,
       nodeUrl,
-      singleClientMode,
+      legacyMode,
       rootStoreDir,
       logLevel,
     );
-    if (singleClientMode && persistedClients && persistedClients.length) {
+    if (legacyMode && persistedClients && persistedClients.length) {
       logger.info(`Connecting a single persisted client`);
       multiClient.connectClient(persistedClients[0]);
     }
@@ -55,7 +54,7 @@ class MultiClient {
     public store: IStoreService,
     public ethProviderUrl: string | undefined,
     public nodeUrl: string | undefined,
-    public singleClientMode: boolean,
+    public legacyMode: boolean,
     public rootStoreDir: string,
     public logLevel: number,
   ) {
@@ -64,7 +63,7 @@ class MultiClient {
     this.store = store;
     this.ethProviderUrl = ethProviderUrl;
     this.nodeUrl = nodeUrl;
-    this.singleClientMode = singleClientMode;
+    this.legacyMode = legacyMode;
     this.rootStoreDir = rootStoreDir;
     this.logLevel = logLevel;
   }
@@ -72,7 +71,7 @@ class MultiClient {
   public async connectClient(opts?: Partial<ConnectOptions>): Promise<Client> {
     let publicIdentifier = opts?.publicIdentifier;
 
-    if (this.singleClientMode) {
+    if (this.legacyMode) {
       if (this.clients.length !== 0) {
         return this.clients[0].client;
       } else {
@@ -125,10 +124,6 @@ class MultiClient {
     throw new Error(`No client found matching publicIdentifier: ${publicIdentifier}`);
   }
 
-  public getAllClientIds(): string[] {
-    return this.clients.map(({ client }) => client.getClient().publicIdentifier);
-  }
-
   public async disconnectClient(pubId?: string) {
     const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
     const client = this.clients.filter(
@@ -138,21 +133,21 @@ class MultiClient {
     this.removeClient(publicIdentifier);
   }
 
-  public async getClientsStats() {
-    const stats = await Promise.all(
+  public async getClients() {
+    const stats: ClientSummary[] = await Promise.all(
       this.clients.map(async ({ client }) => {
         const channel = client.getClient();
         const basicInfo = {
           publicIdentifier: channel.publicIdentifier,
-          multisig: channel.multisigAddress,
-          signer: channel.signerAddress,
+          multisigAddress: channel.multisigAddress,
+          signerAddress: channel.signerAddress,
           chainId: channel.chainId,
           token: channel.config.contractAddresses[channel.chainId].Token,
         };
-        let tokenBalance: BigNumber | undefined;
+        let tokenBalance: string | undefined;
         try {
           const freeBalance = await channel.getFreeBalance(basicInfo.token);
-          tokenBalance = freeBalance[basicInfo.signer];
+          tokenBalance = freeBalance[basicInfo.signerAddress].toString();
         } catch (e) {
           this.logger.warn(`Failed to fetch free balance for ${basicInfo.token}: ${e.message}`);
         }
@@ -160,25 +155,20 @@ class MultiClient {
         try {
           stateChannel = (await channel.getStateChannel()).data;
         } catch (e) {
-          this.logger.warn(`Failed to fetch state channel for ${basicInfo.multisig}: ${e.message}`);
+          this.logger.warn(
+            `Failed to fetch state channel for ${basicInfo.multisigAddress}: ${e.message}`,
+          );
         }
         return {
           ...basicInfo,
-          tokenBalance: tokenBalance?.toString(),
+          tokenBalance,
           channelNonce: stateChannel?.monotonicNumProposedApps,
           proposedApps: stateChannel?.proposedAppInstances.length,
           installedApps: stateChannel?.appInstances.length,
         };
       }),
     );
-    const deduped: ClientSummary[] = [];
-    stats.forEach((stat) => {
-      if (deduped.find((info) => info.publicIdentifier === stat.publicIdentifier)) {
-        return;
-      }
-      deduped.push(stat);
-    });
-    return deduped;
+    return stats;
   }
 
   public async reset() {

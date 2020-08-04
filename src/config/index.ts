@@ -10,10 +10,8 @@ const port = process.env.PORT || (debug ? 5040 : 5000);
 const host = process.env.HOST || `0.0.0.0:${port}`;
 const apiKey = process.env.API_KEY;
 
-const singleClientMode =
-  typeof process.env.SINGLE_CLIENT_MODE !== "undefined"
-    ? JSON.parse(process.env.SINGLE_CLIENT_MODE)
-    : false;
+const legacyMode =
+  typeof process.env.LEGACY_MODE !== "undefined" ? JSON.parse(process.env.LEGACY_MODE) : false;
 const version = pkg.version;
 
 const ethProviderUrl = process.env.CONNEXT_ETH_PROVIDER_URL || undefined;
@@ -30,7 +28,7 @@ export default {
   debug,
   port,
   host,
-  singleClientMode,
+  legacyMode,
   version,
   apiKey,
   ethProviderUrl,

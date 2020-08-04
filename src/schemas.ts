@@ -24,6 +24,14 @@ export function getSwaggerOptions(docsHost: string, version: string) {
   };
 }
 
+export const WalletSummarySchema = {
+  type: "object",
+  properties: {
+    address: { type: "string" },
+    publicIdentifier: { type: "string" },
+  },
+};
+
 export const ConnectOptionsSchema = {
   type: "object",
   properties: {
@@ -113,7 +121,7 @@ export const GenericErrorResponseSchema = {
   },
 };
 
-export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
+export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
   cleanDeep({
     get: {
       health: {
@@ -155,26 +163,24 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
           },
         },
       },
-      clients: {
-        url: "/clients",
-        description: "Get array of initialized clients' public identifiers",
+      wallets: {
+        url: "/wallets",
+        description: "Get summary of created wallets",
         opts: {
           preHandler: authHandler,
           schema: {
             response: {
               200: {
-                type: "object",
-                properties: {
-                  publicIdentifiers: { type: "array", items: { type: "string" } },
-                },
+                type: "array",
+                items: WalletSummarySchema,
               },
               500: GenericErrorResponseSchema,
             },
           },
         },
       },
-      clientStats: {
-        url: "/client-stats",
+      clients: {
+        url: "/clients",
         description: "Get summary of running clients",
         opts: {
           preHandler: authHandler,
@@ -186,8 +192,8 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
                   typeof: "object",
                   properties: {
                     publicIdentifier: { type: "string" },
-                    multisig: { type: "string" },
-                    signer: { type: "string" },
+                    multisigAddress: { type: "string" },
+                    signerAddress: { type: "string" },
                     chainId: { type: "number" },
                     token: { type: "string" },
                     tokenBalance: { type: "string" },
@@ -203,7 +209,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
         },
       },
       balance: {
-        url: !singleClientMode ? "/balance/:assetId/:publicIdentifier" : "/balance/:assetId",
+        url: !legacyMode ? "/balance/:assetId/:publicIdentifier" : "/balance/:assetId",
         description: "Get on-chain and off-chain balances for specific asset",
         opts: {
           preHandler: authHandler,
@@ -212,7 +218,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
               type: "object",
               properties: {
                 assetId: { type: "string" },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -223,11 +229,11 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
         },
       },
       config: {
-        url: !singleClientMode ? "/config/:publicIdentifier" : "/config",
+        url: !legacyMode ? "/config/:publicIdentifier" : "/config",
         description: "Get channel configuration if client is initialized",
         opts: {
           preHandler: authHandler,
-          params: !singleClientMode
+          params: !legacyMode
             ? {
                 type: "object",
                 properties: {
@@ -244,7 +250,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
         },
       },
       hashLockStatus: {
-        url: !singleClientMode
+        url: !legacyMode
           ? "/hashlock-status/:lockHash/:assetId/:publicIdentifier"
           : "/hashlock-status/:lockHash/:assetId",
         description: "Get hash lock transfer status and details",
@@ -256,7 +262,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
               properties: {
                 lockHash: { type: "string" },
                 assetId: { type: "string" },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -279,7 +285,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
         },
       },
       linkedStatus: {
-        url: !singleClientMode
+        url: !legacyMode
           ? "/linked-status/:paymentId/:publicIdentifier"
           : "/linked-status/:paymentId",
         description: "Get linked transfer status and details",
@@ -290,7 +296,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
               type: "object",
               properties: {
                 paymentId: { type: "string" },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -313,7 +319,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
         },
       },
       appinstanceDetails: {
-        url: !singleClientMode
+        url: !legacyMode
           ? "/appinstance-details/:appIdentityHash/:publicIdentifier"
           : "/appinstance-details/:appIdentityHash",
         description: "Get app instance details",
@@ -324,7 +330,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
               type: "object",
               properties: {
                 appIdentityHash: { type: "string" },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -335,12 +341,12 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
         },
       },
       transferHistory: {
-        url: !singleClientMode ? "/transfer-history/:publicIdentifier" : "/transfer-history",
+        url: !legacyMode ? "/transfer-history/:publicIdentifier" : "/transfer-history",
         description: "Get all channel transfer history",
         opts: {
           preHandler: authHandler,
           schema: {
-            params: !singleClientMode
+            params: !legacyMode
               ? {
                   type: "object",
                   properties: {
@@ -382,13 +388,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
               },
             },
             response: {
-              200: {
-                type: "object",
-                properties: {
-                  address: { type: "string" },
-                  publicIdentifier: { type: "string" },
-                },
-              },
+              200: WalletSummarySchema,
               500: GenericErrorResponseSchema,
             },
           },
@@ -414,7 +414,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
         opts: {
           preHandler: authHandler,
           schema: {
-            body: !singleClientMode
+            body: !legacyMode
               ? {
                   type: "object",
                   properties: {
@@ -461,7 +461,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
                 amount: { type: "string" },
                 assetId: { type: "string" },
                 recipient: { type: "string" },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -490,7 +490,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
                 lockHash: { type: "string" },
                 timelock: { type: "string" },
                 recipient: { type: "string" },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -525,7 +525,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
                 preImage: { type: "string" },
                 assetId: { type: "string" },
                 paymentId: { type: "string", nullable: true },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -557,7 +557,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
                 preImage: { type: "string", nullable: true },
                 paymentId: { type: "string", nullable: true },
                 recipient: { type: "string", nullable: true },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -591,7 +591,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
               properties: {
                 preImage: { type: "string" },
                 paymentId: { type: "string" },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -621,7 +621,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
               properties: {
                 amount: { type: "string" },
                 assetId: { type: "string" },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -644,7 +644,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
                 fromAssetId: { type: "string" },
                 swapRate: { type: "string" },
                 toAssetId: { type: "string" },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -668,7 +668,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
               properties: {
                 amount: { type: "string" },
                 assetId: { type: "string" },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -689,7 +689,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
         opts: {
           preHandler: authHandler,
           schema: {
-            body: singleClientMode
+            body: legacyMode
               ? EventSubscriptionParamsSchema
               : {
                   type: "object",
@@ -715,7 +715,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
               type: "object",
               properties: {
                 params: { type: "array", items: EventSubscriptionParamsSchema },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -742,7 +742,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
               type: "object",
               properties: {
                 id: { type: "string" },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -762,7 +762,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
               type: "object",
               properties: {
                 ids: { type: "array", items: { type: "string" } },
-                publicIdentifier: !singleClientMode ? { type: "string" } : undefined,
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
               },
             },
             response: {
@@ -778,7 +778,7 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
         opts: {
           preHandler: authHandler,
           schema: {
-            body: !singleClientMode
+            body: !legacyMode
               ? {
                   type: "object",
                   properties: {

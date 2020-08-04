@@ -1,7 +1,7 @@
 import { IStoreService } from "@connext/types";
 import { getPublicIdentifierFromPublicKey } from "@connext/utils";
 
-import { storeMnemonic, getPath, getIndex, RouteMethods } from "./helpers";
+import { storeMnemonic, getPath, getIndex, WalletSummary } from "./helpers";
 import { Wallet } from "ethers";
 
 class Keyring {
@@ -17,7 +17,7 @@ class Keyring {
     this.store = store;
   }
 
-  public createWallet(index: number): RouteMethods.PostCreateResponse {
+  public createWallet(index: number): WalletSummary {
     if (typeof this.mnemonic === "undefined") {
       throw new Error("Cannot create wallet without mnemonic");
     }
@@ -31,8 +31,7 @@ class Keyring {
       wallet = Wallet.fromMnemonic(this.mnemonic, getPath(index));
       this.wallets.push(wallet);
     }
-    const publicIdentifier = getPublicIdentifierFromPublicKey(wallet.publicKey);
-    return { address: wallet.address, publicIdentifier };
+    return this.formatWalletSummary(wallet);
   }
 
   public getWalletByIndex(index: number): Wallet {
@@ -53,10 +52,19 @@ class Keyring {
     return wallet;
   }
 
+  public getWallets(): WalletSummary[] {
+    return this.wallets.map(this.formatWalletSummary);
+  }
+
   public async setMnemonic(mnemonic: string) {
     this.mnemonic = mnemonic;
     await storeMnemonic(this.mnemonic, this.store);
     this.logger.info("Mnemonic set successfully");
+  }
+
+  private formatWalletSummary(wallet: Wallet): WalletSummary {
+    const publicIdentifier = getPublicIdentifierFromPublicKey(wallet.publicKey);
+    return { address: wallet.address, publicIdentifier };
   }
 }
 

@@ -32,6 +32,11 @@ export interface PersistedData {
   initiatedClients: InternalConnectOptions[] | undefined;
 }
 
+export type WalletSummary = {
+  address: string;
+  publicIdentifier: string;
+};
+
 export type GenericErrorResponse = {
   message: string;
 };
@@ -57,8 +62,8 @@ export type EventSubscriptionParams = { event: string; webhook: string };
 
 export type ClientSummary = {
   publicIdentifier: string;
-  multisig: string;
-  signer: string;
+  multisigAddress: string;
+  signerAddress: string;
   chainId: number;
   token: string | undefined;
   tokenBalance: string | undefined;
@@ -81,11 +86,9 @@ export namespace RouteMethods {
     version: string;
   };
 
-  export type GetClientsResponse = {
-    publicIdentifiers: string[];
-  };
+  export type GetWalletsResponse = WalletSummary[];
 
-  export type GetClientsStatsResponse = ClientSummary[];
+  export type GetClientsResponse = ClientSummary[];
 
   export type GetAppInstanceDetailsParams = MultiClientRequestParams & { appIdentityHash: string };
   export type GetAppInstanceDetailsResponse = MethodResults.GetAppInstanceDetails;
@@ -105,7 +108,7 @@ export namespace RouteMethods {
   export type GetTransferHistoryResponse = MultiClientRequestParams &
     NodeResponses.GetTransferHistory;
 
-  export type PostCreateResponse = { address: string; publicIdentifier: string };
+  export type PostCreateResponse = WalletSummary;
 
   export type PostDepositRequestParams = MultiClientRequestParams & PublicParams.Deposit;
 

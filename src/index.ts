@@ -54,7 +54,7 @@ app.addHook("onReady", async () => {
     store,
     config.ethProviderUrl,
     config.nodeUrl,
-    config.singleClientMode,
+    config.legacyMode,
     config.storeDir,
     config.logLevel,
     persisted.initiatedClients,
@@ -81,7 +81,7 @@ app.addHook("onResponse", (req, reply, done) => {
 });
 
 app.after(() => {
-  const Routes = getRoutes(app.auth([app.verifyApiKey]), config.singleClientMode);
+  const Routes = getRoutes(app.auth([app.verifyApiKey]), config.legacyMode);
 
   // -- GET ---------------------------------------------------------------- //
 
@@ -102,22 +102,18 @@ app.after(() => {
     }
   });
 
-  app.get(Routes.get.clients.url, Routes.get.clients.opts, async (req, res) => {
+  app.get(Routes.get.wallets.url, Routes.get.wallets.opts, async (req, res) => {
     try {
-      res.status(200).send<RouteMethods.GetClientsResponse>({
-        publicIdentifiers: multiClient.getAllClientIds(),
-      });
+      res.status(200).send<RouteMethods.GetWalletsResponse>(multiClient.keyring.getWallets());
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
     }
   });
 
-  app.get(Routes.get.clientStats.url, Routes.get.clientStats.opts, async (req, res) => {
+  app.get(Routes.get.clients.url, Routes.get.clients.opts, async (req, res) => {
     try {
-      res
-        .status(200)
-        .send<RouteMethods.GetClientsStatsResponse>(await multiClient.getClientsStats());
+      res.status(200).send<RouteMethods.GetClientsResponse>(await multiClient.getClients());
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -131,7 +127,7 @@ app.after(() => {
   app.get<GetBalanceRequest>(Routes.get.balance.url, Routes.get.balance.opts, async (req, res) => {
     try {
       await requireParam(req.params, "assetId");
-      if (!config.singleClientMode) {
+      if (!config.legacyMode) {
         await requireParam(req.params, "publicIdentifier");
       }
       const client = multiClient.getClient(req.params.publicIdentifier);
@@ -150,7 +146,7 @@ app.after(() => {
 
   app.get<GetConfigRequest>(Routes.get.config.url, Routes.get.config.opts, async (req, res) => {
     try {
-      if (!config.singleClientMode) {
+      if (!config.legacyMode) {
         await requireParam(req.params, "publicIdentifier");
       }
       const client = multiClient.getClient(req.params.publicIdentifier);
@@ -173,7 +169,7 @@ app.after(() => {
         await requireParam(req.params, "lockHash");
         await requireParam(req.params, "assetId");
         const { lockHash, assetId } = req.params;
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
@@ -200,7 +196,7 @@ app.after(() => {
       try {
         await requireParam(req.params, "paymentId");
         const { paymentId } = req.params;
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
@@ -224,7 +220,7 @@ app.after(() => {
     async (req, res) => {
       try {
         await requireParam(req.params, "appIdentityHash");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
@@ -249,7 +245,7 @@ app.after(() => {
     Routes.get.transferHistory.opts,
     async (req, res) => {
       try {
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
@@ -292,7 +288,7 @@ app.after(() => {
     Routes.post.connect.opts,
     async (req, res) => {
       try {
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = await multiClient.connectClient(req.body);
@@ -313,7 +309,7 @@ app.after(() => {
     Routes.post.disconnect.opts,
     async (req, res) => {
       try {
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         await multiClient.disconnectClient(req.body?.publicIdentifier);
@@ -359,7 +355,7 @@ app.after(() => {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
         await requireParam(req.body, "recipient");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -387,7 +383,7 @@ app.after(() => {
         await requireParam(req.body, "lockHash");
         await requireParam(req.body, "timelock");
         await requireParam(req.body, "recipient");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -412,7 +408,7 @@ app.after(() => {
       try {
         await requireParam(req.body, "preImage");
         await requireParam(req.body, "assetId");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -438,7 +434,7 @@ app.after(() => {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
         await requireParam(req.body, "preImage");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -463,7 +459,7 @@ app.after(() => {
       try {
         await requireParam(req.body, "preImage");
         await requireParam(req.body, "paymentId");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -488,7 +484,7 @@ app.after(() => {
       try {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -510,7 +506,7 @@ app.after(() => {
       await requireParam(req.body, "fromAssetId");
       await requireParam(req.body, "swapRate");
       await requireParam(req.body, "toAssetId");
-      if (!config.singleClientMode) {
+      if (!config.legacyMode) {
         await requireParam(req.body, "publicIdentifier");
       }
       const client = multiClient.getClient(req.body.publicIdentifier);
@@ -532,7 +528,7 @@ app.after(() => {
       try {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -555,7 +551,7 @@ app.after(() => {
       try {
         await requireParam(req.body, "event");
         await requireParam(req.body, "webhook");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -580,7 +576,7 @@ app.after(() => {
     async (req, res) => {
       try {
         await requireParam(req.body, "params", "array");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -609,7 +605,7 @@ app.after(() => {
     async (req, res) => {
       try {
         await requireParam(req.body, "id");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -634,7 +630,7 @@ app.after(() => {
     async (req, res) => {
       try {
         await requireParam(req.body, "ids", "array");
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
@@ -657,7 +653,7 @@ app.after(() => {
     Routes.delete.subscribeAll.opts,
     async (req, res) => {
       try {
-        if (!config.singleClientMode) {
+        if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
