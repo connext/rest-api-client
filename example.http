@@ -1,3 +1,12 @@
+###
+### The use this example you need to run a node and the rest-api-client in parallel
+### Afterwards you will need to configure the env variables for:
+### * CONNEXT_ETH_PROVIDER_URL
+### * CONNEXT_NODE_URL
+###
+### Additionally make sure to top up the first account with ETH to be deposited
+###
+
 GET http://localhost:5040/hello
 
 ###
