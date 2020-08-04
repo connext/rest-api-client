@@ -27,10 +27,8 @@ export function getSwaggerOptions(docsHost: string, version: string) {
 export const ConnectOptionsSchema = {
   type: "object",
   properties: {
-    mnemonic: { type: "string", nullable: true },
     nodeUrl: { type: "string", nullable: true },
     ethProviderUrl: { type: "string", nullable: true },
-    index: { type: "string", nullable: true },
   },
   nullable: true,
 };
@@ -371,9 +369,34 @@ export const getRoutes = (authHandler: any, singleClientMode: boolean): any =>
       },
     },
     post: {
+      create: {
+        url: "/create",
+        description: "Create wallet for provided index",
+        opts: {
+          preHandler: authHandler,
+          schema: {
+            body: {
+              type: "object",
+              properties: {
+                index: { type: "number" },
+              },
+            },
+            response: {
+              200: {
+                type: "object",
+                properties: {
+                  address: { type: "string" },
+                  publicIdentifier: { type: "string" },
+                },
+              },
+              500: GenericErrorResponseSchema,
+            },
+          },
+        },
+      },
       connect: {
         url: "/connect",
-        description: "Connect client channel for provided or persisted mnemonic",
+        description: "Connect client channel for provided publicIdentifier or default",
         opts: {
           preHandler: authHandler,
           schema: {

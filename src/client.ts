@@ -13,9 +13,8 @@ import {
   BatchSubscriptionResponse,
   GenericSuccessResponse,
   RouteMethods,
-  getPath,
   getStore,
-  ConnectOptions,
+  InternalConnectOptions,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
@@ -36,7 +35,10 @@ export default class Client {
     this.logLevel = opts.logLevel;
   }
 
-  public async connect(rootStoreDir: string, opts: ConnectOptions): Promise<IConnextClient> {
+  public async connect(
+    rootStoreDir: string,
+    opts: InternalConnectOptions,
+  ): Promise<IConnextClient> {
     if (this.connecting) {
       throw new Error(`Client is connecting`);
     }
@@ -47,12 +49,9 @@ export default class Client {
     }
 
     this.connecting = true;
-    this.wallet = Wallet.fromMnemonic(opts.mnemonic, getPath(opts.index));
-    const signer = this.wallet.privateKey;
-    const store = await getStore(rootStoreDir, this.wallet);
     const clientOpts = {
-      signer,
-      store,
+      store: await getStore(rootStoreDir, this.wallet),
+      signer: opts.signer,
       ethProviderUrl: opts.ethProviderUrl,
       nodeUrl: opts.nodeUrl,
       logLevel: this.logLevel,

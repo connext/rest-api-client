@@ -1,5 +1,4 @@
 import {
-  ClientOptions,
   IStoreService,
   PublicResults,
   MethodResults,
@@ -13,22 +12,24 @@ export interface InitClientManagerOptions {
   store: IStoreService;
   logLevel: number;
 }
-export interface ConnectOptions {
-  mnemonic: string;
-  index: number;
+
+export interface InternalConnectOptions {
+  signer: string;
+  publicIdentifier: string;
   ethProviderUrl: string;
   nodeUrl: string;
+}
+
+export interface ConnectOptions {
+  ethProviderUrl: string;
+  nodeUrl: string;
+  publicIdentifier?: string;
 }
 
 export interface PersistedData {
   mnemonic: string | undefined;
   subscriptions: EventSubscription[] | undefined;
-  initiatedClients: PersistedClientSettings[] | undefined;
-}
-
-export interface PersistedClientSettings {
-  publicIdentifier: string;
-  opts: ConnectOptions;
+  initiatedClients: InternalConnectOptions[] | undefined;
 }
 
 export type GenericErrorResponse = {
@@ -103,6 +104,8 @@ export namespace RouteMethods {
   export type GetTransferHistoryRequestParams = MultiClientRequestParams;
   export type GetTransferHistoryResponse = MultiClientRequestParams &
     NodeResponses.GetTransferHistory;
+
+  export type PostCreateResponse = { address: string; publicIdentifier: string };
 
   export type PostDepositRequestParams = MultiClientRequestParams & PublicParams.Deposit;
 

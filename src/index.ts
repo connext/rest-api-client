@@ -4,8 +4,8 @@ import fastifySwagger from "fastify-swagger";
 import fastifyHelmet from "fastify-helmet";
 
 import config from "./config";
-import { getSwaggerOptions, getRoutes } from "./schemas";
 import MultiClient from "./multiClient";
+import { getSwaggerOptions, getRoutes } from "./schemas";
 import {
   requireParam,
   isNotIncluded,
@@ -42,18 +42,18 @@ app.register(fastifyHelmet);
 app.register(fastifySwagger, getSwaggerOptions(config.docsHost, config.version) as any);
 
 app.addHook("onReady", async () => {
-  const rootStore = await getStore(config.storeDir);
-  const persisted = await fetchPersistedData(rootStore);
+  const store = await getStore(config.storeDir);
+  const persisted = await fetchPersistedData(store);
   const mnemonic = persisted.mnemonic || config.mnemonic;
   if (mnemonic && persisted.mnemonic !== mnemonic) {
-    await storeMnemonic(mnemonic, rootStore);
+    await storeMnemonic(mnemonic, store);
   }
   multiClient = await MultiClient.init(
     mnemonic,
+    app.log,
+    store,
     config.ethProviderUrl,
     config.nodeUrl,
-    app.log,
-    rootStore,
     config.singleClientMode,
     config.storeDir,
     config.logLevel,
@@ -115,9 +115,9 @@ app.after(() => {
 
   app.get(Routes.get.clientStats.url, Routes.get.clientStats.opts, async (req, res) => {
     try {
-      const stats = await multiClient.getClientsStats();
-      console.log("returning", stats);
-      res.status(200).send<RouteMethods.GetClientsStatsResponse>(stats);
+      res
+        .status(200)
+        .send<RouteMethods.GetClientsStatsResponse>(await multiClient.getClientsStats());
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -265,6 +265,24 @@ app.after(() => {
 
   // -- POST ---------------------------------------------------------------- //
 
+  interface PostCreateRequest extends RequestGenericInterface {
+    Body: { index: number };
+  }
+
+  app.post<PostCreateRequest>(Routes.post.create.url, Routes.post.create.opts, async (req, res) => {
+    try {
+      await requireParam(req.body, "index", "number");
+      res
+        .status(200)
+        .send<RouteMethods.PostCreateResponse>(
+          await multiClient.keyring.createWallet(req.body.index),
+        );
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
+    }
+  });
+
   interface PostConnectRequest extends RequestGenericInterface {
     Body: Partial<ConnectOptions>;
   }
@@ -274,9 +292,11 @@ app.after(() => {
     Routes.post.connect.opts,
     async (req, res) => {
       try {
+        if (!config.singleClientMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
         const client = await multiClient.connectClient(req.body);
-        const config = await client.getConfig();
-        res.status(200).send<RouteMethods.GetConfigResponse>(config);
+        res.status(200).send<RouteMethods.GetConfigResponse>(await client.getConfig());
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -315,7 +335,10 @@ app.after(() => {
     async (req, res) => {
       try {
         await requireParam(req.body, "mnemonic");
-        await multiClient.setMnemonic(req.body.mnemonic);
+        if (multiClient.keyring.mnemonic !== req.body.mnemonic) {
+          await multiClient.reset();
+        }
+        await multiClient.keyring.setMnemonic(req.body.mnemonic);
         res.status(200).send<GenericSuccessResponse>({ success: true });
       } catch (error) {
         app.log.error(error);

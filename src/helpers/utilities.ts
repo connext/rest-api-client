@@ -40,7 +40,7 @@ export function verifyType(value: any, type: string): boolean {
 }
 
 export async function requireParam(obj: any, param: string, type = "string"): Promise<void> {
-  if (!obj[param] || !verifyType(obj[param], type)) {
+  if (typeof obj[param] === "undefined" || !verifyType(obj[param], type)) {
     throw new Error(`Invalid or missing ${param}`);
   }
 }

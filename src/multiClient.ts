@@ -2,10 +2,10 @@ import { BigNumber } from "ethers";
 import { IStoreService, StateChannelJSON } from "@connext/types";
 
 import Client from "./client";
+import Keyring from "./keyring";
 import {
+  InternalConnectOptions,
   ConnectOptions,
-  storeMnemonic,
-  PersistedClientSettings,
   updateInitiatedClients,
   deleteInitiatedClients,
   storeIntiatedClients,
@@ -13,35 +13,36 @@ import {
   fetchInitiatedClients,
 } from "./helpers";
 
-export interface ClientSettings extends PersistedClientSettings {
+export interface ClientSettings extends InternalConnectOptions {
   client: Client;
 }
 
 class MultiClient {
   static async init(
     mnemonic: string | undefined,
-    ethProviderUrl: string | undefined,
-    nodeUrl: string | undefined,
     logger: any,
     store: IStoreService,
+    ethProviderUrl: string | undefined,
+    nodeUrl: string | undefined,
     singleClientMode: boolean,
     rootStoreDir: string,
     logLevel: number,
-    persistedClients?: PersistedClientSettings[],
+    persistedClients?: InternalConnectOptions[],
   ): Promise<MultiClient> {
+    const keyring = new Keyring(mnemonic, logger, store);
     const multiClient = new MultiClient(
-      mnemonic,
-      ethProviderUrl,
-      nodeUrl,
+      keyring,
       logger,
       store,
+      ethProviderUrl,
+      nodeUrl,
       singleClientMode,
       rootStoreDir,
       logLevel,
     );
     if (singleClientMode && persistedClients && persistedClients.length) {
       logger.info(`Connecting a single persisted client`);
-      multiClient.connectClient(persistedClients[0].opts);
+      multiClient.connectClient(persistedClients[0]);
     }
     return multiClient;
   }
@@ -49,48 +50,45 @@ class MultiClient {
   public clients: ClientSettings[] = [];
 
   constructor(
-    public mnemonic: string | undefined,
-    public ethProviderUrl: string | undefined,
-    public nodeUrl: string | undefined,
+    public keyring: Keyring,
     public logger: any,
     public store: IStoreService,
+    public ethProviderUrl: string | undefined,
+    public nodeUrl: string | undefined,
     public singleClientMode: boolean,
     public rootStoreDir: string,
     public logLevel: number,
   ) {
-    this.mnemonic = mnemonic;
-    this.ethProviderUrl = ethProviderUrl;
-    this.nodeUrl = nodeUrl;
+    this.keyring = keyring;
     this.logger = logger;
     this.store = store;
+    this.ethProviderUrl = ethProviderUrl;
+    this.nodeUrl = nodeUrl;
     this.singleClientMode = singleClientMode;
     this.rootStoreDir = rootStoreDir;
     this.logLevel = logLevel;
   }
 
   public async connectClient(opts?: Partial<ConnectOptions>): Promise<Client> {
-    const mnemonic = opts?.mnemonic || this.mnemonic;
-    if (typeof mnemonic === "undefined") {
-      throw new Error("Cannot connect Connext client without mnemonic");
-    }
-    if (mnemonic !== this.mnemonic) {
-      await this.setMnemonic(mnemonic);
-    }
+    let publicIdentifier = opts?.publicIdentifier;
 
-    if (typeof opts?.index !== "undefined") {
-      const match = this.getClientByIndex(opts?.index);
-      if (match) return match.client;
+    if (this.singleClientMode) {
+      if (this.clients.length !== 0) {
+        return this.clients[0].client;
+      } else {
+        const wallet = this.keyring.createWallet(0);
+        publicIdentifier = wallet.publicIdentifier;
+      }
     }
 
-    if (this.singleClientMode && this.clients.length !== 0) {
-      return this.clients[0].client;
+    if (typeof publicIdentifier === "undefined") {
+      throw new Error("Cannot connect Connext client without publicIdentifier");
     }
 
-    const index = this.getNewIndex(opts?.index);
-    this.logger.info(`Connecting client with mnemonic: ${mnemonic}`);
-    this.logger.info(`Connecting client with index: ${index}`);
+    const signer = this.keyring.getWalletByPublicIdentifier(publicIdentifier).privateKey;
+    this.logger.info(`Connecting client with publicIdentifier: ${publicIdentifier}`);
 
-    const persistedOpts = await this.getPersistedClientOptions(index);
+    const persistedOpts = await this.getPersistedClientOptions(publicIdentifier);
 
     const ethProviderUrl =
       opts?.ethProviderUrl || persistedOpts?.ethProviderUrl || this.ethProviderUrl;
@@ -103,9 +101,13 @@ class MultiClient {
       throw new Error("Cannot connect Connext client without nodeUrl");
     }
 
-    const connectOpts = { mnemonic, index, ethProviderUrl, nodeUrl };
+    const connectOpts: InternalConnectOptions = {
+      publicIdentifier,
+      signer,
+      ethProviderUrl,
+      nodeUrl,
+    };
     const client = await this.createClient(connectOpts);
-    await this.setClient(client, connectOpts);
 
     return client;
   }
@@ -134,15 +136,6 @@ class MultiClient {
     )[0];
     await client.client.unsubscribeAll();
     this.removeClient(publicIdentifier);
-  }
-
-  public async setMnemonic(mnemonic: string) {
-    if (this.mnemonic && mnemonic !== this.mnemonic) {
-      this.removeAllClients();
-    }
-    this.mnemonic = mnemonic;
-    await storeMnemonic(this.mnemonic, this.store);
-    this.logger.info("Mnemonic set successfully");
   }
 
   public async getClientsStats() {
@@ -188,65 +181,42 @@ class MultiClient {
     return deduped;
   }
 
+  public async reset() {
+    this.logger.info(`Removing all initiated clients`);
+    await Promise.all(
+      this.clients.map(async ({ client }) => {
+        await client.unsubscribeAll();
+      }),
+    );
+    this.clients = [];
+    await deleteInitiatedClients(this.store);
+  }
+
   // -- Private ---------------------------------------------------------------- //
 
-  private getNewIndex(index?: number): number {
-    if (typeof index !== "undefined") {
-      const match = this.getClientByIndex(index);
-      console.log("[getNewIndex]", "match", match);
-      if (typeof match !== "undefined") {
-        throw new Error(`Client already connected with index: ${index}`);
-      }
-      return Number(index);
-    }
-    let result = 0;
-    console.log("[getNewIndex]", "this.clients.length", this.clients.length);
-    if (this.clients.length === 0) return result;
-    const indexes = this.clients.map((c) => c.opts.index);
-    console.log("[getNewIndex]", "indexes", indexes);
-    const maxIndex = Math.max(...indexes);
-    console.log("[getNewIndex]", "maxIndex", maxIndex);
-    for (let i = 0; i <= maxIndex; i++) {
-      if (!indexes.includes(i)) {
-        result = i;
-        break;
-      } else if (i === maxIndex) {
-        result = i + 1;
-      }
-    }
-    console.log("[getNewIndex]", "result", result);
-
-    return result;
-  }
-
-  private getClientByIndex(index: number) {
-    return this.clients.find((c) => c.opts.index === index);
-  }
-
-  private async getPersistedClientOptions(index: number): Promise<ConnectOptions | undefined> {
+  private async getPersistedClientOptions(pubId?: string): Promise<ConnectOptions | undefined> {
+    const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
     let result: ConnectOptions | undefined;
     const persistedClients = await fetchInitiatedClients(this.store);
-    const match = persistedClients?.find((c) => c.opts.index === index);
+    const match = persistedClients?.find((c) => c.publicIdentifier === publicIdentifier);
     if (match) {
-      result = match.opts;
+      result = match;
     }
     return result;
   }
 
-  private async createClient(opts: ConnectOptions): Promise<Client> {
+  private async createClient(opts: InternalConnectOptions): Promise<Client> {
     const client = new Client({ logger: this.logger, store: this.store, logLevel: this.logLevel });
     await client.connect(this.rootStoreDir, opts);
+    await this.setClient(client, opts);
     return client;
   }
 
-  private async setClient(client: Client, opts: ConnectOptions): Promise<void> {
+  private async setClient(client: Client, opts: InternalConnectOptions): Promise<void> {
     if (!client.client) return;
-    const initiatedClient: PersistedClientSettings = {
-      publicIdentifier: client.client.publicIdentifier,
-      opts,
-    };
-    this.clients.push({ ...initiatedClient, client });
-    await updateInitiatedClients(initiatedClient, this.store);
+
+    this.clients.push({ ...opts, client });
+    await updateInitiatedClients(opts, this.store);
   }
 
   private async removeClient(publicIdentifier: string) {
@@ -261,17 +231,6 @@ class MultiClient {
       }),
       this.store,
     );
-  }
-
-  private async removeAllClients() {
-    this.logger.info(`Removing all initiated clients`);
-    await Promise.all(
-      this.clients.map(async ({ client }) => {
-        await client.unsubscribeAll();
-      }),
-    );
-    this.clients = [];
-    await deleteInitiatedClients(this.store);
   }
 }
 

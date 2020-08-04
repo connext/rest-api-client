@@ -2,7 +2,7 @@ import { IStoreService } from "@connext/types";
 import { getFileStore } from "@connext/store";
 
 import { CONNEXT_MNEMONIC_KEY, CONNEXT_CLIENTS_KEY, CONNEXT_SUBSCRIPTIONS_KEY } from "./constants";
-import { EventSubscription, PersistedData, PersistedClientSettings } from "./types";
+import { EventSubscription, PersistedData, InternalConnectOptions } from "./types";
 import { Wallet } from "ethers";
 
 export async function getStore(storeDir: string, wallet?: Wallet) {
@@ -34,7 +34,7 @@ export async function fetchSubscriptions(
 }
 
 export async function storeIntiatedClients(
-  initiatedClients: PersistedClientSettings[],
+  initiatedClients: InternalConnectOptions[],
   store: IStoreService,
 ): Promise<void> {
   return (store as any).setItem(CONNEXT_CLIENTS_KEY, initiatedClients);
@@ -42,12 +42,12 @@ export async function storeIntiatedClients(
 
 export async function fetchInitiatedClients(
   store: IStoreService,
-): Promise<PersistedClientSettings[] | undefined> {
+): Promise<InternalConnectOptions[] | undefined> {
   return (store as any).getItem(CONNEXT_CLIENTS_KEY);
 }
 
 export async function updateInitiatedClients(
-  initiatedClient: PersistedClientSettings,
+  initiatedClient: InternalConnectOptions,
   store: IStoreService,
 ): Promise<void> {
   let initiatedClients = (await fetchInitiatedClients(store)) || [];
