@@ -2,13 +2,14 @@ FROM node:12
 
 WORKDIR /app
 
-COPY  ./ /app
+COPY package*.json ./
 
 RUN npm install
 
-RUN /app/node_modules/.bin/tsc -p tsconfig.json
+COPY . .
 
-RUN node /app/build/src
+RUN /app/node_modules/.bin/tsc -p tsconfig.json
 
 EXPOSE  5040
 
+CMD ["node", "/app/build/src"]
