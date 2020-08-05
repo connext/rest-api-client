@@ -4,14 +4,14 @@
   "version": "7.0.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ConnextProject/rest-api-client.git"
+    "url": "git+https://github.com/connext/rest-api-client.git"
   },
   "author": "Connext & Friends",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/ConnextProject/rest-api-client/issues"
+    "url": "https://github.com/connext/rest-api-client/issues"
   },
-  "homepage": "https://github.com/ConnextProject/rest-api-client#readme",
+  "homepage": "https://github.com/connext/rest-api-client#readme",
   "scripts": {
     "clean:build": "rm -rf ./build",
     "clean:store": "rm -rf ./connext-store*",
