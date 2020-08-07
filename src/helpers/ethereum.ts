@@ -1,10 +1,17 @@
-import { GetBalanceResponse } from "./types";
 import { IConnextClient } from "@connext/types";
 import { ERC20 } from "@connext/contracts";
-import { Wallet, Contract, providers, constants } from "ethers";
+import { Wallet, Contract, providers, constants, BigNumber } from "ethers";
 
-export function getRandomMnemonic(): string {
-  return Wallet.createRandom().mnemonic.phrase;
+import { RouteMethods } from "./types";
+
+export const ETH_STANDARD_PATH = "m/44'/60'/0'/0";
+
+export function getPath(index = 0) {
+  return `${ETH_STANDARD_PATH}/${(String(index).match(/.{1,9}/gi) || [index]).join("/")}`;
+}
+
+export function getIndexFromPath(path: string): number {
+  return Number(path.replace(ETH_STANDARD_PATH, "").replace("/", ""));
 }
 
 export async function getFreeBalanceOffChain(
@@ -32,29 +39,29 @@ export async function getFreeBalanceOnChain(
 export async function getClientBalance(
   client: IConnextClient,
   assetId: string,
-): Promise<GetBalanceResponse> {
+): Promise<RouteMethods.GetBalanceResponse> {
   const freeBalanceOffChain = await getFreeBalanceOffChain(client, assetId);
   const freeBalanceOnChain = await getFreeBalanceOnChain(client, assetId);
   return { freeBalanceOffChain, freeBalanceOnChain };
 }
 
 export async function transferOnChain(params: {
-  mnemonic: string;
+  wallet: Wallet;
   ethProvider: providers.Provider;
   assetId: string;
   amount: string;
   recipient: string;
 }): Promise<string> {
   let tx: providers.TransactionResponse;
-  const wallet = Wallet.fromMnemonic(params.mnemonic).connect(params.ethProvider);
+  const wallet = params.wallet.connect(params.ethProvider);
   if (params.assetId === constants.AddressZero) {
     tx = await wallet.sendTransaction({
       to: params.recipient,
-      value: params.amount,
+      value: BigNumber.from(params.amount),
     });
   } else {
-    const token = new Contract(params.assetId, ERC20.abi, params.ethProvider);
-    tx = await token.transfer([params.recipient, params.amount]);
+    const token = new Contract(params.assetId, ERC20.abi, wallet);
+    tx = await token.transfer(params.recipient, BigNumber.from(params.amount));
   }
   if (typeof tx.hash === "undefined") {
     throw new Error("Transaction hash is undefined");

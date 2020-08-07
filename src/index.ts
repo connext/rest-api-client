@@ -3,57 +3,31 @@ import fastifyAuth from "fastify-auth";
 import fastifySwagger from "fastify-swagger";
 import fastifyHelmet from "fastify-helmet";
 
-import pkg from "../package.json";
-
 import config from "./config";
-import { swaggerOptions, Routes } from "./schemas";
-import Client from "./client";
+import MultiClient from "./multiClient";
+import { getSwaggerOptions, getRoutes } from "./schemas";
 import {
   requireParam,
   isNotIncluded,
-  getRandomMnemonic,
   ConnectOptions,
   GenericErrorResponse,
-  GetBalanceResponse,
   GenericSuccessResponse,
-  GetBalanceRequestParams,
-  GetHashLockStatusRequestParams,
-  GetHashLockStatusResponse,
-  PostMnemonicRequestParams,
-  PostTransactionRequestParams,
-  PostTransactionResponse,
-  PostHashLockTransferRequestParams,
-  PostHashLockTransferResponse,
-  PostHashLockResolveResponse,
-  PostHashLockResolveRequestParams,
-  PostDepositRequestParams,
-  PostWithdrawRequestParams,
+  RouteMethods,
+  getStore,
+  fetchPersistedData,
+  storeMnemonic,
   EventSubscriptionParams,
-  SubscriptionResponse,
-  GetAppInstanceDetailsParams,
-  GetAppInstanceDetailsResponse,
-  GetConfigResponse,
-  GetVersionResponse,
-  PostWithdrawResponse,
   BatchSubscriptionResponse,
-  GetLinkedStatusRequestParams,
-  GetLinkedStatusResponse,
-  GetTransferHistory,
-  PostLinkedTransferRequestParams,
-  PostLinkedTransferResponse,
-  PostLinkedResolveRequestParams,
-  PostLinkedResolveResponse,
-  PostSwapRequestParams,
-  PostSwapResponse,
-  PostRequestCollateralRequestParams,
+  SubscriptionResponse,
 } from "./helpers";
 
 const app = fastify({
   logger: { prettyPrint: config.debug } as any,
   disableRequestLogging: true,
+  pluginTimeout: 120_000,
 });
 
-let client: Client;
+let multiClient: MultiClient;
 
 app
   .decorate("verifyApiKey", function (request, reply, done) {
@@ -65,14 +39,30 @@ app
   .register(fastifyAuth);
 
 app.register(fastifyHelmet);
-app.register(fastifySwagger, swaggerOptions);
+app.register(fastifySwagger, getSwaggerOptions(config.docsHost, config.version) as any);
 
 app.addHook("onReady", async () => {
-  client = await Client.init(app.log);
+  const store = await getStore(config.storeDir);
+  const persisted = await fetchPersistedData(store);
+  const mnemonic = persisted.mnemonic || config.mnemonic;
+  if (mnemonic && persisted.mnemonic !== mnemonic) {
+    await storeMnemonic(mnemonic, store);
+  }
+  multiClient = await MultiClient.init(
+    mnemonic,
+    app.log,
+    store,
+    config.ethProviderUrl,
+    config.nodeUrl,
+    config.legacyMode,
+    config.storeDir,
+    config.logLevel,
+    persisted.clients,
+    persisted.wallets,
+  );
 });
 
 const loggingBlacklist = ["/balance"];
-
 app.addHook("onRequest", (req, reply, done) => {
   if (config.debug && req.url) {
     if (isNotIncluded(req.url, loggingBlacklist)) {
@@ -92,11 +82,10 @@ app.addHook("onResponse", (req, reply, done) => {
 });
 
 app.after(() => {
-  routes();
-});
+  const Routes = getRoutes(app.auth([app.verifyApiKey]), config.legacyMode);
 
-const routes = () => {
   // -- GET ---------------------------------------------------------------- //
+
   app.get(Routes.get.health.url, Routes.get.health.opts, (req, res) => {
     res.status(204).send<void>();
   });
@@ -107,7 +96,25 @@ const routes = () => {
 
   app.get(Routes.get.version.url, Routes.get.version.opts, (req, res) => {
     try {
-      res.status(200).send<GetVersionResponse>({ version: pkg.version });
+      res.status(200).send<RouteMethods.GetVersionResponse>({ version: config.version });
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
+    }
+  });
+
+  app.get(Routes.get.wallets.url, Routes.get.wallets.opts, async (req, res) => {
+    try {
+      res.status(200).send<RouteMethods.GetWalletsResponse>(multiClient.keyring.getWallets());
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
+    }
+  });
+
+  app.get(Routes.get.clients.url, Routes.get.clients.opts, async (req, res) => {
+    try {
+      res.status(200).send<RouteMethods.GetClientsResponse>(await multiClient.getClients());
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -115,22 +122,36 @@ const routes = () => {
   });
 
   interface GetBalanceRequest extends RequestGenericInterface {
-    Params: GetBalanceRequestParams;
+    Params: RouteMethods.GetBalanceRequestParams;
   }
 
   app.get<GetBalanceRequest>(Routes.get.balance.url, Routes.get.balance.opts, async (req, res) => {
     try {
       await requireParam(req.params, "assetId");
-      res.status(200).send<GetBalanceResponse>(await client.balance(req.params.assetId));
+      if (!config.legacyMode) {
+        await requireParam(req.params, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.params.publicIdentifier);
+      res
+        .status(200)
+        .send<RouteMethods.GetBalanceResponse>(await client.balance(req.params.assetId));
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
     }
   });
 
-  app.get(Routes.get.config.url, Routes.get.config.opts, async (req, res) => {
+  interface GetConfigRequest extends RequestGenericInterface {
+    Params: RouteMethods.GetConfigRequestParams;
+  }
+
+  app.get<GetConfigRequest>(Routes.get.config.url, Routes.get.config.opts, async (req, res) => {
     try {
-      res.status(200).send<GetConfigResponse>(await client.getConfig());
+      if (!config.legacyMode) {
+        await requireParam(req.params, "publicIdentifier");
+      }
+      const client = multiClient.getClient(req.params.publicIdentifier);
+      res.status(200).send<RouteMethods.GetConfigResponse>(await client.getConfig());
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -138,7 +159,7 @@ const routes = () => {
   });
 
   interface GetHashLockStatusRequest extends RequestGenericInterface {
-    Params: GetHashLockStatusRequestParams;
+    Params: RouteMethods.GetHashLockStatusRequestParams;
   }
 
   app.get<GetHashLockStatusRequest>(
@@ -149,9 +170,15 @@ const routes = () => {
         await requireParam(req.params, "lockHash");
         await requireParam(req.params, "assetId");
         const { lockHash, assetId } = req.params;
+        if (!config.legacyMode) {
+          await requireParam(req.params, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.params.publicIdentifier);
         res
           .status(200)
-          .send<GetHashLockStatusResponse>(await client.hashLockStatus(lockHash, assetId));
+          .send<RouteMethods.GetHashLockStatusResponse>(
+            await client.hashLockStatus(lockHash, assetId),
+          );
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -160,7 +187,7 @@ const routes = () => {
   );
 
   interface GetLinkedStatusRequest extends RequestGenericInterface {
-    Params: GetLinkedStatusRequestParams;
+    Params: RouteMethods.GetLinkedStatusRequestParams;
   }
 
   app.get<GetLinkedStatusRequest>(
@@ -170,7 +197,13 @@ const routes = () => {
       try {
         await requireParam(req.params, "paymentId");
         const { paymentId } = req.params;
-        res.status(200).send<GetLinkedStatusResponse>(await client.linkedStatus(paymentId));
+        if (!config.legacyMode) {
+          await requireParam(req.params, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.params.publicIdentifier);
+        res
+          .status(200)
+          .send<RouteMethods.GetLinkedStatusResponse>(await client.linkedStatus(paymentId));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -179,7 +212,7 @@ const routes = () => {
   );
 
   interface GetAppInstanceDetailsRequest extends RequestGenericInterface {
-    Params: GetAppInstanceDetailsParams;
+    Params: RouteMethods.GetAppInstanceDetailsParams;
   }
 
   app.get<GetAppInstanceDetailsRequest>(
@@ -188,9 +221,13 @@ const routes = () => {
     async (req, res) => {
       try {
         await requireParam(req.params, "appIdentityHash");
+        if (!config.legacyMode) {
+          await requireParam(req.params, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.params.publicIdentifier);
         res
           .status(200)
-          .send<GetAppInstanceDetailsResponse>(
+          .send<RouteMethods.GetAppInstanceDetailsResponse>(
             await client.getAppInstanceDetails(req.params.appIdentityHash),
           );
       } catch (error) {
@@ -200,35 +237,22 @@ const routes = () => {
     },
   );
 
-  app.get(Routes.get.transferHistory.url, Routes.get.transferHistory.opts, async (req, res) => {
-    try {
-      res.status(200).send<GetTransferHistory>(await client.getTransferHistory());
-    } catch (error) {
-      app.log.error(error);
-      res.status(500).send<GenericErrorResponse>({ message: error.message });
-    }
-  });
-
-  // -- POST ---------------------------------------------------------------- //
-
-  interface PostCreateRequest extends RequestGenericInterface {
-    Body: Partial<ConnectOptions>;
+  interface GetTransferHistoryRequest extends RequestGenericInterface {
+    Params: RouteMethods.GetTransferHistoryRequestParams;
   }
 
-  app.post<PostCreateRequest>(
-    Routes.post.create.url,
-    {
-      ...Routes.post.create.opts,
-      preHandler: app.auth([app.verifyApiKey]),
-    },
+  app.get<GetTransferHistoryRequest>(
+    Routes.get.transferHistory.url,
+    Routes.get.transferHistory.opts,
     async (req, res) => {
       try {
-        const opts = { ...req.body };
-        if (!client.mnemonic && !opts.mnemonic) {
-          opts.mnemonic = getRandomMnemonic();
+        if (!config.legacyMode) {
+          await requireParam(req.params, "publicIdentifier");
         }
-        await client.connect(opts);
-        res.status(200).send<GetConfigResponse>(await client.getConfig());
+        const client = multiClient.getClient(req.params.publicIdentifier);
+        res
+          .status(200)
+          .send<RouteMethods.GetTransferHistoryResponse>(await client.getTransferHistory());
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -236,21 +260,61 @@ const routes = () => {
     },
   );
 
+  // -- POST ---------------------------------------------------------------- //
+
+  interface PostCreateRequest extends RequestGenericInterface {
+    Body: { index: number };
+  }
+
+  app.post<PostCreateRequest>(Routes.post.create.url, Routes.post.create.opts, async (req, res) => {
+    try {
+      await requireParam(req.body, "index", "number");
+      res
+        .status(200)
+        .send<RouteMethods.PostCreateResponse>(
+          await multiClient.keyring.createWallet(req.body.index),
+        );
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
+    }
+  });
+
   interface PostConnectRequest extends RequestGenericInterface {
     Body: Partial<ConnectOptions>;
   }
 
   app.post<PostConnectRequest>(
     Routes.post.connect.url,
-    { ...Routes.post.connect.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.post.connect.opts,
     async (req, res) => {
       try {
-        if (!client.mnemonic) {
-          await requireParam(req.body, "mnemonic");
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
         }
-        await client.connect(req.body);
-        const config = await client.getConfig();
-        res.status(200).send<GetConfigResponse>(config);
+        const client = await multiClient.connectClient(req.body);
+        res.status(200).send<RouteMethods.GetConfigResponse>(await client.getConfig());
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
+  interface PostDisconnectRequest extends RequestGenericInterface {
+    Body: { publicIdentifier?: string };
+  }
+
+  app.post<PostDisconnectRequest>(
+    Routes.post.disconnect.url,
+    Routes.post.disconnect.opts,
+    async (req, res) => {
+      try {
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        await multiClient.disconnectClient(req.body?.publicIdentifier);
+        res.status(200).send<GenericSuccessResponse>({ success: true });
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -259,16 +323,19 @@ const routes = () => {
   );
 
   interface PostMnemonicRequest extends RequestGenericInterface {
-    Body: PostMnemonicRequestParams;
+    Body: RouteMethods.PostMnemonicRequestParams;
   }
 
   app.post<PostMnemonicRequest>(
     Routes.post.mnemonic.url,
-    { ...Routes.post.mnemonic.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.post.mnemonic.opts,
     async (req, res) => {
       try {
         await requireParam(req.body, "mnemonic");
-        await client.setMnemonic(req.body.mnemonic);
+        if (multiClient.keyring.mnemonic !== req.body.mnemonic) {
+          await multiClient.reset();
+        }
+        await multiClient.keyring.setMnemonic(req.body.mnemonic);
         res.status(200).send<GenericSuccessResponse>({ success: true });
       } catch (error) {
         app.log.error(error);
@@ -278,38 +345,24 @@ const routes = () => {
   );
 
   interface PostTransactionRequest extends RequestGenericInterface {
-    Body: PostTransactionRequestParams;
+    Body: RouteMethods.PostTransactionRequestParams;
   }
 
   app.post<PostTransactionRequest>(
     Routes.post.onchainTransfer.url,
-    { ...Routes.post.onchainTransfer.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.post.onchainTransfer.opts,
     async (req, res) => {
       try {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
         await requireParam(req.body, "recipient");
-        res.status(200).send<PostTransactionResponse>(await client.transferOnChain(req.body));
-      } catch (error) {
-        app.log.error(error);
-        res.status(500).send<GenericErrorResponse>({ message: error.message });
-      }
-    },
-  );
-
-  interface PostLinkedTransferRequest extends RequestGenericInterface {
-    Body: PostLinkedTransferRequestParams;
-  }
-
-  app.post<PostLinkedTransferRequest>(
-    Routes.post.linkedTransfer.url,
-    Routes.post.linkedTransfer.opts,
-    async (req, res) => {
-      try {
-        await requireParam(req.body, "amount");
-        await requireParam(req.body, "assetId");
-        // await requireParam(req.body, "preImage");
-        res.status(200).send<PostLinkedTransferResponse>(await client.linkedTransfer(req.body));
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        res
+          .status(200)
+          .send<RouteMethods.PostTransactionResponse>(await client.transferOnChain(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -318,12 +371,12 @@ const routes = () => {
   );
 
   interface PostHashLockTransferRequest extends RequestGenericInterface {
-    Body: PostHashLockTransferRequestParams;
+    Body: RouteMethods.PostHashLockTransferRequestParams;
   }
 
   app.post<PostHashLockTransferRequest>(
     Routes.post.hashLockTransfer.url,
-    { ...Routes.post.hashLockTransfer.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.post.hashLockTransfer.opts,
     async (req, res) => {
       try {
         await requireParam(req.body, "amount");
@@ -331,7 +384,13 @@ const routes = () => {
         await requireParam(req.body, "lockHash");
         await requireParam(req.body, "timelock");
         await requireParam(req.body, "recipient");
-        res.status(200).send<PostHashLockTransferResponse>(await client.hashLockTransfer(req.body));
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        res
+          .status(200)
+          .send<RouteMethods.PostHashLockTransferResponse>(await client.hashLockTransfer(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -340,16 +399,48 @@ const routes = () => {
   );
 
   interface PostHashLockResolveRequest extends RequestGenericInterface {
-    Body: PostHashLockResolveRequestParams;
+    Body: RouteMethods.PostHashLockResolveRequestParams;
   }
 
   app.post<PostHashLockResolveRequest>(
     Routes.post.hashLockResolve.url,
-    { ...Routes.post.hashLockResolve.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.post.hashLockResolve.opts,
+    async (req, res) => {
+      try {
+        await requireParam(req.body, "preImage");
+        await requireParam(req.body, "assetId");
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        res
+          .status(200)
+          .send<RouteMethods.PostHashLockResolveResponse>(await client.hashLockResolve(req.body));
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
+  interface PostLinkedTransferRequest extends RequestGenericInterface {
+    Body: RouteMethods.PostLinkedTransferRequestParams;
+  }
+
+  app.post<PostLinkedTransferRequest>(
+    Routes.post.linkedTransfer.url,
+    Routes.post.linkedTransfer.opts,
     async (req, res) => {
       try {
         await requireParam(req.body, "assetId");
-        res.status(200).send<PostHashLockResolveResponse>(await client.hashLockResolve(req.body));
+        await requireParam(req.body, "preImage");
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        res
+          .status(200)
+          .send<RouteMethods.PostLinkedTransferResponse>(await client.linkedTransfer(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -358,17 +449,23 @@ const routes = () => {
   );
 
   interface PostLinkedResolveRequest extends RequestGenericInterface {
-    Body: PostLinkedResolveRequestParams;
+    Body: RouteMethods.PostLinkedResolveRequestParams;
   }
 
   app.post<PostLinkedResolveRequest>(
     Routes.post.linkedResolve.url,
-    { ...Routes.post.linkedResolve.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.post.linkedResolve.opts,
     async (req, res) => {
       try {
         await requireParam(req.body, "preImage");
         await requireParam(req.body, "paymentId");
-        res.status(200).send<PostLinkedResolveResponse>(await client.linkedResolve(req.body));
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        res
+          .status(200)
+          .send<RouteMethods.PostLinkedResolveResponse>(await client.linkedResolve(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -377,17 +474,21 @@ const routes = () => {
   );
 
   interface PostDepositRequest extends RequestGenericInterface {
-    Body: PostDepositRequestParams;
+    Body: RouteMethods.PostDepositRequestParams;
   }
 
   app.post<PostDepositRequest>(
     Routes.post.deposit.url,
-    { ...Routes.post.deposit.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.post.deposit.opts,
     async (req, res) => {
       try {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
-        res.status(200).send<GetBalanceResponse>(await client.deposit(req.body));
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        res.status(200).send<RouteMethods.PostDepositResponse>(await client.deposit(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -396,7 +497,7 @@ const routes = () => {
   );
 
   interface PostRequestCollateralRequest extends RequestGenericInterface {
-    Body: PostRequestCollateralRequestParams;
+    Body: RouteMethods.PostRequestCollateralRequestParams;
   }
 
   app.post<PostRequestCollateralRequest>(
@@ -405,7 +506,12 @@ const routes = () => {
     async (req, res) => {
       try {
         await requireParam(req.body, "assetId");
-        res.status(200).send<void>(await client.requestCollateral(req.body));
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        await client.requestCollateral(req.body);
+        res.status(200).send<GenericSuccessResponse>({ success: true });
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -414,38 +520,42 @@ const routes = () => {
   );
 
   interface PostSwapRequest extends RequestGenericInterface {
-    Body: PostSwapRequestParams;
+    Body: RouteMethods.PostSwapRequestParams;
   }
 
-  app.post<PostSwapRequest>(
-    Routes.post.swap.url,
-    { ...Routes.post.swap.opts, preHandler: app.auth([app.verifyApiKey]) },
-    async (req, res) => {
-      try {
-        await requireParam(req.body, "amount");
-        await requireParam(req.body, "fromAssetId");
-        await requireParam(req.body, "swapRate");
-        await requireParam(req.body, "toAssetId");
-        res.status(200).send<PostSwapResponse>(await client.swap(req.body));
-      } catch (error) {
-        app.log.error(error);
-        res.status(500).send<GenericErrorResponse>({ message: error.message });
+  app.post<PostSwapRequest>(Routes.post.swap.url, Routes.post.swap.opts, async (req, res) => {
+    try {
+      await requireParam(req.body, "amount");
+      await requireParam(req.body, "fromAssetId");
+      await requireParam(req.body, "swapRate");
+      await requireParam(req.body, "toAssetId");
+      if (!config.legacyMode) {
+        await requireParam(req.body, "publicIdentifier");
       }
-    },
-  );
+      const client = multiClient.getClient(req.body.publicIdentifier);
+      res.status(200).send<RouteMethods.PostSwapResponse>(await client.swap(req.body));
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
+    }
+  });
 
   interface PostWithdrawRequest extends RequestGenericInterface {
-    Body: PostWithdrawRequestParams;
+    Body: RouteMethods.PostWithdrawRequestParams;
   }
 
   app.post<PostWithdrawRequest>(
     Routes.post.withdraw.url,
-    { ...Routes.post.withdraw.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.post.withdraw.opts,
     async (req, res) => {
       try {
         await requireParam(req.body, "amount");
         await requireParam(req.body, "assetId");
-        res.status(200).send<PostWithdrawResponse>(await client.withdraw(req.body));
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        res.status(200).send<RouteMethods.PostWithdrawResponse>(await client.withdraw(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
@@ -454,16 +564,20 @@ const routes = () => {
   );
 
   interface PostSubscribeRequest extends RequestGenericInterface {
-    Body: EventSubscriptionParams;
+    Body: RouteMethods.PostSubscribeRequestParams;
   }
 
   app.post<PostSubscribeRequest>(
     Routes.post.subscribe.url,
-    { ...Routes.post.subscribe.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.post.subscribe.opts,
     async (req, res) => {
       try {
         await requireParam(req.body, "event");
         await requireParam(req.body, "webhook");
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
         res.status(200).send<SubscriptionResponse>(await client.subscribe(req.body));
       } catch (error) {
         app.log.error(error);
@@ -474,16 +588,21 @@ const routes = () => {
 
   interface PostBatchSubscribeRequest extends RequestGenericInterface {
     Body: {
+      publicIdentifier?: string;
       params: EventSubscriptionParams[];
     };
   }
 
   app.post<PostBatchSubscribeRequest>(
     Routes.post.batchSubscribe.url,
-    { ...Routes.post.batchSubscribe.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.post.batchSubscribe.opts,
     async (req, res) => {
       try {
         await requireParam(req.body, "params", "array");
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
         res
           .status(200)
           .send<BatchSubscriptionResponse>(await client.subscribeBatch(req.body.params));
@@ -498,16 +617,21 @@ const routes = () => {
 
   interface DeleteSubscribeRequest extends RequestGenericInterface {
     Body: {
+      publicIdentifier?: string;
       id: string;
     };
   }
 
   app.delete<DeleteSubscribeRequest>(
     Routes.delete.subscribe.url,
-    { ...Routes.delete.subscribe.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.delete.subscribe.opts,
     async (req, res) => {
       try {
         await requireParam(req.body, "id");
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
         res.status(200).send<GenericSuccessResponse>(await client.unsubscribe(req.body.id));
       } catch (error) {
         app.log.error(error);
@@ -518,16 +642,21 @@ const routes = () => {
 
   interface DeleteBatchSubscribeRequest extends RequestGenericInterface {
     Body: {
+      publicIdentifier?: string;
       ids: string[];
     };
   }
 
   app.delete<DeleteBatchSubscribeRequest>(
     Routes.delete.batchSubscribe.url,
-    { ...Routes.delete.batchSubscribe.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.delete.batchSubscribe.opts,
     async (req, res) => {
       try {
         await requireParam(req.body, "ids", "array");
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
         res.status(200).send<GenericSuccessResponse>(await client.unsubscribeBatch(req.body.ids));
       } catch (error) {
         app.log.error(error);
@@ -536,11 +665,21 @@ const routes = () => {
     },
   );
 
-  app.delete(
+  interface DeleteSubscribeAllRequest extends RequestGenericInterface {
+    Body: {
+      publicIdentifier?: string;
+    };
+  }
+
+  app.delete<DeleteSubscribeAllRequest>(
     Routes.delete.subscribeAll.url,
-    { ...Routes.delete.subscribeAll.opts, preHandler: app.auth([app.verifyApiKey]) },
+    Routes.delete.subscribeAll.opts,
     async (req, res) => {
       try {
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
         res.status(200).send<GenericSuccessResponse>(await client.unsubscribeAll());
       } catch (error) {
         app.log.error(error);
@@ -548,7 +687,7 @@ const routes = () => {
       }
     },
   );
-};
+});
 
 // -- INIT ---------------------------------------------------------------- //
 

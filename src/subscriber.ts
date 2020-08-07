@@ -5,13 +5,13 @@ import { IConnextClient, IStoreService } from "@connext/types";
 import { EventSubscription, EventSubscriptionParams, storeSubscriptions } from "./helpers";
 
 export default class Subscriber {
-  private _store: IStoreService;
-  private _logger: any;
-  private _subscriptions: EventSubscription[] = [];
+  private store: IStoreService;
+  private logger: any;
+  private subscriptions: EventSubscription[] = [];
 
   constructor(logger: any, store: IStoreService) {
-    this._logger = logger;
-    this._store = store;
+    this.logger = logger;
+    this.store = store;
   }
 
   // -- SUBSCRIBE ---------------------------------------------------------------- //
@@ -24,7 +24,7 @@ export default class Subscriber {
     if (match) {
       return match;
     }
-    const subscription = this.formatSubscription(params);
+    const subscription = this.formatSubscription(client.publicIdentifier, params);
     await this.saveSubscription(subscription);
     this.subscribeOnClient(client, subscription);
     return subscription;
@@ -72,30 +72,30 @@ export default class Subscriber {
   }
 
   public async clearAllSubscriptions(client: IConnextClient): Promise<void> {
-    this._subscriptions.map(() => this.unsubscribeOnClient(client));
+    this.subscriptions.map(() => this.unsubscribeOnClient(client));
     await this.persistSubscriptions([]);
   }
 
   // -- STORE ---------------------------------------------------------------- //
 
   private async persistSubscriptions(subscriptions: EventSubscription[]) {
-    this._subscriptions = subscriptions;
-    await storeSubscriptions(subscriptions, this._store);
+    this.subscriptions = subscriptions;
+    await storeSubscriptions(subscriptions, this.store);
   }
 
   private async saveSubscription(subscription: EventSubscription) {
-    const subscriptions = this._subscriptions;
+    const subscriptions = this.subscriptions;
     subscriptions.push(subscription);
     await this.persistSubscriptions(subscriptions);
   }
 
   private async removeSubscription(id: string) {
-    const subscriptions = this._subscriptions.filter((x) => x.id !== id);
+    const subscriptions = this.subscriptions.filter((x) => x.id !== id);
     await this.persistSubscriptions(subscriptions);
   }
 
   private getSubscriptionById(id: string) {
-    const matches = this._subscriptions.filter((x) => x.id === id);
+    const matches = this.subscriptions.filter((x) => x.id === id);
     if (matches && matches.length) {
       return matches[0];
     }
@@ -103,7 +103,7 @@ export default class Subscriber {
   }
 
   private getSubscriptionsByEvent(event: string) {
-    return this._subscriptions.filter((x) => x.params.event === event);
+    return this.subscriptions.filter((x) => x.params.event === event);
   }
 
   private getSubscriptionByParams(params: EventSubscriptionParams): EventSubscription | undefined {
@@ -131,15 +131,18 @@ export default class Subscriber {
             id: subscription.id,
             data,
           });
-          this._logger.info(`Successfully pushed event ${event} to webhook: ${webhook}`);
+          this.logger.info(`Successfully pushed event ${event} to webhook: ${webhook}`);
         } catch (error) {
-          this._logger.error(error);
+          this.logger.error(error);
         }
       }),
     );
   }
 
-  private formatSubscription(params: EventSubscriptionParams): EventSubscription {
-    return { id: uuid(), params };
+  private formatSubscription(
+    publicIdentifier: string,
+    params: EventSubscriptionParams,
+  ): EventSubscription {
+    return { id: uuid(), publicIdentifier, params };
   }
 }

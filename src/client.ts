@@ -1,125 +1,73 @@
-import { getFileStore } from "@connext/store";
 import * as connext from "@connext/client";
 import { getRandomBytes32 } from "@connext/utils";
-import {
-  IConnextClient,
-  IStoreService,
-  ConditionalTransferTypes,
-  PublicParams,
-} from "@connext/types";
+import { IConnextClient, ConditionalTransferTypes, PublicParams } from "@connext/types";
 import { Wallet, constants } from "ethers";
 
-import config from "./config";
-
 import {
-  storeMnemonic,
-  storeInitOptions,
   getClientBalance,
   getFreeBalanceOnChain,
   EventSubscriptionParams,
   InitClientManagerOptions,
-  ConnectOptions,
-  EventSubscription,
   transferOnChain,
-  GetBalanceResponse,
-  PostTransactionResponse,
-  PostHashLockTransferResponse,
   SubscriptionResponse,
   BatchSubscriptionResponse,
   GenericSuccessResponse,
-  GetAppInstanceDetailsResponse,
-  GetConfigResponse,
-  GetHashLockStatusResponse,
-  PostHashLockResolveResponse,
-  PostWithdrawResponse,
-  PostWithdrawRequestParams,
-  PostHashLockTransferRequestParams,
-  PostDepositRequestParams,
-  PostHashLockResolveRequestParams,
-  PostTransactionRequestParams,
-  PostSwapRequestParams,
-  PostSwapResponse,
-  PostLinkedTransferRequestParams,
-  PostLinkedTransferResponse,
-  GetLinkedStatusResponse,
-  PostLinkedResolveRequestParams,
-  PostLinkedResolveResponse,
-  GetTransferHistory,
-  fetchAll,
-  PostRequestCollateralRequestParams,
+  RouteMethods,
+  getStore,
+  InternalConnectOptions,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
 const { AddressZero, HashZero } = constants;
 
 export default class Client {
-  public static async init(logger: any) {
-    const store = getFileStore(config.storeDir);
-    await store.init();
-    const { mnemonic, initOptions } = await fetchAll(store);
-    const client = new Client({ mnemonic, logger, store });
-    if (initOptions && Object.keys(initOptions).length) {
-      await client.connect(initOptions);
-    }
-    return client;
-  }
+  public wallet: Wallet | undefined;
+  public client: IConnextClient | undefined;
 
-  private _client: IConnextClient | undefined;
-  private _logger: any;
-  private _mnemonic: string | undefined;
-  private _subscriber: Subscriber;
-  private _store: IStoreService;
-  private _initializing = false;
+  private logger: any;
+  private subscriber: Subscriber;
+  private connecting = false;
+  private logLevel: number;
 
   constructor(opts: InitClientManagerOptions) {
-    this._logger = opts.logger;
-    this._mnemonic = opts.mnemonic;
-    this._subscriber = new Subscriber(opts.logger, opts.store);
-    this._store = opts.store;
+    this.subscriber = new Subscriber(opts.logger, opts.store);
+    this.logger = opts.logger;
+    this.logLevel = opts.logLevel;
   }
 
-  get mnemonic(): string {
-    return this._mnemonic || config.mnemonic;
-  }
-
-  set mnemonic(value: string) {
-    this._mnemonic = value;
-  }
-
-  public async connect(opts?: Partial<ConnectOptions>): Promise<IConnextClient> {
-    const mnemonic = opts?.mnemonic || this.mnemonic;
-    if (!mnemonic) {
-      throw new Error("Cannot init Connext client without mnemonic");
+  public async connect(
+    rootStoreDir: string,
+    opts: InternalConnectOptions,
+  ): Promise<IConnextClient> {
+    if (this.connecting) {
+      throw new Error(`Client is connecting`);
     }
 
-    if (this._initializing) {
-      throw new Error(`Client is initializing`);
+    if (this.client) {
+      this.logger.info("Client is already connected - skipping connect logic");
+      return this.client;
     }
 
-    if (this._client) {
-      this._logger.info("Client is already connected - skipping connect logic");
-      return this._client;
-    }
-
-    this._initializing = true;
-    this.setMnemonic(mnemonic);
-    const network = opts?.network || config.network;
-    const ethProviderUrl = opts?.ethProviderUrl || config.ethProviderUrl;
-    const nodeUrl = opts?.nodeUrl || config.nodeUrl;
-    const logLevel = opts?.logLevel || config.logLevel;
-    const signer = Wallet.fromMnemonic(mnemonic).privateKey;
-    const clientOpts = { signer, store: this._store, ethProviderUrl, nodeUrl, logLevel };
+    this.connecting = true;
+    this.wallet = new Wallet(opts.signer);
+    const clientOpts = {
+      store: await getStore(rootStoreDir, this.wallet),
+      signer: opts.signer,
+      ethProviderUrl: opts.ethProviderUrl,
+      nodeUrl: opts.nodeUrl,
+      logLevel: this.logLevel,
+    };
     try {
-      const client = await connext.connect(network, clientOpts);
-      this._client = client;
-      this._logger.info("Client initialized successfully");
+      const client = await connext.connect(clientOpts);
+      this.client = client;
+      this.logger.info("Client initialized successfully");
       return client;
     } finally {
-      this._initializing = false;
+      this.connecting = false;
     }
   }
 
-  public async getConfig(): Promise<GetConfigResponse> {
+  public async getConfig(): Promise<RouteMethods.GetConfigResponse> {
     const client = this.getClient();
     const config = {
       multisigAddress: undefined,
@@ -131,7 +79,7 @@ export default class Client {
     return config;
   }
 
-  public async getTransferHistory(): Promise<GetTransferHistory> {
+  public async getTransferHistory(): Promise<RouteMethods.GetTransferHistoryResponse> {
     const client = this.getClient();
     const transferHistory = await client.getTransferHistory();
     return transferHistory;
@@ -139,7 +87,7 @@ export default class Client {
 
   public async getAppInstanceDetails(
     appIdentityHash: string,
-  ): Promise<GetAppInstanceDetailsResponse> {
+  ): Promise<RouteMethods.GetAppInstanceDetailsResponse> {
     const client = this.getClient();
     const appDetails = await client.getAppInstance(appIdentityHash);
     if (typeof appDetails === "undefined") {
@@ -150,8 +98,8 @@ export default class Client {
   }
 
   public async hashLockTransfer(
-    params: PostHashLockTransferRequestParams,
-  ): Promise<PostHashLockTransferResponse> {
+    params: RouteMethods.PostHashLockTransferRequestParams,
+  ): Promise<RouteMethods.PostHashLockTransferResponse> {
     const client = this.getClient();
     if (params.assetId === AddressZero) {
       delete params.assetId;
@@ -171,8 +119,8 @@ export default class Client {
   }
 
   public async hashLockResolve(
-    params: PostHashLockResolveRequestParams,
-  ): Promise<PostHashLockResolveResponse> {
+    params: RouteMethods.PostHashLockResolveRequestParams,
+  ): Promise<RouteMethods.PostHashLockResolveResponse> {
     const client = this.getClient();
     const response = await client.resolveCondition({
       conditionType: ConditionalTransferTypes.HashLockTransfer,
@@ -186,7 +134,7 @@ export default class Client {
   public async hashLockStatus(
     lockHash: string,
     assetId: string,
-  ): Promise<GetHashLockStatusResponse> {
+  ): Promise<RouteMethods.GetHashLockStatusResponse> {
     const client = this.getClient();
     const response = await client.getHashLockTransfer(lockHash, assetId);
     if (!response) {
@@ -197,7 +145,7 @@ export default class Client {
     return { ...response, paymentId: response.meta.paymentId };
   }
 
-  public async linkedStatus(paymentId: string): Promise<GetLinkedStatusResponse> {
+  public async linkedStatus(paymentId: string): Promise<RouteMethods.GetLinkedStatusResponse> {
     const client = this.getClient();
     const response = await client.getLinkedTransfer(paymentId);
     if (!response) {
@@ -208,8 +156,8 @@ export default class Client {
   }
 
   public async linkedTransfer(
-    params: PostLinkedTransferRequestParams,
-  ): Promise<PostLinkedTransferResponse> {
+    params: RouteMethods.PostLinkedTransferRequestParams,
+  ): Promise<RouteMethods.PostLinkedTransferResponse> {
     const client = this.getClient();
     if (params.assetId === AddressZero) {
       delete params.assetId;
@@ -231,8 +179,8 @@ export default class Client {
   }
 
   public async linkedResolve(
-    params: PostLinkedResolveRequestParams,
-  ): Promise<PostLinkedResolveResponse> {
+    params: RouteMethods.PostLinkedResolveRequestParams,
+  ): Promise<RouteMethods.PostLinkedResolveResponse> {
     const client = this.getClient();
     const response = await client.resolveCondition({
       conditionType: ConditionalTransferTypes.LinkedTransfer,
@@ -243,36 +191,32 @@ export default class Client {
     return data;
   }
 
-  public async balance(assetId: string): Promise<GetBalanceResponse> {
+  public async balance(assetId: string): Promise<RouteMethods.GetBalanceResponse> {
     const client = this.getClient();
     return getClientBalance(client, assetId);
   }
 
-  public async setMnemonic(mnemonic: string): Promise<void> {
-    await storeMnemonic(mnemonic, this._store);
-    this._mnemonic = mnemonic;
-    this._logger.info("Mnemonic set successfully");
-  }
-
-  public async deposit(params: PostDepositRequestParams): Promise<GetBalanceResponse> {
+  public async deposit(
+    params: RouteMethods.PostDepositRequestParams,
+  ): Promise<RouteMethods.PostDepositResponse> {
     const client = this.getClient();
-    const assetId = params.assetId || AddressZero;
     if (params.assetId === AddressZero) {
       delete params.assetId;
     }
     const response = await client.deposit(params);
-    return {
-      freeBalanceOffChain: response.freeBalance[client.signerAddress].toString(),
-      freeBalanceOnChain: await getFreeBalanceOnChain(client, assetId),
-    };
+    return { txhash: response.transaction.hash };
   }
 
-  public async requestCollateral(params: PostRequestCollateralRequestParams): Promise<void> {
+  public async requestCollateral(
+    params: RouteMethods.PostRequestCollateralRequestParams,
+  ): Promise<void> {
     const client = this.getClient();
     await client.requestCollateral(params.assetId);
   }
 
-  public async swap(params: PostSwapRequestParams): Promise<PostSwapResponse> {
+  public async swap(
+    params: RouteMethods.PostSwapRequestParams,
+  ): Promise<RouteMethods.PostSwapResponse> {
     const client = this.getClient();
     await client.swap(params);
     return {
@@ -281,7 +225,9 @@ export default class Client {
     };
   }
 
-  public async withdraw(params: PostWithdrawRequestParams): Promise<PostWithdrawResponse> {
+  public async withdraw(
+    params: RouteMethods.PostWithdrawRequestParams,
+  ): Promise<RouteMethods.PostWithdrawResponse> {
     const client = this.getClient();
     if (params.assetId === AddressZero) {
       delete params.assetId;
@@ -291,11 +237,14 @@ export default class Client {
   }
 
   public async transferOnChain(
-    params: PostTransactionRequestParams,
-  ): Promise<PostTransactionResponse> {
+    params: RouteMethods.PostTransactionRequestParams,
+  ): Promise<RouteMethods.PostTransactionResponse> {
     const client = this.getClient();
+    if (!this.wallet) {
+      throw new Error("Client signer wallet is not initialized");
+    }
     const txhash = await transferOnChain({
-      mnemonic: this.mnemonic,
+      wallet: this.wallet,
       ethProvider: client.ethProvider,
       assetId: params.assetId,
       amount: params.amount,
@@ -306,7 +255,7 @@ export default class Client {
 
   public async subscribe(params: EventSubscriptionParams): Promise<SubscriptionResponse> {
     const client = this.getClient();
-    const subscription = await this._subscriber.subscribe(client, params);
+    const subscription = await this.subscriber.subscribe(client, params);
     return { id: subscription.id };
   }
 
@@ -314,54 +263,32 @@ export default class Client {
     paramsArr: EventSubscriptionParams[],
   ): Promise<BatchSubscriptionResponse> {
     const client = this.getClient();
-    const subscriptions = await this._subscriber.batchSubscribe(client, paramsArr);
+    const subscriptions = await this.subscriber.batchSubscribe(client, paramsArr);
     return { subscriptions };
   }
 
   public async unsubscribe(id: string): Promise<GenericSuccessResponse> {
     const client = this.getClient();
-    await this._subscriber.unsubscribe(client, id);
+    await this.subscriber.unsubscribe(client, id);
     return { success: true };
   }
 
   public async unsubscribeBatch(idsArr: string[]): Promise<GenericSuccessResponse> {
     const client = this.getClient();
-    await this._subscriber.batchUnsubscribe(client, idsArr);
+    await this.subscriber.batchUnsubscribe(client, idsArr);
     return { success: true };
   }
 
   public async unsubscribeAll(): Promise<GenericSuccessResponse> {
     const client = this.getClient();
-    await this._subscriber.clearAllSubscriptions(client);
+    await this.subscriber.clearAllSubscriptions(client);
     return { success: true };
   }
 
-  // -- Private ---------------------------------------------------------------- //
-
-  private getClient(): IConnextClient {
-    if (!this._client) {
+  public getClient(): IConnextClient {
+    if (!this.client) {
       throw new Error("Client is not initialized");
     }
-    return this._client;
-  }
-
-  private async updateClient(
-    client: IConnextClient,
-    initOpts: Partial<ConnectOptions>,
-    subscriptions?: EventSubscription[],
-  ) {
-    if (this._client) {
-      await this._subscriber.clearAllSubscriptions(this._client);
-    }
-    this._client = client;
-    await this.initSubscriptions(subscriptions);
-    await storeInitOptions(initOpts, this._store);
-  }
-
-  private async initSubscriptions(subscriptions?: EventSubscription[]) {
-    if (subscriptions && subscriptions.length) {
-      const client = this.getClient();
-      await this._subscriber.batchResubscribe(client, subscriptions);
-    }
+    return this.client;
   }
 }
