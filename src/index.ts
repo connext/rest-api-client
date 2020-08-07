@@ -488,7 +488,7 @@ app.after(() => {
           await requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
-        res.status(200).send<RouteMethods.GetBalanceResponse>(await client.deposit(req.body));
+        res.status(200).send<RouteMethods.PostDepositResponse>(await client.deposit(req.body));
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });

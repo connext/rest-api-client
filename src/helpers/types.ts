@@ -116,6 +116,7 @@ export namespace RouteMethods {
   export type PostCreateResponse = WalletSummary;
 
   export type PostDepositRequestParams = MultiClientRequestParams & PublicParams.Deposit;
+  export type PostDepositResponse = { txhash: string };
 
   export type PostHashLockTransferRequestParams = MultiClientRequestParams &
     PublicParams.HashLockTransfer;

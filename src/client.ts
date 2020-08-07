@@ -198,17 +198,13 @@ export default class Client {
 
   public async deposit(
     params: RouteMethods.PostDepositRequestParams,
-  ): Promise<RouteMethods.GetBalanceResponse> {
+  ): Promise<RouteMethods.PostDepositResponse> {
     const client = this.getClient();
-    const assetId = params.assetId || AddressZero;
     if (params.assetId === AddressZero) {
       delete params.assetId;
     }
     const response = await client.deposit(params);
-    return {
-      freeBalanceOffChain: response.freeBalance[client.signerAddress].toString(),
-      freeBalanceOnChain: await getFreeBalanceOnChain(client, assetId),
-    };
+    return { txhash: response.transaction.hash };
   }
 
   public async requestCollateral(

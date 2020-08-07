@@ -59,6 +59,13 @@ export const BalanceResponseSchema = {
   },
 };
 
+export const TransactionResponseSchema = {
+  type: "object",
+  properties: {
+    txhash: { type: "string" },
+  },
+};
+
 export const AppInstanceDetailsSchema = {
   type: "object",
   properties: {
@@ -465,12 +472,7 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
               },
             },
             response: {
-              200: {
-                type: "object",
-                properties: {
-                  txhash: { type: "string" },
-                },
-              },
+              200: TransactionResponseSchema,
               500: GenericErrorResponseSchema,
             },
           },
@@ -625,7 +627,7 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
               },
             },
             response: {
-              200: BalanceResponseSchema,
+              200: TransactionResponseSchema,
               500: GenericErrorResponseSchema,
             },
           },
@@ -690,12 +692,7 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
               },
             },
             response: {
-              200: {
-                type: "object",
-                properties: {
-                  txhash: { type: "string" },
-                },
-              },
+              200: TransactionResponseSchema,
               500: GenericErrorResponseSchema,
             },
           },
