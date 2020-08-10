@@ -142,6 +142,7 @@ export namespace RouteMethods {
     amount: string;
     assetId: string;
     recipient: string;
+    ethProviderUrl?: string;
   };
   export interface PostTransactionResponse {
     txhash: string;

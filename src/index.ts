@@ -359,10 +359,11 @@ app.after(() => {
         if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
-        const client = multiClient.getClient(req.body.publicIdentifier);
         res
           .status(200)
-          .send<RouteMethods.PostTransactionResponse>(await client.transferOnChain(req.body));
+          .send<RouteMethods.PostTransactionResponse>(
+            await multiClient.keyring.transferOnChain(req.body),
+          );
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });

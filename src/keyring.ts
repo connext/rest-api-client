@@ -9,18 +9,25 @@ import {
   deleteWallets,
   InternalWalletOptions,
   updateWallets,
+  RouteMethods,
+  getPersistedClientOptions,
+  transferOnChain,
 } from "./helpers";
-import { Wallet } from "ethers";
+import { Wallet, providers } from "ethers";
 
 class Keyring {
   public static async init(
     mnemonic: string | undefined,
     logger: any,
     store: IStoreService,
+    ethProviderUrl: string | undefined,
+    legacyMode: boolean,
     persistedWallets?: InternalWalletOptions[],
   ): Promise<Keyring> {
-    const keyring = new Keyring(mnemonic, logger, store);
-    if (persistedWallets && persistedWallets.length) {
+    const keyring = new Keyring(mnemonic, logger, store, ethProviderUrl, legacyMode);
+    if (legacyMode) {
+      await keyring.createWallet(0);
+    } else if (persistedWallets && persistedWallets.length) {
       logger.info(`Creating ${persistedWallets.length} persisted wallets`);
       await Promise.all(persistedWallets.map((w) => keyring.createWallet(w.index)));
     }
@@ -34,10 +41,14 @@ class Keyring {
     public mnemonic: string | undefined,
     public logger: any,
     public store: IStoreService,
+    public ethProviderUrl: string | undefined,
+    public legacyMode: boolean,
   ) {
     this.mnemonic = mnemonic;
     this.logger = logger;
     this.store = store;
+    this.ethProviderUrl = ethProviderUrl;
+    this.legacyMode = legacyMode;
   }
 
   public async createWallet(index: number): Promise<WalletSummary> {
@@ -85,6 +96,32 @@ class Keyring {
 
   public getWallets(): WalletSummary[] {
     return this.wallets.map(this.formatWalletSummary);
+  }
+
+  public async transferOnChain(
+    params: RouteMethods.PostTransactionRequestParams,
+  ): Promise<RouteMethods.PostTransactionResponse> {
+    const publicIdentifier = this.legacyMode
+      ? getPublicIdentifierFromPublicKey(this.getWalletByIndex(0).publicKey)
+      : params.publicIdentifier;
+    if (typeof publicIdentifier === "undefined") {
+      throw new Error("Missing publicIdentifier required for on-chain transfer");
+    }
+    const ethProviderUrl =
+      params.ethProviderUrl ||
+      (await getPersistedClientOptions(this.store, publicIdentifier))?.ethProviderUrl ||
+      this.ethProviderUrl;
+    if (typeof ethProviderUrl === "undefined") {
+      throw new Error("Missing ethProviderUrl required for on-chain transfer");
+    }
+    const txhash = await transferOnChain({
+      wallet: this.getWalletByPublicIdentifier(publicIdentifier),
+      ethProvider: new providers.JsonRpcProvider(ethProviderUrl),
+      assetId: params.assetId,
+      amount: params.amount,
+      recipient: params.recipient,
+    });
+    return { txhash };
   }
 
   public async setMnemonic(mnemonic: string) {
