@@ -9,7 +9,6 @@ import {
   deleteClients,
   storeClients,
   ClientSummary,
-  fetchClients,
   InternalWalletOptions,
   getPersistedClientOptions,
 } from "./helpers";

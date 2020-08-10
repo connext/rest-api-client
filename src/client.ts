@@ -5,7 +5,7 @@ import {
   getPublicKeyFromPrivateKey,
 } from "@connext/utils";
 import { IConnextClient, ConditionalTransferTypes, PublicParams } from "@connext/types";
-import { Wallet, constants } from "ethers";
+import { constants } from "ethers";
 
 import {
   getClientBalance,

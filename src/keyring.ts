@@ -1,3 +1,4 @@
+import { Wallet, providers } from "ethers";
 import { IStoreService } from "@connext/types";
 import { getPublicIdentifierFromPublicKey } from "@connext/utils";
 
@@ -14,7 +15,6 @@ import {
   transferOnChain,
   getFreeBalanceOnChain,
 } from "./helpers";
-import { Wallet, providers } from "ethers";
 
 class Keyring {
   public static async init(
