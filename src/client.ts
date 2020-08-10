@@ -1,14 +1,17 @@
 import * as connext from "@connext/client";
-import { getRandomBytes32 } from "@connext/utils";
+import {
+  getRandomBytes32,
+  getPublicIdentifierFromPublicKey,
+  getPublicKeyFromPrivateKey,
+} from "@connext/utils";
 import { IConnextClient, ConditionalTransferTypes, PublicParams } from "@connext/types";
-import { Wallet, constants } from "ethers";
+import { constants } from "ethers";
 
 import {
   getClientBalance,
   getFreeBalanceOnChain,
   EventSubscriptionParams,
   InitClientManagerOptions,
-  transferOnChain,
   SubscriptionResponse,
   BatchSubscriptionResponse,
   GenericSuccessResponse,
@@ -21,7 +24,6 @@ import Subscriber from "./subscriber";
 const { AddressZero, HashZero } = constants;
 
 export default class Client {
-  public wallet: Wallet | undefined;
   public client: IConnextClient | undefined;
 
   private logger: any;
@@ -49,9 +51,12 @@ export default class Client {
     }
 
     this.connecting = true;
-    this.wallet = new Wallet(opts.signer);
+    const publicIdentifier = getPublicIdentifierFromPublicKey(
+      getPublicKeyFromPrivateKey(opts.signer),
+    );
+    const store = await getStore(rootStoreDir, publicIdentifier);
     const clientOpts = {
-      store: await getStore(rootStoreDir, this.wallet),
+      store,
       signer: opts.signer,
       ethProviderUrl: opts.ethProviderUrl,
       nodeUrl: opts.nodeUrl,
@@ -220,8 +225,16 @@ export default class Client {
     const client = this.getClient();
     await client.swap(params);
     return {
-      fromAssetIdBalance: await getFreeBalanceOnChain(client, params.fromAssetId),
-      toAssetIdBalance: await getFreeBalanceOnChain(client, params.toAssetId),
+      fromAssetIdBalance: await getFreeBalanceOnChain(
+        client.signerAddress,
+        client.ethProvider,
+        params.fromAssetId,
+      ),
+      toAssetIdBalance: await getFreeBalanceOnChain(
+        client.signerAddress,
+        client.ethProvider,
+        params.toAssetId,
+      ),
     };
   }
 
@@ -234,23 +247,6 @@ export default class Client {
     }
     const response = await client.withdraw(params);
     return { txhash: response.transaction.hash };
-  }
-
-  public async transferOnChain(
-    params: RouteMethods.PostTransactionRequestParams,
-  ): Promise<RouteMethods.PostTransactionResponse> {
-    const client = this.getClient();
-    if (!this.wallet) {
-      throw new Error("Client signer wallet is not initialized");
-    }
-    const txhash = await transferOnChain({
-      wallet: this.wallet,
-      ethProvider: client.ethProvider,
-      assetId: params.assetId,
-      amount: params.amount,
-      recipient: params.recipient,
-    });
-    return { txhash };
   }
 
   public async subscribe(params: EventSubscriptionParams): Promise<SubscriptionResponse> {

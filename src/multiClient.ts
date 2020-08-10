@@ -9,8 +9,8 @@ import {
   deleteClients,
   storeClients,
   ClientSummary,
-  fetchClients,
   InternalWalletOptions,
+  getPersistedClientOptions,
 } from "./helpers";
 
 export interface ClientSettings extends InternalConnectOptions {
@@ -30,7 +30,14 @@ class MultiClient {
     persistedClients?: InternalConnectOptions[],
     persistedWallets?: InternalWalletOptions[],
   ): Promise<MultiClient> {
-    const keyring = await Keyring.init(mnemonic, logger, store, persistedWallets);
+    const keyring = await Keyring.init(
+      mnemonic,
+      logger,
+      store,
+      ethProviderUrl,
+      legacyMode,
+      persistedWallets,
+    );
     const multiClient = new MultiClient(
       keyring,
       logger,
@@ -216,13 +223,7 @@ class MultiClient {
 
   private async getPersistedClientOptions(pubId?: string): Promise<ConnectOptions | undefined> {
     const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
-    let result: ConnectOptions | undefined;
-    const persistedClients = await fetchClients(this.store);
-    const match = persistedClients?.find((c) => c.publicIdentifier === publicIdentifier);
-    if (match) {
-      result = match;
-    }
-    return result;
+    return getPersistedClientOptions(this.store, publicIdentifier);
   }
 
   private async createClient(opts: InternalConnectOptions): Promise<Client> {

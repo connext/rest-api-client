@@ -12,14 +12,27 @@ import {
   PersistedData,
   InternalConnectOptions,
   InternalWalletOptions,
+  ConnectOptions,
 } from "./types";
-import { Wallet } from "ethers";
 
-export async function getStore(storeDir: string, wallet?: Wallet) {
-  const dir = wallet ? `${storeDir}-${wallet.address}` : storeDir;
+export async function getStore(storeDir: string, publicIdentifier?: string) {
+  const dir = publicIdentifier ? `${storeDir}-${publicIdentifier}` : storeDir;
   const store = getFileStore(dir);
   await store.init();
   return store;
+}
+
+export async function getPersistedClientOptions(
+  store: IStoreService,
+  publicIdentifier: string,
+): Promise<ConnectOptions | undefined> {
+  let result: ConnectOptions | undefined;
+  const persistedClients = await fetchClients(store);
+  const match = persistedClients?.find((c) => c.publicIdentifier === publicIdentifier);
+  if (match) {
+    result = match;
+  }
+  return result;
 }
 
 export function storeMnemonic(mnemonic: string, store: IStoreService): Promise<void> {

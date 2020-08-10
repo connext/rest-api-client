@@ -20,6 +20,7 @@ import {
   BatchSubscriptionResponse,
   SubscriptionResponse,
 } from "./helpers";
+import Client from "./client";
 
 const app = fastify({
   logger: { prettyPrint: config.debug } as any,
@@ -112,6 +113,29 @@ app.after(() => {
     }
   });
 
+  app.get<GetBalanceRequest>(Routes.get.balance.url, Routes.get.balance.opts, async (req, res) => {
+    try {
+      await requireParam(req.params, "assetId");
+      if (!config.legacyMode) {
+        await requireParam(req.params, "publicIdentifier");
+      }
+      let client: Client | undefined;
+      try {
+        client = multiClient.getClient(req.params.publicIdentifier);
+      } catch (e) {
+        // do nothing
+      }
+      const balances =
+        typeof client !== "undefined"
+          ? await client.balance(req.params.assetId)
+          : await multiClient.keyring.balance(req.params.assetId, req.params.publicIdentifier);
+      res.status(200).send<RouteMethods.GetBalanceResponse>(balances);
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
+    }
+  });
+
   app.get(Routes.get.clients.url, Routes.get.clients.opts, async (req, res) => {
     try {
       res.status(200).send<RouteMethods.GetClientsResponse>(await multiClient.getClients());
@@ -124,22 +148,6 @@ app.after(() => {
   interface GetBalanceRequest extends RequestGenericInterface {
     Params: RouteMethods.GetBalanceRequestParams;
   }
-
-  app.get<GetBalanceRequest>(Routes.get.balance.url, Routes.get.balance.opts, async (req, res) => {
-    try {
-      await requireParam(req.params, "assetId");
-      if (!config.legacyMode) {
-        await requireParam(req.params, "publicIdentifier");
-      }
-      const client = multiClient.getClient(req.params.publicIdentifier);
-      res
-        .status(200)
-        .send<RouteMethods.GetBalanceResponse>(await client.balance(req.params.assetId));
-    } catch (error) {
-      app.log.error(error);
-      res.status(500).send<GenericErrorResponse>({ message: error.message });
-    }
-  });
 
   interface GetConfigRequest extends RequestGenericInterface {
     Params: RouteMethods.GetConfigRequestParams;
@@ -280,48 +288,6 @@ app.after(() => {
     }
   });
 
-  interface PostConnectRequest extends RequestGenericInterface {
-    Body: Partial<ConnectOptions>;
-  }
-
-  app.post<PostConnectRequest>(
-    Routes.post.connect.url,
-    Routes.post.connect.opts,
-    async (req, res) => {
-      try {
-        if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
-        }
-        const client = await multiClient.connectClient(req.body);
-        res.status(200).send<RouteMethods.GetConfigResponse>(await client.getConfig());
-      } catch (error) {
-        app.log.error(error);
-        res.status(500).send<GenericErrorResponse>({ message: error.message });
-      }
-    },
-  );
-
-  interface PostDisconnectRequest extends RequestGenericInterface {
-    Body: { publicIdentifier?: string };
-  }
-
-  app.post<PostDisconnectRequest>(
-    Routes.post.disconnect.url,
-    Routes.post.disconnect.opts,
-    async (req, res) => {
-      try {
-        if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
-        }
-        await multiClient.disconnectClient(req.body?.publicIdentifier);
-        res.status(200).send<GenericSuccessResponse>({ success: true });
-      } catch (error) {
-        app.log.error(error);
-        res.status(500).send<GenericErrorResponse>({ message: error.message });
-      }
-    },
-  );
-
   interface PostMnemonicRequest extends RequestGenericInterface {
     Body: RouteMethods.PostMnemonicRequestParams;
   }
@@ -359,10 +325,51 @@ app.after(() => {
         if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
-        const client = multiClient.getClient(req.body.publicIdentifier);
         res
           .status(200)
-          .send<RouteMethods.PostTransactionResponse>(await client.transferOnChain(req.body));
+          .send<RouteMethods.PostTransactionResponse>(await multiClient.keyring.transfer(req.body));
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
+  interface PostConnectRequest extends RequestGenericInterface {
+    Body: Partial<ConnectOptions>;
+  }
+
+  app.post<PostConnectRequest>(
+    Routes.post.connect.url,
+    Routes.post.connect.opts,
+    async (req, res) => {
+      try {
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = await multiClient.connectClient(req.body);
+        res.status(200).send<RouteMethods.GetConfigResponse>(await client.getConfig());
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
+  interface PostDisconnectRequest extends RequestGenericInterface {
+    Body: { publicIdentifier?: string };
+  }
+
+  app.post<PostDisconnectRequest>(
+    Routes.post.disconnect.url,
+    Routes.post.disconnect.opts,
+    async (req, res) => {
+      try {
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        await multiClient.disconnectClient(req.body?.publicIdentifier);
+        res.status(200).send<GenericSuccessResponse>({ success: true });
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
