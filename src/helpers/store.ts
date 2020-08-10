@@ -15,8 +15,8 @@ import {
   ConnectOptions,
 } from "./types";
 
-export async function getStore(storeDir: string, address?: string) {
-  const dir = address ? `${storeDir}-${address}` : storeDir;
+export async function getStore(storeDir: string, publicIdentifier?: string) {
+  const dir = publicIdentifier ? `${storeDir}-${publicIdentifier}` : storeDir;
   const store = getFileStore(dir);
   await store.init();
   return store;
