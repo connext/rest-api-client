@@ -357,7 +357,7 @@ app.after(() => {
         await requireParam(req.body, "assetId");
         await requireParam(req.body, "recipient");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          await requireParam(req.body, "address");
         }
         res
           .status(200)

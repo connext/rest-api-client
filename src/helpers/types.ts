@@ -138,10 +138,11 @@ export namespace RouteMethods {
 
   export type PostMnemonicRequestParams = { mnemonic: string };
 
-  export type PostTransactionRequestParams = MultiClientRequestParams & {
+  export type PostTransactionRequestParams = {
     amount: string;
     assetId: string;
     recipient: string;
+    address?: string;
     ethProviderUrl?: string;
   };
   export interface PostTransactionResponse {

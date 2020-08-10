@@ -75,23 +75,23 @@ class Keyring {
   }
 
   public getWalletByIndex(index: number): Wallet {
-    const wallet = this.wallets.find((w) => getIndexFromPath(w.mnemonic.path) === index);
-    if (!wallet) {
-      throw new Error(`No wallet found for index: ${index}`);
-    }
-    this.logger.info(`Getting wallet for index: ${index}`);
-    return wallet;
+    return this.getWallet<number>(
+      index,
+      "index",
+      (wallet, value) => getIndexFromPath(wallet.mnemonic.path) === value,
+    );
+  }
+
+  public getWalletByAddress(address: string): Wallet {
+    return this.getWallet<string>(address, "address", (wallet, value) => wallet.address === value);
   }
 
   public getWalletByPublicIdentifier(publicIdentifier: string): Wallet {
-    const wallet = this.wallets.find(
-      (w) => getPublicIdentifierFromPublicKey(w.publicKey) === publicIdentifier,
+    return this.getWallet<string>(
+      publicIdentifier,
+      "publicIdentifier",
+      (wallet, value) => getPublicIdentifierFromPublicKey(wallet.publicKey) === value,
     );
-    if (!wallet) {
-      throw new Error(`No wallet found for publicIdentifier: ${publicIdentifier}`);
-    }
-    this.logger.info(`Getting wallet for publicIdentifier: ${publicIdentifier}`);
-    return wallet;
   }
 
   public getWallets(): WalletSummary[] {
@@ -101,21 +101,25 @@ class Keyring {
   public async transferOnChain(
     params: RouteMethods.PostTransactionRequestParams,
   ): Promise<RouteMethods.PostTransactionResponse> {
-    const publicIdentifier = this.legacyMode
-      ? getPublicIdentifierFromPublicKey(this.getWalletByIndex(0).publicKey)
-      : params.publicIdentifier;
-    if (typeof publicIdentifier === "undefined") {
-      throw new Error("Missing publicIdentifier required for on-chain transfer");
+    const address = this.legacyMode ? this.getWalletByIndex(0).address : params.address;
+    if (typeof address === "undefined") {
+      throw new Error("Missing address required for on-chain transfer");
     }
+    const wallet = this.getWalletByAddress(address);
     const ethProviderUrl =
       params.ethProviderUrl ||
-      (await getPersistedClientOptions(this.store, publicIdentifier))?.ethProviderUrl ||
+      (
+        await getPersistedClientOptions(
+          this.store,
+          getPublicIdentifierFromPublicKey(wallet.publicKey),
+        )
+      )?.ethProviderUrl ||
       this.ethProviderUrl;
     if (typeof ethProviderUrl === "undefined") {
       throw new Error("Missing ethProviderUrl required for on-chain transfer");
     }
     const txhash = await transferOnChain({
-      wallet: this.getWalletByPublicIdentifier(publicIdentifier),
+      wallet,
       ethProvider: new providers.JsonRpcProvider(ethProviderUrl),
       assetId: params.assetId,
       amount: params.amount,
@@ -144,6 +148,19 @@ class Keyring {
   private async setWallet(wallet: Wallet, index: number): Promise<void> {
     this.wallets.push(wallet);
     await updateWallets({ index }, this.store);
+  }
+
+  private getWallet<T>(
+    value: T,
+    name: string,
+    condition: (wallet: Wallet, value: T) => boolean,
+  ): Wallet {
+    const wallet = this.wallets.find((w) => condition(w, value));
+    if (!wallet) {
+      throw new Error(`No wallet found for ${name}: ${value}`);
+    }
+    this.logger.info(`Getting wallet for ${name}: ${value}`);
+    return wallet;
   }
 
   private formatWalletSummary(wallet: Wallet): WalletSummary {
