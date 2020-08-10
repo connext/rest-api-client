@@ -225,8 +225,16 @@ export default class Client {
     const client = this.getClient();
     await client.swap(params);
     return {
-      fromAssetIdBalance: await getFreeBalanceOnChain(client, params.fromAssetId),
-      toAssetIdBalance: await getFreeBalanceOnChain(client, params.toAssetId),
+      fromAssetIdBalance: await getFreeBalanceOnChain(
+        client.signerAddress,
+        client.ethProvider,
+        params.fromAssetId,
+      ),
+      toAssetIdBalance: await getFreeBalanceOnChain(
+        client.signerAddress,
+        client.ethProvider,
+        params.toAssetId,
+      ),
     };
   }
 

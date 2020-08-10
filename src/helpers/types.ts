@@ -81,7 +81,7 @@ export namespace RouteMethods {
     assetId: string;
   };
   export type GetBalanceResponse = {
-    freeBalanceOffChain: string;
+    freeBalanceOffChain?: string;
     freeBalanceOnChain: string;
   };
 
@@ -138,11 +138,10 @@ export namespace RouteMethods {
 
   export type PostMnemonicRequestParams = { mnemonic: string };
 
-  export type PostTransactionRequestParams = {
+  export type PostTransactionRequestParams = MultiClientRequestParams & {
     amount: string;
     assetId: string;
     recipient: string;
-    address?: string;
     ethProviderUrl?: string;
   };
   export interface PostTransactionResponse {

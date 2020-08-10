@@ -12,6 +12,7 @@ import {
   RouteMethods,
   getPersistedClientOptions,
   transferOnChain,
+  getFreeBalanceOnChain,
 } from "./helpers";
 import { Wallet, providers } from "ethers";
 
@@ -98,34 +99,50 @@ class Keyring {
     return this.wallets.map(this.formatWalletSummary);
   }
 
-  public async transferOnChain(
+  public async balance(assetId: string, pubId?: string): Promise<RouteMethods.GetBalanceResponse> {
+    const publicIdentifier = this.getPublicIdentifier(pubId);
+    const wallet = this.getWalletByPublicIdentifier(publicIdentifier);
+    const ethProvider = await this.getEthProvider(publicIdentifier);
+    const freeBalanceOnChain = await getFreeBalanceOnChain(wallet.address, ethProvider, assetId);
+    return { freeBalanceOnChain };
+  }
+
+  public async transfer(
     params: RouteMethods.PostTransactionRequestParams,
   ): Promise<RouteMethods.PostTransactionResponse> {
-    const address = this.legacyMode ? this.getWalletByIndex(0).address : params.address;
-    if (typeof address === "undefined") {
-      throw new Error("Missing address required for on-chain transfer");
-    }
-    const wallet = this.getWalletByAddress(address);
-    const ethProviderUrl =
-      params.ethProviderUrl ||
-      (
-        await getPersistedClientOptions(
-          this.store,
-          getPublicIdentifierFromPublicKey(wallet.publicKey),
-        )
-      )?.ethProviderUrl ||
-      this.ethProviderUrl;
-    if (typeof ethProviderUrl === "undefined") {
-      throw new Error("Missing ethProviderUrl required for on-chain transfer");
-    }
+    const publicIdentifier = this.getPublicIdentifier(params.publicIdentifier);
     const txhash = await transferOnChain({
-      wallet,
-      ethProvider: new providers.JsonRpcProvider(ethProviderUrl),
+      wallet: this.getWalletByPublicIdentifier(publicIdentifier),
+      ethProvider: await this.getEthProvider(publicIdentifier, params.ethProviderUrl),
       assetId: params.assetId,
       amount: params.amount,
       recipient: params.recipient,
     });
     return { txhash };
+  }
+
+  private getPublicIdentifier(pubId?: string): string {
+    const publicIdentifier = this.legacyMode
+      ? getPublicIdentifierFromPublicKey(this.getWalletByIndex(0).publicKey)
+      : pubId;
+    if (typeof publicIdentifier === "undefined") {
+      throw new Error("Missing publicIdentifier required for on-chain transfer");
+    }
+    return publicIdentifier;
+  }
+
+  private async getEthProvider(
+    publicIdentifier: string,
+    url?: string,
+  ): Promise<providers.Provider> {
+    const ethProviderUrl =
+      url ||
+      (await getPersistedClientOptions(this.store, publicIdentifier))?.ethProviderUrl ||
+      this.ethProviderUrl;
+    if (typeof ethProviderUrl === "undefined") {
+      throw new Error("Missing ethProviderUrl required for on-chain transfer");
+    }
+    return new providers.JsonRpcProvider(ethProviderUrl);
   }
 
   public async setMnemonic(mnemonic: string) {

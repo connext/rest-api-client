@@ -54,7 +54,7 @@ export const ChannelConfigResponseSchema = {
 export const BalanceResponseSchema = {
   type: "object",
   properties: {
-    freeBalanceOffChain: { type: "string" },
+    freeBalanceOffChain: { type: "string", nullable: true },
     freeBalanceOnChain: { type: "string" },
   },
 };

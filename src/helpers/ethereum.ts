@@ -24,16 +24,13 @@ export async function getFreeBalanceOffChain(
 }
 
 export async function getFreeBalanceOnChain(
-  client: IConnextClient,
+  address: string,
+  ethProvider: providers.Provider,
   assetId: string,
 ): Promise<string> {
   return assetId === constants.AddressZero
-    ? (await client.ethProvider.getBalance(client.signerAddress)).toString()
-    : (
-        await new Contract(assetId, ERC20.abi, client.ethProvider).functions.balanceOf(
-          client.signerAddress,
-        )
-      ).toString();
+    ? (await ethProvider.getBalance(address)).toString()
+    : (await new Contract(assetId, ERC20.abi, ethProvider).functions.balanceOf(address)).toString();
 }
 
 export async function getClientBalance(
@@ -41,7 +38,11 @@ export async function getClientBalance(
   assetId: string,
 ): Promise<RouteMethods.GetBalanceResponse> {
   const freeBalanceOffChain = await getFreeBalanceOffChain(client, assetId);
-  const freeBalanceOnChain = await getFreeBalanceOnChain(client, assetId);
+  const freeBalanceOnChain = await getFreeBalanceOnChain(
+    client.signerAddress,
+    client.ethProvider,
+    assetId,
+  );
   return { freeBalanceOffChain, freeBalanceOnChain };
 }
 
