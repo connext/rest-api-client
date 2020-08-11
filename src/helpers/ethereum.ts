@@ -1,13 +1,14 @@
 import { IConnextClient } from "@connext/types";
 import { Wallet, Contract, providers, constants, BigNumber } from "ethers";
 
-import { RouteMethods, TransferOnChainParams, FundChannelParams } from "./types";
+import { RouteMethods, TransferOnChainParams } from "./types";
 
 const ETH_STANDARD_PATH = "m/44'/60'/0'/0";
 
 const tokenAbi = [
   "function mint(address _to, uint256 _value) returns (bool success)",
   "function transfer(address _to, uint256 _value) returns (bool success)",
+  "function balanceOf(address account) view returns (uint256)",
 ];
 
 function assertTxHash(tx: providers.TransactionResponse): void {
@@ -39,8 +40,8 @@ export async function getFreeBalanceOnChain(
   assetId: string,
 ): Promise<string> {
   return assetId === constants.AddressZero
-    ? (await ethProvider.getBalance(address)).toString()
-    : (await new Contract(assetId, tokenAbi, ethProvider).functions.balanceOf(address)).toString();
+    ? getEthBalance(address, ethProvider)
+    : getTokenBalance(address, ethProvider, assetId);
 }
 
 export async function getClientBalance(
@@ -54,6 +55,23 @@ export async function getClientBalance(
     assetId,
   );
   return { freeBalanceOffChain, freeBalanceOnChain };
+}
+
+export async function getEthBalance(
+  address: string,
+  ethProvider: providers.Provider,
+): Promise<string> {
+  return (await ethProvider.getBalance(address)).toString();
+}
+
+export async function getTokenBalance(
+  address: string,
+  ethProvider: providers.Provider,
+  assetId: string,
+): Promise<string> {
+  return (
+    await new Contract(assetId, tokenAbi, ethProvider).functions.balanceOf(address)
+  ).toString();
 }
 
 export async function transferToken(

@@ -483,25 +483,24 @@ app.after(() => {
     Body: RouteMethods.PostFundRequestParams;
   }
 
-  app.post<PostFundRequest>(
-    Routes.post.onchainTransfer.url,
-    Routes.post.onchainTransfer.opts,
-    async (req, res) => {
-      try {
-        await requireParam(req.body, "amount");
-        await requireParam(req.body, "assetId");
-        if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
-        }
-        const client = await multiClient.getClient(req.body.publicIdentifier);
-        await client.fund(req.body.amount, req.body.assetId, config.fundingMnemonic);
-        res.status(200).send<GenericSuccessResponse>({ success: true });
-      } catch (error) {
-        app.log.error(error);
-        res.status(500).send<GenericErrorResponse>({ message: error.message });
+  app.post<PostFundRequest>(Routes.post.fund.url, Routes.post.fund.opts, async (req, res) => {
+    try {
+      await requireParam(req.body, "amount");
+      await requireParam(req.body, "assetId");
+      if (!config.legacyMode) {
+        await requireParam(req.body, "publicIdentifier");
       }
-    },
-  );
+      const client = multiClient.getClient(req.body.publicIdentifier);
+      res
+        .status(200)
+        .send<RouteMethods.PostFundResponse>(
+          await client.fund(req.body.amount, req.body.assetId, config.fundingMnemonic),
+        );
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
+    }
+  });
 
   interface PostDepositRequest extends RequestGenericInterface {
     Body: RouteMethods.PostDepositRequestParams;

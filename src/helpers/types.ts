@@ -87,12 +87,6 @@ export interface TransferOnChainParams {
   recipient: string;
 }
 
-export interface FundChannelParams {
-  fundingMnemonic: string;
-  ethProvider: providers.Provider;
-  amount: string;
-  assetId: string;
-}
 export namespace RouteMethods {
   export type GetBalanceRequestParams = MultiClientRequestParams & {
     assetId: string;
@@ -136,6 +130,7 @@ export namespace RouteMethods {
     amount: string;
     assetId: string;
   };
+  export type PostFundResponse = { txhash: string };
 
   export type PostDepositRequestParams = MultiClientRequestParams & PublicParams.Deposit;
   export type PostDepositResponse = { txhash: string };

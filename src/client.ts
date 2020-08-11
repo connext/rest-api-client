@@ -5,7 +5,7 @@ import {
   getPublicKeyFromPrivateKey,
 } from "@connext/utils";
 import { IConnextClient, ConditionalTransferTypes, PublicParams } from "@connext/types";
-import { Wallet, constants } from "ethers";
+import { Wallet, constants, BigNumber } from "ethers";
 
 import {
   getClientBalance,
@@ -19,6 +19,8 @@ import {
   getStore,
   InternalConnectOptions,
   mintToken,
+  transferEth,
+  transferToken,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
@@ -202,25 +204,34 @@ export default class Client {
     return getClientBalance(client, assetId);
   }
 
-  public async requestDepositRights(assetId?: string): Promise<void> {
-    const client = this.getClient();
-    await client.requestDepositRights({ assetId });
-  }
-
-  public async rescindDepositRights(assetId?: string): Promise<void> {
-    const client = this.getClient();
-    await client.rescindDepositRights({ assetId });
-  }
-
-  public async fund(amount: string, assetId: string, fundingMnemonic: string) {
+  public async fund(
+    amount: string,
+    assetId: string,
+    fundingMnemonic: string,
+  ): Promise<RouteMethods.PostFundResponse> {
     const client = this.getClient();
     const wallet = Wallet.fromMnemonic(fundingMnemonic).connect(client.ethProvider);
-    await this.requestDepositRights(assetId);
+    await client.requestDepositRights({ assetId });
+    let txhash: string;
+    const balance = await getFreeBalanceOnChain(wallet.address, client.ethProvider, assetId);
     if (assetId !== constants.AddressZero) {
-      await mintToken(wallet, wallet.address, amount, assetId);
+      if (BigNumber.from(balance).lte(BigNumber.from(amount))) {
+        try {
+          txhash = await mintToken(wallet, client.multisigAddress, amount, assetId);
+        } catch (e) {
+          throw new Error(`Failed to mint token for assetId: ${assetId}`);
+        }
+      } else {
+        txhash = await transferToken(wallet, client.multisigAddress, amount, assetId);
+      }
+    } else {
+      if (BigNumber.from(balance).lte(BigNumber.from(amount))) {
+        throw new Error(`Insufficient ETH balance to fund channel`);
+      }
+      txhash = await transferEth(wallet, client.multisigAddress, amount);
     }
-    await this.deposit({ amount, assetId });
-    await this.rescindDepositRights(assetId);
+    await client.rescindDepositRights({ assetId });
+    return { txhash };
   }
 
   public async deposit(
