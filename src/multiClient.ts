@@ -50,7 +50,7 @@ class MultiClient {
     );
     if (legacyMode && persistedClients && persistedClients.length) {
       logger.info(`Connecting a single persisted client`);
-      multiClient.connectClient(persistedClients[0]);
+      await multiClient.connectClient(persistedClients[0]);
     }
     return multiClient;
   }
