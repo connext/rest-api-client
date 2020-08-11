@@ -1,10 +1,20 @@
 import { IConnextClient } from "@connext/types";
-import { ERC20 } from "@connext/contracts";
 import { Wallet, Contract, providers, constants, BigNumber } from "ethers";
 
-import { RouteMethods } from "./types";
+import { RouteMethods, TransferOnChainParams, FundChannelParams } from "./types";
 
-export const ETH_STANDARD_PATH = "m/44'/60'/0'/0";
+const ETH_STANDARD_PATH = "m/44'/60'/0'/0";
+
+const tokenAbi = [
+  "function mint(address _to, uint256 _value) returns (bool success)",
+  "function transfer(address _to, uint256 _value) returns (bool success)",
+];
+
+function assertTxHash(tx: providers.TransactionResponse): void {
+  if (typeof tx.hash === "undefined") {
+    throw new Error("Transaction hash is undefined");
+  }
+}
 
 export function getPath(index = 0) {
   return `${ETH_STANDARD_PATH}/${(String(index).match(/.{1,9}/gi) || [index]).join("/")}`;
@@ -30,7 +40,7 @@ export async function getFreeBalanceOnChain(
 ): Promise<string> {
   return assetId === constants.AddressZero
     ? (await ethProvider.getBalance(address)).toString()
-    : (await new Contract(assetId, ERC20.abi, ethProvider).functions.balanceOf(address)).toString();
+    : (await new Contract(assetId, tokenAbi, ethProvider).functions.balanceOf(address)).toString();
 }
 
 export async function getClientBalance(
@@ -46,26 +56,47 @@ export async function getClientBalance(
   return { freeBalanceOffChain, freeBalanceOnChain };
 }
 
-export async function transferOnChain(params: {
-  wallet: Wallet;
-  ethProvider: providers.Provider;
-  assetId: string;
-  amount: string;
-  recipient: string;
-}): Promise<string> {
-  let tx: providers.TransactionResponse;
+export async function transferToken(
+  wallet: Wallet,
+  recipient: string,
+  amount: string,
+  tokenAddress: string,
+): Promise<string> {
+  const token = new Contract(tokenAddress, tokenAbi, wallet);
+  const tx = await token.transfer(recipient, BigNumber.from(amount));
+  assertTxHash(tx);
+  return tx.hash;
+}
+
+export async function mintToken(
+  wallet: Wallet,
+  recipient: string,
+  amount: string,
+  tokenAddress: string,
+): Promise<string> {
+  const token = new Contract(tokenAddress, tokenAbi, wallet);
+  const tx = await token.mint(recipient, BigNumber.from(amount));
+  assertTxHash(tx);
+  return tx.hash;
+}
+
+export async function transferEth(
+  wallet: Wallet,
+  recipient: string,
+  amount: string,
+): Promise<string> {
+  const tx = await wallet.sendTransaction({
+    to: recipient,
+    value: BigNumber.from(amount),
+  });
+  assertTxHash(tx);
+  return tx.hash;
+}
+
+export async function transferOnChain(params: TransferOnChainParams): Promise<string> {
   const wallet = params.wallet.connect(params.ethProvider);
   if (params.assetId === constants.AddressZero) {
-    tx = await wallet.sendTransaction({
-      to: params.recipient,
-      value: BigNumber.from(params.amount),
-    });
-  } else {
-    const token = new Contract(params.assetId, ERC20.abi, wallet);
-    tx = await token.transfer(params.recipient, BigNumber.from(params.amount));
+    return transferEth(wallet, params.recipient, params.amount);
   }
-  if (typeof tx.hash === "undefined") {
-    throw new Error("Transaction hash is undefined");
-  }
-  return tx.hash;
+  return transferToken(wallet, params.recipient, params.amount, params.assetId);
 }

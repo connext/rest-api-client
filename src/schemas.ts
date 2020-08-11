@@ -612,6 +612,28 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
           },
         },
       },
+      fund: {
+        url: "/fund",
+        description: "Fund asset on channel from funding wallet",
+        opts: {
+          preHandler: authHandler,
+          schema: {
+            body: {
+              type: "object",
+              properties: {
+                amount: { type: "string" },
+                assetId: { type: "string" },
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
+              },
+            },
+            response: {
+              200: TransactionResponseSchema,
+              500: GenericErrorResponseSchema,
+            },
+          },
+        },
+      },
+
       deposit: {
         url: "/deposit",
         description: "Deposit asset on channel",

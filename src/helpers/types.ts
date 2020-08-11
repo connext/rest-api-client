@@ -1,3 +1,5 @@
+import { Wallet, providers } from "ethers";
+
 import {
   IStoreService,
   PublicResults,
@@ -76,6 +78,21 @@ export type ClientSummary = {
   proposedApps: number | undefined;
   installedApps: number | undefined;
 };
+
+export interface TransferOnChainParams {
+  wallet: Wallet;
+  ethProvider: providers.Provider;
+  assetId: string;
+  amount: string;
+  recipient: string;
+}
+
+export interface FundChannelParams {
+  fundingMnemonic: string;
+  ethProvider: providers.Provider;
+  amount: string;
+  assetId: string;
+}
 export namespace RouteMethods {
   export type GetBalanceRequestParams = MultiClientRequestParams & {
     assetId: string;
@@ -114,6 +131,11 @@ export namespace RouteMethods {
     NodeResponses.GetTransferHistory;
 
   export type PostCreateResponse = WalletSummary;
+
+  export type PostFundRequestParams = MultiClientRequestParams & {
+    amount: string;
+    assetId: string;
+  };
 
   export type PostDepositRequestParams = MultiClientRequestParams & PublicParams.Deposit;
   export type PostDepositResponse = { txhash: string };

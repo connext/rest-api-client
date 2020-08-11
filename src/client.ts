@@ -5,7 +5,7 @@ import {
   getPublicKeyFromPrivateKey,
 } from "@connext/utils";
 import { IConnextClient, ConditionalTransferTypes, PublicParams } from "@connext/types";
-import { constants } from "ethers";
+import { Wallet, constants } from "ethers";
 
 import {
   getClientBalance,
@@ -18,6 +18,7 @@ import {
   RouteMethods,
   getStore,
   InternalConnectOptions,
+  mintToken,
 } from "./helpers";
 import Subscriber from "./subscriber";
 
@@ -199,6 +200,27 @@ export default class Client {
   public async balance(assetId: string): Promise<RouteMethods.GetBalanceResponse> {
     const client = this.getClient();
     return getClientBalance(client, assetId);
+  }
+
+  public async requestDepositRights(assetId?: string): Promise<void> {
+    const client = this.getClient();
+    await client.requestDepositRights({ assetId });
+  }
+
+  public async rescindDepositRights(assetId?: string): Promise<void> {
+    const client = this.getClient();
+    await client.rescindDepositRights({ assetId });
+  }
+
+  public async fund(amount: string, assetId: string, fundingMnemonic: string) {
+    const client = this.getClient();
+    const wallet = Wallet.fromMnemonic(fundingMnemonic).connect(client.ethProvider);
+    await this.requestDepositRights(assetId);
+    if (assetId !== constants.AddressZero) {
+      await mintToken(wallet, wallet.address, amount, assetId);
+    }
+    await this.deposit({ amount, assetId });
+    await this.rescindDepositRights(assetId);
   }
 
   public async deposit(
