@@ -26,9 +26,7 @@ class Keyring {
     persistedWallets?: InternalWalletOptions[],
   ): Promise<Keyring> {
     const keyring = new Keyring(mnemonic, logger, store, ethProviderUrl, legacyMode);
-    if (legacyMode) {
-      await keyring.createWallet(0);
-    } else if (persistedWallets && persistedWallets.length) {
+    if (persistedWallets && persistedWallets.length) {
       logger.info(`Creating ${persistedWallets.length} persisted wallets`);
       await Promise.all(persistedWallets.map((w) => keyring.createWallet(w.index)));
     }
@@ -100,7 +98,7 @@ class Keyring {
   }
 
   public async balance(assetId: string, pubId?: string): Promise<RouteMethods.GetBalanceResponse> {
-    const publicIdentifier = this.getPublicIdentifier(pubId);
+    const publicIdentifier = await this.getPublicIdentifier(pubId);
     const wallet = this.getWalletByPublicIdentifier(publicIdentifier);
     const ethProvider = await this.getEthProvider(publicIdentifier);
     const freeBalanceOnChain = await getFreeBalanceOnChain(wallet.address, ethProvider, assetId);
@@ -110,7 +108,7 @@ class Keyring {
   public async transfer(
     params: RouteMethods.PostTransactionRequestParams,
   ): Promise<RouteMethods.PostTransactionResponse> {
-    const publicIdentifier = this.getPublicIdentifier(params.publicIdentifier);
+    const publicIdentifier = await this.getPublicIdentifier(params.publicIdentifier);
     const txhash = await transferOnChain({
       wallet: this.getWalletByPublicIdentifier(publicIdentifier),
       ethProvider: await this.getEthProvider(publicIdentifier, params.ethProviderUrl),
@@ -121,10 +119,14 @@ class Keyring {
     return { txhash };
   }
 
-  private getPublicIdentifier(pubId?: string): string {
-    const publicIdentifier = this.legacyMode
-      ? getPublicIdentifierFromPublicKey(this.getWalletByIndex(0).publicKey)
-      : pubId;
+  private async getPublicIdentifier(pubId?: string): Promise<string> {
+    let publicIdentifier: string | undefined;
+    if (this.legacyMode) {
+      const wallet = await this.createWallet(0);
+      publicIdentifier = wallet.publicIdentifier;
+    } else {
+      publicIdentifier = pubId;
+    }
     if (typeof publicIdentifier === "undefined") {
       throw new Error("Missing publicIdentifier required for on-chain transfer");
     }
