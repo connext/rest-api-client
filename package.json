@@ -1,7 +1,7 @@
 {
   "name": "@connext/rest-api",
   "description": "REST API client for Connext",
-  "version": "7.2.0",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/connext/rest-api-client.git"
@@ -21,7 +21,8 @@
     "prod": "node ./build/src",
     "start": "npm run build && npm run prod",
     "lint": "eslint -c './.eslintrc' --fix './src/**/*.ts'",
-    "start:dev": "ts-node src/index.ts --watch"
+    "start:dev": "ts-node src/index.ts --watch",
+    "deploy": "bash ops/deploy.sh"
   },
   "dependencies": {
     "@connext/client": "7.2.0",
