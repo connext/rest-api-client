@@ -160,13 +160,11 @@ class MultiClient {
     const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
     this.logger.info(`Getting client for publicIdentifier: ${publicIdentifier}`);
     if (!publicIdentifier) throw new Error("No client initialized");
-    const matches = this.clients.filter(
+    const match = this.clients.find(
       (c) => c.client.getClient().publicIdentifier === publicIdentifier,
     );
-    if (matches && matches.length) {
-      return matches[0];
-    }
-    throw new Error(`No client found matching publicIdentifier: ${publicIdentifier}`);
+    if (!match) throw new Error(`No client found matching publicIdentifier: ${publicIdentifier}`);
+    return match;
   }
 
   public async disconnectClient(pubId?: string) {
