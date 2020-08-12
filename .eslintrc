@@ -22,7 +22,8 @@
     "no-prototype-builtins": ["off"],
     "sort-keys": ["off"],
     "space-before-function-paren": ["off"],
-    "indent": ["off"]
+    "indent": ["off"],
+    "require-await": ["error"]
   },
   "env": {
     "browser": true,

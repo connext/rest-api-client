@@ -57,7 +57,7 @@ class MultiClient {
 
   public clients: ClientSettings[] = [];
   public pending: string[] = [];
-  public creatingDefaultWallet = false;
+  public resetting = false;
 
   constructor(
     public keyring: Keyring,
@@ -80,17 +80,13 @@ class MultiClient {
   }
 
   public async connectClient(opts?: Partial<ConnectOptions>): Promise<Client> {
+    if (this.resetting) throw new Error("Currently resetting clients");
     let publicIdentifier = opts?.publicIdentifier;
     if (this.legacyMode) {
       if (this.clients.length !== 0) {
         return this.clients[0].client;
       } else {
-        if (this.creatingDefaultWallet) {
-          throw new Error(`Client already initializating with wallet index: 0`);
-        }
-        this.creatingDefaultWallet = true;
         const wallet = await this.keyring.createWallet(0);
-        this.creatingDefaultWallet = false;
         publicIdentifier = wallet.publicIdentifier;
       }
     }
@@ -144,9 +140,8 @@ class MultiClient {
         nodeUrl,
       };
       client = await this.createClient(connectOpts);
-    } catch (e) {
+    } finally {
       this.removePending(publicIdentifier);
-      throw e;
     }
 
     return client;
@@ -157,6 +152,7 @@ class MultiClient {
   }
 
   public getClientSettings(pubId?: string): ClientSettings {
+    if (this.resetting) throw new Error("Currently resetting clients");
     const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
     this.logger.info(`Getting client for publicIdentifier: ${publicIdentifier}`);
     if (!publicIdentifier) throw new Error("No client initialized");
@@ -168,6 +164,7 @@ class MultiClient {
   }
 
   public async disconnectClient(pubId?: string) {
+    if (this.resetting) throw new Error("Currently resetting clients");
     const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
     this.logger.info(`Disconnecting client with publicIdentifier: ${publicIdentifier}`);
     const client = this.clients.filter(
@@ -178,6 +175,7 @@ class MultiClient {
   }
 
   public async getClients() {
+    if (this.resetting) throw new Error("Currently resetting clients");
     this.logger.info(`Getting summary of all connected clients`);
     const stats: ClientSummary[] = await Promise.all(
       this.clients.map(async ({ client }) => {
@@ -218,21 +216,28 @@ class MultiClient {
   }
 
   public async reset() {
-    this.logger.info(`Removing all connected clients`);
-    await Promise.all(
-      this.clients.map(async ({ client }) => {
-        await client.unsubscribeAll();
-      }),
-    );
-    this.clients = [];
-    await deleteClients(this.store);
+    if (this.resetting) throw new Error("Currently resetting clients");
+    this.resetting = true;
+    try {
+      this.logger.info(`Removing all connected clients`);
+      await Promise.all(
+        this.clients.map(async ({ client }) => {
+          await client.unsubscribeAll();
+        }),
+      );
+      this.clients = [];
+      await deleteClients(this.store);
+    } finally {
+      this.resetting = false;
+    }
   }
 
   // -- Private ---------------------------------------------------------------- //
 
   private async getPersistedClientOptions(pubId?: string): Promise<ConnectOptions | undefined> {
     const publicIdentifier = pubId || this.clients[0].client.getClient().publicIdentifier;
-    return getPersistedClientOptions(this.store, publicIdentifier);
+    const opts = await getPersistedClientOptions(this.store, publicIdentifier);
+    return opts;
   }
 
   private async createClient(opts: InternalConnectOptions): Promise<Client> {
