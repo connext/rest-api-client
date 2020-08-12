@@ -57,6 +57,7 @@ class MultiClient {
 
   public clients: ClientSettings[] = [];
   public pending: string[] = [];
+  public creatingDefaultWallet = false;
 
   constructor(
     public keyring: Keyring,
@@ -80,12 +81,16 @@ class MultiClient {
 
   public async connectClient(opts?: Partial<ConnectOptions>): Promise<Client> {
     let publicIdentifier = opts?.publicIdentifier;
-
     if (this.legacyMode) {
       if (this.clients.length !== 0) {
         return this.clients[0].client;
       } else {
+        if (this.creatingDefaultWallet) {
+          throw new Error(`Client already initializating with wallet index: 0`);
+        }
+        this.creatingDefaultWallet = true;
         const wallet = await this.keyring.createWallet(0);
+        this.creatingDefaultWallet = false;
         publicIdentifier = wallet.publicIdentifier;
       }
     }
@@ -98,45 +103,51 @@ class MultiClient {
       throw new Error(`Client already initializating for publicIdentifier: ${publicIdentifier}`);
     }
 
-    const signer = this.keyring.getWalletByPublicIdentifier(publicIdentifier).privateKey;
-
-    const persistedOpts = await this.getPersistedClientOptions(publicIdentifier);
-
-    const ethProviderUrl =
-      opts?.ethProviderUrl || persistedOpts?.ethProviderUrl || this.ethProviderUrl;
-    if (typeof ethProviderUrl === "undefined") {
-      throw new Error("Cannot connect Connext client without ethProviderUrl");
-    }
-
-    const nodeUrl = opts?.nodeUrl || persistedOpts?.nodeUrl || this.nodeUrl;
-    if (typeof nodeUrl === "undefined") {
-      throw new Error("Cannot connect Connext client without nodeUrl");
-    }
-
-    let match: ClientSettings | undefined;
+    let client: Client;
     try {
-      match = this.getClientSettings(publicIdentifier);
-    } catch {
-      // do nothing
-    }
+      this.setPending(publicIdentifier);
+      const signer = this.keyring.getWalletByPublicIdentifier(publicIdentifier).privateKey;
 
-    if (typeof match !== "undefined") {
-      if (ethProviderUrl === match.ethProviderUrl && nodeUrl === match.nodeUrl) {
-        return match.client;
-      } else {
-        this.removeClient(publicIdentifier);
+      const persistedOpts = await this.getPersistedClientOptions(publicIdentifier);
+
+      const ethProviderUrl =
+        opts?.ethProviderUrl || persistedOpts?.ethProviderUrl || this.ethProviderUrl;
+      if (typeof ethProviderUrl === "undefined") {
+        throw new Error("Cannot connect Connext client without ethProviderUrl");
       }
+
+      const nodeUrl = opts?.nodeUrl || persistedOpts?.nodeUrl || this.nodeUrl;
+      if (typeof nodeUrl === "undefined") {
+        throw new Error("Cannot connect Connext client without nodeUrl");
+      }
+
+      let match: ClientSettings | undefined;
+      try {
+        match = this.getClientSettings(publicIdentifier);
+      } catch {
+        // do nothing
+      }
+
+      if (typeof match !== "undefined") {
+        if (ethProviderUrl === match.ethProviderUrl && nodeUrl === match.nodeUrl) {
+          return match.client;
+        } else {
+          this.removeClient(publicIdentifier);
+        }
+      }
+      this.logger.info(`Connecting client with publicIdentifier: ${publicIdentifier}`);
+
+      const connectOpts: InternalConnectOptions = {
+        publicIdentifier,
+        signer,
+        ethProviderUrl,
+        nodeUrl,
+      };
+      client = await this.createClient(connectOpts);
+    } catch (e) {
+      this.removePending(publicIdentifier);
+      throw e;
     }
-    this.logger.info(`Connecting client with publicIdentifier: ${publicIdentifier}`);
-    this.setPending(publicIdentifier);
-    const connectOpts: InternalConnectOptions = {
-      publicIdentifier,
-      signer,
-      ethProviderUrl,
-      nodeUrl,
-    };
-    const client = await this.createClient(connectOpts);
-    this.removePending(publicIdentifier);
 
     return client;
   }
@@ -255,6 +266,7 @@ class MultiClient {
   }
 
   private setPending(publicIdentifier: string) {
+    if (this.pending.includes(publicIdentifier)) return;
     this.pending.push(publicIdentifier);
   }
 
