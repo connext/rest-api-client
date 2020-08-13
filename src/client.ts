@@ -33,6 +33,8 @@ export default class Client {
   private subscriber: Subscriber;
   private connecting = false;
   private logLevel: number;
+  private cleanUpInterval: NodeJS.Timeout | undefined;
+  private cleanningUp = false;
 
   constructor(opts: InitClientManagerOptions) {
     this.subscriber = new Subscriber(opts.logger, opts.store);
@@ -44,10 +46,11 @@ export default class Client {
     rootStoreDir: string,
     opts: InternalConnectOptions,
   ): Promise<IConnextClient> {
+    if (this.cleanningUp) throw new Error(`Client is cleanning up`);
+
     if (this.connecting) {
       throw new Error(`Client is connecting`);
     }
-
     if (this.client) {
       this.logger.info("Client is already connected - skipping connect logic");
       return this.client;
@@ -72,7 +75,24 @@ export default class Client {
       return client;
     } finally {
       this.connecting = false;
+      this.scheduleCleanup();
     }
+  }
+
+  public scheduleCleanup(): void {
+    if (typeof this.cleanUpInterval !== "undefined") clearInterval(this.cleanUpInterval);
+    this.cleanUpInterval = setInterval(
+      this.cleanupRegistryApps,
+      86_400_000, // 24 hours
+    );
+  }
+
+  public async cleanupRegistryApps(): Promise<void> {
+    const client = this.getClient();
+    this.cleanningUp = true;
+    // TODO: expose method in Connext client
+    await client.cleanupRegistryApps();
+    this.cleanningUp = false;
   }
 
   public getConfig(): RouteMethods.GetConfigResponse {
@@ -326,6 +346,7 @@ export default class Client {
     if (!this.client) {
       throw new Error("Client is not initialized");
     }
+    if (this.cleanningUp) throw new Error(`Client is cleanning up`);
     return this.client;
   }
 }
