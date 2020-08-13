@@ -1,6 +1,8 @@
 # Get summary of funding wallet
 GET http://localhost:5040/funding-wallet
 
+### publicIdentifier: indra8AXWmo3dFpK1drnjeWPyi9KTy9Fy3SkCydWx8waQrxhnW4KPmR
+### address: 0x627306090abaB3A6e1400e9345bC60c78a8BEf57
 ###
 
 # Get balance of funding wallet for ETH
