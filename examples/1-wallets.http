@@ -1,0 +1,36 @@
+GET http://localhost:5040/wallets
+
+###
+
+POST http://localhost:5040/mnemonic
+Content-Type: application/json
+
+{
+  "mnemonic": "rich awful vocal decade chaos horse cheese sadness just equip equip dismiss"
+}
+
+###
+
+POST http://localhost:5040/create
+Content-Type: application/json
+
+{
+  "index": 0
+}
+### publicIdentifier: indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS
+### address: 0x44A0ac8eEaCa8D3B51CD3c6a2C23C618d3a2eB63
+
+###
+
+
+
+POST http://localhost:5040/create
+Content-Type: application/json
+
+{
+  "index": 1
+}
+### publicIdentifier: indra6FHtEpVbRgT221fN95REhxXHqeZrV4fJiv9TbG5FuwjrhUfcZ9
+### address: 0x098158D8B59327C5EcA50A299151D69182b36A4b
+
+###

@@ -1,0 +1,29 @@
+GET http://localhost:5040/clients
+
+###
+
+POST http://localhost:5040/connect
+Content-Type: application/json
+
+{
+  "publicIdentifier": "indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS"
+}
+
+###
+
+GET http://localhost:5040/config/indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS
+
+###
+
+POST http://localhost:5040/connect
+Content-Type: application/json
+
+{
+  "publicIdentifier": "indra6FHtEpVbRgT221fN95REhxXHqeZrV4fJiv9TbG5FuwjrhUfcZ9"
+}
+
+###
+
+GET http://localhost:5040/config/indra6FHtEpVbRgT221fN95REhxXHqeZrV4fJiv9TbG5FuwjrhUfcZ9
+
+###

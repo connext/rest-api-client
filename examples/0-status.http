@@ -1,0 +1,8 @@
+GET http://localhost:5040/health
+
+###
+
+
+GET http://localhost:5040/hello
+
+###
