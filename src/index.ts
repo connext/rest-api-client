@@ -440,7 +440,7 @@ app.after(() => {
     async (req, res) => {
       try {
         await requireParam(req.body, "assetId");
-        await requireParam(req.body, "preImage");
+        await requireParam(req.body, "amount");
         if (!config.legacyMode) {
           await requireParam(req.body, "publicIdentifier");
         }
