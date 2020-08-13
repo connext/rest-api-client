@@ -61,7 +61,9 @@ export async function getEthBalance(
   address: string,
   ethProvider: providers.Provider | Signer,
 ): Promise<string> {
-  return (await ethProvider.getBalance(address)).toString();
+  return (ethProvider as Signer)._isSigner
+    ? (await (ethProvider as Signer).getBalance()).toString()
+    : (await ethProvider.getBalance(address)).toString();
 }
 
 export async function getTokenBalance(
