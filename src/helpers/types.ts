@@ -168,6 +168,12 @@ export namespace RouteMethods {
   export type PostWithdrawRequestParams = MultiClientRequestParams & PublicParams.Withdraw;
   export type PostWithdrawResponse = { txhash: string };
 
+  export type PostRejectInstallRequestParams = MultiClientRequestParams & {
+    appIdentityHash: string;
+    reason?: string;
+  };
+  export type PostRejectInstallResponse = MethodResults.Uninstall;
+
   export type PostRequestCollateralRequestParams = MultiClientRequestParams & { assetId: string };
 
   export type PostSwapRequestParams = MultiClientRequestParams & PublicParams.Swap;
