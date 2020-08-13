@@ -88,6 +88,16 @@ export interface TransferOnChainParams {
 }
 
 export namespace RouteMethods {
+  export type GetFundingWalletResponse = WalletSummary;
+
+  export type GetFundingBalanceRequestParams = {
+    assetId: string;
+  };
+  export type GetFundingBalanceResponse = {
+    freeBalanceOffChain?: string;
+    freeBalanceOnChain: string;
+  };
+
   export type GetBalanceRequestParams = MultiClientRequestParams & {
     assetId: string;
   };

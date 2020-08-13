@@ -170,6 +170,32 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
           },
         },
       },
+      fundingWallet: {
+        url: "/funding-wallet",
+        description: "Get summary of funding wallet",
+        opts: {
+          preHandler: authHandler,
+          schema: {
+            response: {
+              200: WalletSummarySchema,
+              500: GenericErrorResponseSchema,
+            },
+          },
+        },
+      },
+      fundingBalance: {
+        url: "/funding-balance/:assetId",
+        description: "Get balance of funding wallet",
+        opts: {
+          preHandler: authHandler,
+          schema: {
+            response: {
+              200: BalanceResponseSchema,
+              500: GenericErrorResponseSchema,
+            },
+          },
+        },
+      },
       wallets: {
         url: "/wallets",
         description: "Get summary of created wallets",

@@ -1,25 +1,15 @@
-# Deposit 0.01 ETH to client at index 0
-POST http://localhost:5040/deposit
-Content-Type: application/json
-
-{
-  "amount": "10000000000000000",
-  "assetId": "0x0000000000000000000000000000000000000000",
-  "publicIdentifier": "indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS"
-}
+# Get summary of funding wallet
+GET http://localhost:5040/funding-wallet
 
 ###
 
-# Withdraw 0.01 ETH from client at index 1
-POST http://localhost:5040/withdraw
-Content-Type: application/json
+# Get balance of funding wallet for ETH
+GET http://localhost:5040/funding-balance/0x0000000000000000000000000000000000000000
 
-{
-  "amount": "10000000000000000",
-  "assetId": "0x0000000000000000000000000000000000000000",
-  "publicIdentifier": "indra6FHtEpVbRgT221fN95REhxXHqeZrV4fJiv9TbG5FuwjrhUfcZ9",
-  "recipient": "0x098158D8B59327C5EcA50A299151D69182b36A4b"
-}
+###
+
+# Get balance of funding wallet for test tokens
+GET http://localhost:5040/funding-balance/0x4E72770760c011647D4873f60A3CF6cDeA896CD8
 
 ###
 

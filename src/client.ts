@@ -5,7 +5,7 @@ import {
   getPublicKeyFromPrivateKey,
 } from "@connext/utils";
 import { IConnextClient, ConditionalTransferTypes, PublicParams } from "@connext/types";
-import { Wallet, constants, BigNumber } from "ethers";
+import { constants } from "ethers";
 
 import {
   getClientBalance,
@@ -18,11 +18,9 @@ import {
   RouteMethods,
   getStore,
   InternalConnectOptions,
-  mintToken,
-  transferEth,
-  transferToken,
 } from "./helpers";
 import Subscriber from "./subscriber";
+import Funder from "./funder";
 
 const { AddressZero, HashZero } = constants;
 
@@ -207,29 +205,12 @@ export default class Client {
   public async fund(
     amount: string,
     assetId: string,
-    fundingMnemonic: string,
+    funder: Funder,
   ): Promise<RouteMethods.PostFundResponse> {
     const client = this.getClient();
-    const wallet = Wallet.fromMnemonic(fundingMnemonic).connect(client.ethProvider);
+    funder.setProvider(client.ethProvider);
     await client.requestDepositRights({ assetId });
-    let txhash: string;
-    const balance = await getFreeBalanceOnChain(wallet.address, client.ethProvider, assetId);
-    if (assetId !== constants.AddressZero) {
-      if (BigNumber.from(balance).lte(BigNumber.from(amount))) {
-        try {
-          txhash = await mintToken(wallet, client.multisigAddress, amount, assetId);
-        } catch (e) {
-          throw new Error(`Failed to mint token for assetId: ${assetId}`);
-        }
-      } else {
-        txhash = await transferToken(wallet, client.multisigAddress, amount, assetId);
-      }
-    } else {
-      if (BigNumber.from(balance).lte(BigNumber.from(amount))) {
-        throw new Error(`Insufficient ETH balance to fund channel`);
-      }
-      txhash = await transferEth(wallet, client.multisigAddress, amount);
-    }
+    const txhash = await funder.fund(client.multisigAddress, amount, assetId);
     await client.rescindDepositRights({ assetId });
     return { txhash };
   }

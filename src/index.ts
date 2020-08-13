@@ -21,6 +21,7 @@ import {
   SubscriptionResponse,
 } from "./helpers";
 import Client from "./client";
+import Funder from "./funder";
 
 const app = fastify({
   logger: { prettyPrint: config.debug } as any,
@@ -29,6 +30,7 @@ const app = fastify({
 });
 
 let multiClient: MultiClient;
+let funder: Funder;
 
 app
   .decorate("verifyApiKey", function (request, reply, done) {
@@ -61,6 +63,7 @@ app.addHook("onReady", async () => {
     persisted.clients,
     persisted.wallets,
   );
+  funder = new Funder(config.fundingMnemonic, config.ethProviderUrl);
 });
 
 const loggingBlacklist = ["/balance"];
@@ -104,14 +107,41 @@ app.after(() => {
     }
   });
 
-  app.get(Routes.get.wallets.url, Routes.get.wallets.opts, (req, res) => {
+  app.get(Routes.get.fundingWallet.url, Routes.get.fundingWallet.opts, (req, res) => {
     try {
-      res.status(200).send<RouteMethods.GetWalletsResponse>(multiClient.keyring.getWallets());
+      res.status(200).send<RouteMethods.GetFundingWalletResponse>(funder.getSummary());
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });
     }
   });
+
+  interface GetFundingBalanceRequest extends RequestGenericInterface {
+    Params: RouteMethods.GetFundingBalanceRequestParams;
+  }
+
+  app.get<GetFundingBalanceRequest>(
+    Routes.get.fundingBalance.url,
+    Routes.get.fundingBalance.opts,
+    async (req, res) => {
+      try {
+        await requireParam(req.params, "assetId");
+
+        res
+          .status(200)
+          .send<RouteMethods.GetFundingBalanceResponse>(
+            await funder.getBalance(req.params.assetId),
+          );
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
+  interface GetBalanceRequest extends RequestGenericInterface {
+    Params: RouteMethods.GetBalanceRequestParams;
+  }
 
   app.get<GetBalanceRequest>(Routes.get.balance.url, Routes.get.balance.opts, async (req, res) => {
     try {
@@ -136,6 +166,15 @@ app.after(() => {
     }
   });
 
+  app.get(Routes.get.wallets.url, Routes.get.wallets.opts, (req, res) => {
+    try {
+      res.status(200).send<RouteMethods.GetWalletsResponse>(multiClient.keyring.getWallets());
+    } catch (error) {
+      app.log.error(error);
+      res.status(500).send<GenericErrorResponse>({ message: error.message });
+    }
+  });
+
   app.get(Routes.get.clients.url, Routes.get.clients.opts, async (req, res) => {
     try {
       res.status(200).send<RouteMethods.GetClientsResponse>(await multiClient.getClients());
@@ -144,10 +183,6 @@ app.after(() => {
       res.status(500).send<GenericErrorResponse>({ message: error.message });
     }
   });
-
-  interface GetBalanceRequest extends RequestGenericInterface {
-    Params: RouteMethods.GetBalanceRequestParams;
-  }
 
   interface GetConfigRequest extends RequestGenericInterface {
     Params: RouteMethods.GetConfigRequestParams;
@@ -494,7 +529,7 @@ app.after(() => {
       res
         .status(200)
         .send<RouteMethods.PostFundResponse>(
-          await client.fund(req.body.amount, req.body.assetId, config.fundingMnemonic),
+          await client.fund(req.body.amount, req.body.assetId, funder),
         );
     } catch (error) {
       app.log.error(error);

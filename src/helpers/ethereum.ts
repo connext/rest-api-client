@@ -1,5 +1,5 @@
 import { IConnextClient } from "@connext/types";
-import { Wallet, Contract, providers, constants, BigNumber } from "ethers";
+import { Wallet, Signer, Contract, providers, constants, BigNumber } from "ethers";
 
 import { RouteMethods, TransferOnChainParams } from "./types";
 
@@ -34,9 +34,9 @@ export async function getFreeBalanceOffChain(
   ].toString();
 }
 
-export async function getFreeBalanceOnChain(
+export function getFreeBalanceOnChain(
   address: string,
-  ethProvider: providers.Provider,
+  ethProvider: providers.Provider | Signer,
   assetId: string,
 ): Promise<string> {
   return assetId === constants.AddressZero
@@ -59,14 +59,14 @@ export async function getClientBalance(
 
 export async function getEthBalance(
   address: string,
-  ethProvider: providers.Provider,
+  ethProvider: providers.Provider | Signer,
 ): Promise<string> {
   return (await ethProvider.getBalance(address)).toString();
 }
 
 export async function getTokenBalance(
   address: string,
-  ethProvider: providers.Provider,
+  ethProvider: providers.Provider | Signer,
   assetId: string,
 ): Promise<string> {
   return (
@@ -111,7 +111,7 @@ export async function transferEth(
   return tx.hash;
 }
 
-export async function transferOnChain(params: TransferOnChainParams): Promise<string> {
+export function transferOnChain(params: TransferOnChainParams): Promise<string> {
   const wallet = params.wallet.connect(params.ethProvider);
   if (params.assetId === constants.AddressZero) {
     return transferEth(wallet, params.recipient, params.amount);
