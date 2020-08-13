@@ -104,7 +104,7 @@ app.after(() => {
     }
   });
 
-  app.get(Routes.get.wallets.url, Routes.get.wallets.opts, async (req, res) => {
+  app.get(Routes.get.wallets.url, Routes.get.wallets.opts, (req, res) => {
     try {
       res.status(200).send<RouteMethods.GetWalletsResponse>(multiClient.keyring.getWallets());
     } catch (error) {
@@ -159,7 +159,7 @@ app.after(() => {
         await requireParam(req.params, "publicIdentifier");
       }
       const client = multiClient.getClient(req.params.publicIdentifier);
-      res.status(200).send<RouteMethods.GetConfigResponse>(await client.getConfig());
+      res.status(200).send<RouteMethods.GetConfigResponse>(client.getConfig());
     } catch (error) {
       app.log.error(error);
       res.status(500).send<GenericErrorResponse>({ message: error.message });

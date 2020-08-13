@@ -75,7 +75,7 @@ export default class Client {
     }
   }
 
-  public async getConfig(): Promise<RouteMethods.GetConfigResponse> {
+  public getConfig(): RouteMethods.GetConfigResponse {
     const client = this.getClient();
     const config = {
       multisigAddress: undefined,
@@ -199,7 +199,7 @@ export default class Client {
     return data;
   }
 
-  public async balance(assetId: string): Promise<RouteMethods.GetBalanceResponse> {
+  public balance(assetId: string): Promise<RouteMethods.GetBalanceResponse> {
     const client = this.getClient();
     return getClientBalance(client, assetId);
   }
