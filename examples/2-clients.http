@@ -1,7 +1,10 @@
   
-### ATTENTION: You will need to define the following environment variables in the .env file
+### ATTENTION!
+### You will need to define the following environment variables in the .env file
+###
 ### > CONNEXT_ETH_PROVIDER_URL="<INSERT_ETH_PROVIDER_URL>"
 ### > CONNEXT_NODE_URL="<INSERT_NODE_URL>"
+###
 
 # Check already connected clients
 GET http://localhost:5040/clients

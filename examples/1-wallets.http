@@ -4,7 +4,7 @@ GET http://localhost:5040/wallets
 ###
 
 # Set mnemonic used for creating wallets
-# (it will reset wallets if changed later)
+# (it will reset wallets if mnemonic is changed)
 POST http://localhost:5040/mnemonic
 Content-Type: application/json
 
