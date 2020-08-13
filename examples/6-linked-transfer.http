@@ -1,20 +1,9 @@
+# Create a linked transfer for 10 test tokens from client at index 0 with provided preImage and paymentId
 POST http://localhost:5040/linked-transfer
 Content-Type: application/json
 
 {
-  "amount": "1000000000000000",
-  "assetId": "0x4E72770760c011647D4873f60A3CF6cDeA896CD8",
-  "recipient": "indra6FHtEpVbRgT221fN95REhxXHqeZrV4fJiv9TbG5FuwjrhUfcZ9",
-  "publicIdentifier": "indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS"
-}
-
-###
-
-POST http://localhost:5040/linked-transfer
-Content-Type: application/json
-
-{
-  "amount": "1000000000000000",
+  "amount": "10000000000000000",
   "assetId": "0x4E72770760c011647D4873f60A3CF6cDeA896CD8",
   "paymentId": "0xba281a7f453cca791a4aba6eaaf0e224fa83ad31e93c37e5d86b7ba2fb7a4631",
   "preImage": "0x45eef6203f56caf87c3b290010457ea6a21bdca48b06cccc1fb247269a391edf",
@@ -23,12 +12,12 @@ Content-Type: application/json
 
 ###
 
-
+# Check status of corresponding linked transfer with provided paymentId
 GET http://localhost:5040/linked-status/0xba281a7f453cca791a4aba6eaaf0e224fa83ad31e93c37e5d86b7ba2fb7a4631/indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS
 
 ###
 
-
+# Resolve corresponding linked transfer with provided preImage and paymentId
 POST http://localhost:5040/linked-resolve
 Content-Type: application/json
 

@@ -1,3 +1,4 @@
+# Deposit 0.01 ETH to client at index 0
 POST http://localhost:5040/deposit
 Content-Type: application/json
 
@@ -9,6 +10,7 @@ Content-Type: application/json
 
 ###
 
+# Withdraw 0.01 ETH from client at index 1
 POST http://localhost:5040/withdraw
 Content-Type: application/json
 
@@ -21,6 +23,7 @@ Content-Type: application/json
 
 ###
 
+# Fund 0.01 ETH to client at index 0 (requires funding wallet to have funds)
 POST http://localhost:5040/fund
 Content-Type: application/json
 
@@ -32,11 +35,12 @@ Content-Type: application/json
 
 ###
 
+# Fund 10 test tokens to client at index 0 (requires funding wallet to have funds)
 POST http://localhost:5040/fund
 Content-Type: application/json
 
 {
-  "amount": "10000000000000000",
+  "amount": "10000000000000000000",
   "assetId": "0x4E72770760c011647D4873f60A3CF6cDeA896CD8",
   "publicIdentifier": "indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS"
 }

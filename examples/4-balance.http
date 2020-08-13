@@ -1,15 +1,19 @@
+# Check ETH balances for index 0 (onchain and offchain if connected)
 GET http://localhost:5040/balance/0x0000000000000000000000000000000000000000/indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS
 
 ###
 
+# Check ETH balances for index 1 (onchain and offchain if connected)
 GET http://localhost:5040/balance/0x0000000000000000000000000000000000000000/indra6FHtEpVbRgT221fN95REhxXHqeZrV4fJiv9TbG5FuwjrhUfcZ9
 
 ###
 
+# Check test token balances for index 0 (onchain and offchain if connected)
 GET http://localhost:5040/balance/0x4E72770760c011647D4873f60A3CF6cDeA896CD8/indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS
 
 ###
 
+# Check test token balances for index 1 (onchain and offchain if connected)
 GET http://localhost:5040/balance/0x4E72770760c011647D4873f60A3CF6cDeA896CD8/indra6FHtEpVbRgT221fN95REhxXHqeZrV4fJiv9TbG5FuwjrhUfcZ9
 
 ###

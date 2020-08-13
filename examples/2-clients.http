@@ -1,7 +1,14 @@
+  
+### ATTENTION: You will need to define the following environment variables in the .env file
+### > CONNEXT_ETH_PROVIDER_URL="<INSERT_ETH_PROVIDER_URL>"
+### > CONNEXT_NODE_URL="<INSERT_NODE_URL>"
+
+# Check already connected clients
 GET http://localhost:5040/clients
 
 ###
 
+# Connect wallet at index 0 to node
 POST http://localhost:5040/connect
 Content-Type: application/json
 
@@ -11,10 +18,12 @@ Content-Type: application/json
 
 ###
 
+# Check client config for index 0 (if already connected)
 GET http://localhost:5040/config/indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS
 
 ###
 
+# Connect wallet at index 1 to node
 POST http://localhost:5040/connect
 Content-Type: application/json
 
@@ -24,6 +33,7 @@ Content-Type: application/json
 
 ###
 
+# Check client config for index 1 (if already connected)
 GET http://localhost:5040/config/indra6FHtEpVbRgT221fN95REhxXHqeZrV4fJiv9TbG5FuwjrhUfcZ9
 
 ###

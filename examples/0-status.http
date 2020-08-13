@@ -1,8 +1,9 @@
+# Check server health
 GET http://localhost:5040/health
 
 ###
 
-
+# Get test hello world response
 GET http://localhost:5040/hello
 
 ###

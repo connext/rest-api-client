@@ -1,7 +1,10 @@
+# Check already created wallets
 GET http://localhost:5040/wallets
 
 ###
 
+# Set mnemonic used for creating wallets
+# (it will reset wallets if changed later)
 POST http://localhost:5040/mnemonic
 Content-Type: application/json
 
@@ -11,6 +14,7 @@ Content-Type: application/json
 
 ###
 
+# Create wallet at index 0
 POST http://localhost:5040/create
 Content-Type: application/json
 
@@ -19,11 +23,10 @@ Content-Type: application/json
 }
 ### publicIdentifier: indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS
 ### address: 0x44A0ac8eEaCa8D3B51CD3c6a2C23C618d3a2eB63
-
-###
-
+### (we will use these values for the next examples)
 
 
+# Create wallet at index 1
 POST http://localhost:5040/create
 Content-Type: application/json
 
@@ -32,5 +35,4 @@ Content-Type: application/json
 }
 ### publicIdentifier: indra6FHtEpVbRgT221fN95REhxXHqeZrV4fJiv9TbG5FuwjrhUfcZ9
 ### address: 0x098158D8B59327C5EcA50A299151D69182b36A4b
-
-###
+### (we will use these values for the next examples)
