@@ -5,7 +5,7 @@ import {
   getPublicKeyFromPrivateKey,
 } from "@connext/utils";
 import { IConnextClient, ConditionalTransferTypes, PublicParams } from "@connext/types";
-import { constants } from "ethers";
+import { constants, utils } from "ethers";
 
 import {
   getClientBalance,
@@ -115,7 +115,7 @@ export default class Client {
       amount: params.amount,
       recipient: params.recipient,
       lockHash: params.lockHash,
-      assetId: params.assetId,
+      assetId: params.assetId && utils.getAddress(params.assetId),
       meta: params.meta,
       timelock: params.timelock,
     } as PublicParams.ConditionalTransfer);
