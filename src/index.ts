@@ -125,7 +125,7 @@ app.after(() => {
     Routes.get.fundingBalance.opts,
     async (req, res) => {
       try {
-        await requireParam(req.params, "assetId");
+        requireParam(req.params, "assetId");
 
         res
           .status(200)
@@ -145,9 +145,9 @@ app.after(() => {
 
   app.get<GetBalanceRequest>(Routes.get.balance.url, Routes.get.balance.opts, async (req, res) => {
     try {
-      await requireParam(req.params, "assetId");
+      requireParam(req.params, "assetId");
       if (!config.legacyMode) {
-        await requireParam(req.params, "publicIdentifier");
+        requireParam(req.params, "publicIdentifier");
       }
       let client: Client | undefined;
       try {
@@ -191,7 +191,7 @@ app.after(() => {
   app.get<GetConfigRequest>(Routes.get.config.url, Routes.get.config.opts, async (req, res) => {
     try {
       if (!config.legacyMode) {
-        await requireParam(req.params, "publicIdentifier");
+        requireParam(req.params, "publicIdentifier");
       }
       const client = multiClient.getClient(req.params.publicIdentifier);
       res.status(200).send<RouteMethods.GetConfigResponse>(client.getConfig());
@@ -210,11 +210,11 @@ app.after(() => {
     Routes.get.hashLockStatus.opts,
     async (req, res) => {
       try {
-        await requireParam(req.params, "lockHash");
-        await requireParam(req.params, "assetId");
+        requireParam(req.params, "lockHash");
+        requireParam(req.params, "assetId");
         const { lockHash, assetId } = req.params;
         if (!config.legacyMode) {
-          await requireParam(req.params, "publicIdentifier");
+          requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
         res
@@ -238,10 +238,10 @@ app.after(() => {
     Routes.get.linkedStatus.opts,
     async (req, res) => {
       try {
-        await requireParam(req.params, "paymentId");
+        requireParam(req.params, "paymentId");
         const { paymentId } = req.params;
         if (!config.legacyMode) {
-          await requireParam(req.params, "publicIdentifier");
+          requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
         res
@@ -263,9 +263,9 @@ app.after(() => {
     Routes.get.appinstanceDetails.opts,
     async (req, res) => {
       try {
-        await requireParam(req.params, "appIdentityHash");
+        requireParam(req.params, "appIdentityHash");
         if (!config.legacyMode) {
-          await requireParam(req.params, "publicIdentifier");
+          requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
         res
@@ -290,7 +290,7 @@ app.after(() => {
     async (req, res) => {
       try {
         if (!config.legacyMode) {
-          await requireParam(req.params, "publicIdentifier");
+          requireParam(req.params, "publicIdentifier");
         }
         const client = multiClient.getClient(req.params.publicIdentifier);
         res
@@ -311,7 +311,7 @@ app.after(() => {
 
   app.post<PostCreateRequest>(Routes.post.create.url, Routes.post.create.opts, async (req, res) => {
     try {
-      await requireParam(req.body, "index", "number");
+      requireParam(req.body, "index", "number");
       res
         .status(200)
         .send<RouteMethods.PostCreateResponse>(
@@ -332,7 +332,7 @@ app.after(() => {
     Routes.post.mnemonic.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "mnemonic");
+        requireParam(req.body, "mnemonic");
         if (multiClient.keyring.mnemonic !== req.body.mnemonic) {
           await multiClient.reset();
         }
@@ -354,11 +354,11 @@ app.after(() => {
     Routes.post.onchainTransfer.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "amount");
-        await requireParam(req.body, "assetId");
-        await requireParam(req.body, "recipient");
+        requireParam(req.body, "amount");
+        requireParam(req.body, "assetId");
+        requireParam(req.body, "recipient");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         res
           .status(200)
@@ -380,7 +380,7 @@ app.after(() => {
     async (req, res) => {
       try {
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = await multiClient.connectClient(req.body);
         res.status(200).send<RouteMethods.GetConfigResponse>(await client.getConfig());
@@ -401,7 +401,7 @@ app.after(() => {
     async (req, res) => {
       try {
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         await multiClient.disconnectClient(req.body?.publicIdentifier);
         res.status(200).send<GenericSuccessResponse>({ success: true });
@@ -421,13 +421,13 @@ app.after(() => {
     Routes.post.hashLockTransfer.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "amount");
-        await requireParam(req.body, "assetId");
-        await requireParam(req.body, "lockHash");
-        await requireParam(req.body, "timelock");
-        await requireParam(req.body, "recipient");
+        requireParam(req.body, "amount");
+        requireParam(req.body, "assetId");
+        requireParam(req.body, "lockHash");
+        requireParam(req.body, "timelock");
+        requireParam(req.body, "recipient");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res
@@ -449,10 +449,10 @@ app.after(() => {
     Routes.post.hashLockResolve.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "preImage");
-        await requireParam(req.body, "assetId");
+        requireParam(req.body, "preImage");
+        requireParam(req.body, "assetId");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res
@@ -474,10 +474,10 @@ app.after(() => {
     Routes.post.linkedTransfer.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "assetId");
-        await requireParam(req.body, "amount");
+        requireParam(req.body, "assetId");
+        requireParam(req.body, "amount");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res
@@ -499,10 +499,10 @@ app.after(() => {
     Routes.post.linkedResolve.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "preImage");
-        await requireParam(req.body, "paymentId");
+        requireParam(req.body, "preImage");
+        requireParam(req.body, "paymentId");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res
@@ -520,10 +520,10 @@ app.after(() => {
 
   app.post<PostFundRequest>(Routes.post.fund.url, Routes.post.fund.opts, async (req, res) => {
     try {
-      await requireParam(req.body, "amount");
-      await requireParam(req.body, "assetId");
+      requireParam(req.body, "amount");
+      requireParam(req.body, "assetId");
       if (!config.legacyMode) {
-        await requireParam(req.body, "publicIdentifier");
+        requireParam(req.body, "publicIdentifier");
       }
       const client = multiClient.getClient(req.body.publicIdentifier);
       res
@@ -546,10 +546,10 @@ app.after(() => {
     Routes.post.deposit.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "amount");
-        await requireParam(req.body, "assetId");
+        requireParam(req.body, "amount");
+        requireParam(req.body, "assetId");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res.status(200).send<RouteMethods.PostDepositResponse>(await client.deposit(req.body));
@@ -569,9 +569,9 @@ app.after(() => {
     { ...Routes.post.requestCollateral.opts, preHandler: app.auth([app.verifyApiKey]) },
     async (req, res) => {
       try {
-        await requireParam(req.body, "assetId");
+        requireParam(req.body, "assetId");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         await client.requestCollateral(req.body);
@@ -589,12 +589,12 @@ app.after(() => {
 
   app.post<PostSwapRequest>(Routes.post.swap.url, Routes.post.swap.opts, async (req, res) => {
     try {
-      await requireParam(req.body, "amount");
-      await requireParam(req.body, "fromAssetId");
-      await requireParam(req.body, "swapRate");
-      await requireParam(req.body, "toAssetId");
+      requireParam(req.body, "amount");
+      requireParam(req.body, "fromAssetId");
+      requireParam(req.body, "swapRate");
+      requireParam(req.body, "toAssetId");
       if (!config.legacyMode) {
-        await requireParam(req.body, "publicIdentifier");
+        requireParam(req.body, "publicIdentifier");
       }
       const client = multiClient.getClient(req.body.publicIdentifier);
       res.status(200).send<RouteMethods.PostSwapResponse>(await client.swap(req.body));
@@ -613,10 +613,10 @@ app.after(() => {
     Routes.post.withdraw.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "amount");
-        await requireParam(req.body, "assetId");
+        requireParam(req.body, "amount");
+        requireParam(req.body, "assetId");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res.status(200).send<RouteMethods.PostWithdrawResponse>(await client.withdraw(req.body));
@@ -636,10 +636,10 @@ app.after(() => {
     Routes.post.subscribe.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "event");
-        await requireParam(req.body, "webhook");
+        requireParam(req.body, "event");
+        requireParam(req.body, "webhook");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res.status(200).send<SubscriptionResponse>(await client.subscribe(req.body));
@@ -662,9 +662,9 @@ app.after(() => {
     Routes.post.batchSubscribe.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "params", "array");
+        requireParam(req.body, "params", "array");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res
@@ -691,9 +691,9 @@ app.after(() => {
     Routes.delete.subscribe.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "id");
+        requireParam(req.body, "id");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res.status(200).send<GenericSuccessResponse>(await client.unsubscribe(req.body.id));
@@ -716,9 +716,9 @@ app.after(() => {
     Routes.delete.batchSubscribe.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "ids", "array");
+        requireParam(req.body, "ids", "array");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res.status(200).send<GenericSuccessResponse>(await client.unsubscribeBatch(req.body.ids));
@@ -741,7 +741,7 @@ app.after(() => {
     async (req, res) => {
       try {
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res.status(200).send<GenericSuccessResponse>(await client.unsubscribeAll());
