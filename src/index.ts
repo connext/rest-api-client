@@ -627,6 +627,32 @@ app.after(() => {
     },
   );
 
+  interface PostRejectInstallRequest extends RequestGenericInterface {
+    Body: RouteMethods.PostRejectInstallRequestParams;
+  }
+
+  app.post<PostRejectInstallRequest>(
+    Routes.post.rejectInstall.url,
+    Routes.post.rejectInstall.opts,
+    async (req, res) => {
+      try {
+        await requireParam(req.body, "appIdentityHash");
+        if (!config.legacyMode) {
+          await requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        res
+          .status(200)
+          .send<RouteMethods.PostRejectInstallResponse>(
+            await client.rejectInstallApp(req.body.appIdentityHash, req.body.reason),
+          );
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
   interface PostSubscribeRequest extends RequestGenericInterface {
     Body: RouteMethods.PostSubscribeRequestParams;
   }

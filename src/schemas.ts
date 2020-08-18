@@ -746,6 +746,34 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
           },
         },
       },
+      rejectInstall: {
+        url: "/reject-install",
+        description: "Reject Install App for provided appIdentityHash",
+        opts: {
+          preHandler: authHandler,
+          schema: {
+            body: {
+              type: "object",
+              properties: {
+                appIdentityHash: { type: "string" },
+                reason: { type: "string", nullable: true },
+              },
+            },
+            response: {
+              200: {
+                type: "object",
+                properties: {
+                  appIdentityHash: { type: "string" },
+                  multisigAddress: { type: "string" },
+                  uninstalledApp: AppInstanceDetailsSchema,
+                  action: { type: "string", nullable: true },
+                },
+              },
+              500: GenericErrorResponseSchema,
+            },
+          },
+        },
+      },
       subscribe: {
         url: "/subscribe",
         description: "Subscribe to client event",

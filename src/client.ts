@@ -103,6 +103,14 @@ export default class Client {
     return data;
   }
 
+  public rejectInstallApp(
+    appIdentityHash: string,
+    reason?: string,
+  ): Promise<RouteMethods.PostRejectInstallResponse> {
+    const client = this.getClient();
+    return client.rejectInstallApp(appIdentityHash, reason);
+  }
+
   public async hashLockTransfer(
     params: RouteMethods.PostHashLockTransferRequestParams,
   ): Promise<RouteMethods.PostHashLockTransferResponse> {
