@@ -224,7 +224,11 @@ app.after(() => {
           );
       } catch (error) {
         app.log.error(error);
-        res.status(500).send<GenericErrorResponse>({ message: error.message });
+        let statusCode = 500;
+        if ((error.message as string).includes(`No HashLock Transfer found for lockHash`)) {
+          statusCode = 404;
+        }
+        res.status(statusCode).send<GenericErrorResponse>({ message: error.message });
       }
     },
   );
