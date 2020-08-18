@@ -14,7 +14,7 @@ Content-Type: application/json
 
 ###
 
-# Create status of corresponding hashlock transfer 
+# Get status of corresponding hashlock transfer 
 GET http://localhost:5040/hashlock-status/0x7c0023168317e7010af1e8f5d583d2990bd0f7141f2068a9269ca92d9128c95a/0x0000000000000000000000000000000000000000/indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS
 
 ###
