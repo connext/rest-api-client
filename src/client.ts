@@ -90,8 +90,7 @@ export default class Client {
   public async cleanupRegistryApps(): Promise<void> {
     const client = this.getClient();
     this.cleaningUp = true;
-    // TODO: expose method in Connext client
-    await client.cleanupRegistryApps();
+    await (client as connext.ConnextClient).cleanupRegistryApps();
     this.cleaningUp = false;
   }
 
