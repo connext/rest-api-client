@@ -61,6 +61,7 @@ export default class Client {
       signer: opts.signer,
       ethProviderUrl: opts.ethProviderUrl,
       nodeUrl: opts.nodeUrl,
+      messagingUrl: opts.messagingUrl,
       logLevel: this.logLevel,
     };
     try {

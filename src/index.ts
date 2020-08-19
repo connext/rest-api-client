@@ -57,6 +57,7 @@ app.addHook("onReady", async () => {
     store,
     config.ethProviderUrl,
     config.nodeUrl,
+    config.messagingUrl,
     config.legacyMode,
     config.storeDir,
     config.logLevel,
@@ -387,7 +388,7 @@ app.after(() => {
           requireParam(req.body, "publicIdentifier");
         }
         const client = await multiClient.connectClient(req.body);
-        res.status(200).send<RouteMethods.GetConfigResponse>(await client.getConfig());
+        res.status(200).send<RouteMethods.GetConfigResponse>(client.getConfig());
       } catch (error) {
         app.log.error(error);
         res.status(500).send<GenericErrorResponse>({ message: error.message });
