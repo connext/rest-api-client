@@ -47,4 +47,4 @@ build
 *.tsbuildinfo 
 .env
 
-connext-store*
+connext-store

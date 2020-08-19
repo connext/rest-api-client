@@ -1,3 +1,4 @@
+import fs from "fs";
 import { IStoreService } from "@connext/types";
 import { getFileStore } from "@connext/store";
 
@@ -15,8 +16,37 @@ import {
   ConnectOptions,
 } from "./types";
 
-export async function getStore(storeDir: string, publicIdentifier?: string) {
-  const dir = publicIdentifier ? `${storeDir}-${publicIdentifier}` : storeDir;
+export function createDir(path: string) {
+  return new Promise((resolve, reject) => {
+    fs.mkdir(path, { recursive: true }, (err) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve();
+    });
+  });
+}
+
+export function exists(path) {
+  return new Promise((resolve, reject) => {
+    fs.stat(path, (err) => {
+      if (err) {
+        if (err.code === "ENOENT") {
+          return resolve(false);
+        } else {
+          return reject(err);
+        }
+      }
+      return resolve(true);
+    });
+  });
+}
+
+export async function getStore(storeDir: string, subDir?: string) {
+  if (!exists(storeDir)) {
+    await createDir(storeDir);
+  }
+  const dir = subDir ? `${storeDir}/${subDir}` : storeDir;
   const store = getFileStore(dir);
   await store.init();
   return store;
@@ -43,29 +73,25 @@ export function fetchMnemonic(store: IStoreService): Promise<string | undefined>
   return (store as any).getItem(CONNEXT_MNEMONIC_KEY);
 }
 
-export async function storeSubscriptions(
+export function storeSubscriptions(
   subscriptions: EventSubscription[],
   store: IStoreService,
 ): Promise<void> {
   return (store as any).setItem(CONNEXT_SUBSCRIPTIONS_KEY, subscriptions);
 }
 
-export async function fetchSubscriptions(
-  store: IStoreService,
-): Promise<EventSubscription[] | undefined> {
+export function fetchSubscriptions(store: IStoreService): Promise<EventSubscription[] | undefined> {
   return (store as any).getItem(CONNEXT_SUBSCRIPTIONS_KEY);
 }
 
-export async function storeClients(
+export function storeClients(
   clients: InternalConnectOptions[],
   store: IStoreService,
 ): Promise<void> {
   return (store as any).setItem(CONNEXT_CLIENTS_KEY, clients);
 }
 
-export async function fetchClients(
-  store: IStoreService,
-): Promise<InternalConnectOptions[] | undefined> {
+export function fetchClients(store: IStoreService): Promise<InternalConnectOptions[] | undefined> {
   return (store as any).getItem(CONNEXT_CLIENTS_KEY);
 }
 
@@ -79,20 +105,18 @@ export async function updateClients(
   await storeClients(clients, store);
 }
 
-export async function deleteClients(store: IStoreService): Promise<void> {
+export function deleteClients(store: IStoreService): Promise<void> {
   return (store as any).removeItem(CONNEXT_CLIENTS_KEY);
 }
 
-export async function storeWallets(
+export function storeWallets(
   clients: InternalWalletOptions[],
   store: IStoreService,
 ): Promise<void> {
   return (store as any).setItem(CONNEXT_WALLETS_KEY, clients);
 }
 
-export async function fetchWallets(
-  store: IStoreService,
-): Promise<InternalWalletOptions[] | undefined> {
+export function fetchWallets(store: IStoreService): Promise<InternalWalletOptions[] | undefined> {
   return (store as any).getItem(CONNEXT_WALLETS_KEY);
 }
 
@@ -106,7 +130,7 @@ export async function updateWallets(
   await storeWallets(wallets, store);
 }
 
-export async function deleteWallets(store: IStoreService): Promise<void> {
+export function deleteWallets(store: IStoreService): Promise<void> {
   return (store as any).removeItem(CONNEXT_WALLETS_KEY);
 }
 
