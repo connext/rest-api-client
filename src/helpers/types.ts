@@ -20,11 +20,13 @@ export interface InternalConnectOptions {
   publicIdentifier: string;
   ethProviderUrl: string;
   nodeUrl: string;
+  messagingUrl?: string;
 }
 
 export interface ConnectOptions {
   ethProviderUrl: string;
   nodeUrl: string;
+  messagingUrl?: string;
   publicIdentifier?: string;
 }
 

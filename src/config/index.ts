@@ -16,6 +16,7 @@ const version = pkg.version;
 
 const ethProviderUrl = process.env.CONNEXT_ETH_PROVIDER_URL || undefined;
 const nodeUrl = process.env.CONNEXT_NODE_URL || undefined;
+const messagingUrl = process.env.CONNEXT_MESSAGING_URL || undefined;
 const mnemonic = process.env.CONNEXT_MNEMONIC || undefined;
 const fundingMnemonic =
   process.env.CONNEXT_FUNDING_MNEMONIC ||
@@ -36,6 +37,7 @@ export default {
   apiKey,
   ethProviderUrl,
   nodeUrl,
+  messagingUrl,
   mnemonic,
   fundingMnemonic,
   storeDir,

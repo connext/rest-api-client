@@ -24,6 +24,7 @@ class MultiClient {
     store: IStoreService,
     ethProviderUrl: string | undefined,
     nodeUrl: string | undefined,
+    messagingUrl: string | undefined,
     legacyMode: boolean,
     rootStoreDir: string,
     logLevel: number,
@@ -44,6 +45,7 @@ class MultiClient {
       store,
       ethProviderUrl,
       nodeUrl,
+      messagingUrl,
       legacyMode,
       rootStoreDir,
       logLevel,
@@ -65,6 +67,7 @@ class MultiClient {
     public store: IStoreService,
     public ethProviderUrl: string | undefined,
     public nodeUrl: string | undefined,
+    public messagingUrl: string | undefined,
     public legacyMode: boolean,
     public rootStoreDir: string,
     public logLevel: number,
@@ -74,6 +77,7 @@ class MultiClient {
     this.store = store;
     this.ethProviderUrl = ethProviderUrl;
     this.nodeUrl = nodeUrl;
+    this.messagingUrl = messagingUrl;
     this.legacyMode = legacyMode;
     this.rootStoreDir = rootStoreDir;
     this.logLevel = logLevel;
@@ -117,6 +121,8 @@ class MultiClient {
         throw new Error("Cannot connect Connext client without nodeUrl");
       }
 
+      const messagingUrl = opts?.messagingUrl || persistedOpts?.messagingUrl || this.messagingUrl;
+
       let match: ClientSettings | undefined;
       try {
         match = this.getClientSettings(publicIdentifier);
@@ -138,6 +144,7 @@ class MultiClient {
         signer,
         ethProviderUrl,
         nodeUrl,
+        messagingUrl,
       };
       client = await this.createClient(connectOpts);
     } finally {
