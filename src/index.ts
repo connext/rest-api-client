@@ -45,7 +45,7 @@ app.register(fastifyHelmet);
 app.register(fastifySwagger, getSwaggerOptions(config.docsHost, config.version) as any);
 
 app.addHook("onReady", async () => {
-  const store = await getStore(config.storeDir);
+  const store = await getStore(config.storeDir, "shared");
   const persisted = await fetchPersistedData(store);
   const mnemonic = persisted.mnemonic || config.mnemonic;
   if (mnemonic && persisted.mnemonic !== mnemonic) {
@@ -188,7 +188,7 @@ app.after(() => {
     Params: RouteMethods.GetConfigRequestParams;
   }
 
-  app.get<GetConfigRequest>(Routes.get.config.url, Routes.get.config.opts, async (req, res) => {
+  app.get<GetConfigRequest>(Routes.get.config.url, Routes.get.config.opts, (req, res) => {
     try {
       if (!config.legacyMode) {
         requireParam(req.params, "publicIdentifier");
