@@ -90,7 +90,12 @@ export default class Client {
     const client = this.getClient();
     this.cleaningUp = true;
     // TODO: expose method in Connext client
-    await client.cleanupRegistryApps();
+    const { data } = await client.getStateChannel();
+    await Promise.all(
+      data.proposedAppInstances.map(async ([appIdentityHash]) => {
+        await client.rejectInstallApp(appIdentityHash);
+      }),
+    );
     this.cleaningUp = false;
   }
 
