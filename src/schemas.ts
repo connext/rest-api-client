@@ -681,6 +681,57 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
           },
         },
       },
+      requestDepositRights: {
+        url: "/request-deposit-rights",
+        description: "Request deposit rights for an asset on channel",
+        opts: {
+          preHandler: authHandler,
+          schema: {
+            body: {
+              type: "object",
+              properties: {
+                assetId: { type: "string" },
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
+              },
+            },
+            response: {
+              200: {
+                type: "object",
+                properties: {
+                  appIdentityHash: { type: "string" },
+                  multisigAddress: { type: "string" },
+                },
+              },
+              500: GenericErrorResponseSchema,
+            },
+          },
+        },
+      },
+      rescindDepositRights: {
+        url: "/rescind-deposit-rights",
+        description: "Rescind deposit rights for an asset on channel",
+        opts: {
+          preHandler: authHandler,
+          schema: {
+            body: {
+              type: "object",
+              properties: {
+                assetId: { type: "string" },
+                publicIdentifier: !legacyMode ? { type: "string" } : undefined,
+              },
+            },
+            response: {
+              200: {
+                type: "object",
+                properties: {
+                  freeBalance: { type: "string" },
+                },
+              },
+              500: GenericErrorResponseSchema,
+            },
+          },
+        },
+      },
       requestCollateral: {
         url: "/request-collateral",
         description: "Request collateral for an asset",

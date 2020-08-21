@@ -255,6 +255,28 @@ export default class Client {
     return { txhash: response.transaction.hash };
   }
 
+  public async requestDepositRights(
+    params: RouteMethods.PostRequestDepositRightsRequestParams,
+  ): Promise<RouteMethods.PostRequestDepositRightsResponse> {
+    const client = this.getClient();
+    if (params.assetId === AddressZero) {
+      delete params.assetId;
+    }
+    const response = await client.requestDepositRights(params);
+    return response;
+  }
+
+  public async rescindDepositRights(
+    params: RouteMethods.PostRescindDepositRightsRequestParams,
+  ): Promise<RouteMethods.PostRescindDepositRightsResponse> {
+    const client = this.getClient();
+    if (params.assetId === AddressZero) {
+      delete params.assetId;
+    }
+    const response = await client.rescindDepositRights(params);
+    return { freeBalance: response.freeBalance[client.signerAddress].toString() };
+  }
+
   public async requestCollateral(
     params: RouteMethods.PostRequestCollateralRequestParams,
   ): Promise<void> {

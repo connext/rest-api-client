@@ -21,3 +21,38 @@ Content-Type: application/json
 }
 
 ###
+
+# Request deposit rights for test token. After calling this, send tokens directly to the multisig.
+POST http://localhost:5040/request-deposit-rights
+Content-Type: application/json
+
+{
+  "assetId": "0x4E72770760c011647D4873f60A3CF6cDeA896CD8",
+  "publicIdentifier": "indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS"
+}
+
+###
+
+# Rescind deposit rights for test token. Call this after your tx has been confirmed to the multisig.
+POST http://localhost:5040/rescind-deposit-rights
+Content-Type: application/json
+
+{
+  "assetId": "0x4E72770760c011647D4873f60A3CF6cDeA896CD8",
+  "publicIdentifier": "indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS"
+}
+
+###
+
+# Request collateral from the node
+POST http://localhost:5040/request-collateral
+Content-Type: application/json
+
+{
+  "assetId": "0x4E72770760c011647D4873f60A3CF6cDeA896CD8",
+  "publicIdentifier": "indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS"
+}
+
+###
+
+GET http://localhost:3000/api/config/1337
