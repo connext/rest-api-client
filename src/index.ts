@@ -565,6 +565,58 @@ app.after(() => {
     },
   );
 
+  interface PostRequestDepositRightsRequest extends RequestGenericInterface {
+    Body: RouteMethods.PostRequestDepositRightsRequestParams;
+  }
+
+  app.post<PostRequestDepositRightsRequest>(
+    Routes.post.requestDepositRights.url,
+    Routes.post.requestDepositRights.opts,
+    async (req, res) => {
+      try {
+        requireParam(req.body, "assetId");
+        if (!config.legacyMode) {
+          requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        res
+          .status(200)
+          .send<RouteMethods.PostRequestDepositRightsResponse>(
+            await client.requestDepositRights(req.body),
+          );
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
+  interface PostRescindDepositRightsRequest extends RequestGenericInterface {
+    Body: RouteMethods.PostRescindDepositRightsRequestParams;
+  }
+
+  app.post<PostRescindDepositRightsRequest>(
+    Routes.post.rescindDepositRights.url,
+    Routes.post.rescindDepositRights.opts,
+    async (req, res) => {
+      try {
+        requireParam(req.body, "assetId");
+        if (!config.legacyMode) {
+          requireParam(req.body, "publicIdentifier");
+        }
+        const client = multiClient.getClient(req.body.publicIdentifier);
+        res
+          .status(200)
+          .send<RouteMethods.PostRescindDepositRightsResponse>(
+            await client.rescindDepositRights(req.body),
+          );
+      } catch (error) {
+        app.log.error(error);
+        res.status(500).send<GenericErrorResponse>({ message: error.message });
+      }
+    },
+  );
+
   interface PostRequestCollateralRequest extends RequestGenericInterface {
     Body: RouteMethods.PostRequestCollateralRequestParams;
   }
@@ -641,9 +693,9 @@ app.after(() => {
     Routes.post.rejectInstall.opts,
     async (req, res) => {
       try {
-        await requireParam(req.body, "appIdentityHash");
+        requireParam(req.body, "appIdentityHash");
         if (!config.legacyMode) {
-          await requireParam(req.body, "publicIdentifier");
+          requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
         res

@@ -147,6 +147,14 @@ export namespace RouteMethods {
   export type PostDepositRequestParams = MultiClientRequestParams & PublicParams.Deposit;
   export type PostDepositResponse = { txhash: string };
 
+  export type PostRequestDepositRightsRequestParams = MultiClientRequestParams &
+    PublicParams.RequestDepositRights;
+  export type PostRequestDepositRightsResponse = PublicResults.RequestDepositRights;
+
+  export type PostRescindDepositRightsRequestParams = MultiClientRequestParams &
+    PublicParams.RescindDepositRights;
+  export type PostRescindDepositRightsResponse = { freeBalance: string };
+
   export type PostHashLockTransferRequestParams = MultiClientRequestParams &
     PublicParams.HashLockTransfer;
   export type PostHashLockTransferResponse = PublicResults.ConditionalTransfer &
