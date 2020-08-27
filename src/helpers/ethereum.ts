@@ -25,13 +25,11 @@ export function getIndexFromPath(path: string): number {
   return Number(path.replace(ETH_STANDARD_PATH, "").replace("/", ""));
 }
 
-export async function getFreeBalanceOffChain(
+export function getFreeBalanceOffChain(
   client: IConnextClient,
   assetId: string,
-): Promise<string> {
-  return (await client.getFreeBalance(assetId !== constants.AddressZero ? assetId : undefined))[
-    client.signerAddress
-  ].toString();
+): Promise<{ [address: string]: BigNumber }> {
+  return client.getFreeBalance(assetId !== constants.AddressZero ? assetId : undefined);
 }
 
 export function getFreeBalanceOnChain(
@@ -54,7 +52,11 @@ export async function getClientBalance(
     client.ethProvider,
     assetId,
   );
-  return { freeBalanceOffChain, freeBalanceOnChain };
+  return {
+    freeBalanceOffChain: freeBalanceOffChain[client.signerAddress].toString(),
+    nodeFreeBalanceOffChain: freeBalanceOffChain[client.nodeSignerAddress].toString(),
+    freeBalanceOnChain,
+  };
 }
 
 export async function getEthBalance(

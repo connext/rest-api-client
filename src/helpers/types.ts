@@ -105,6 +105,7 @@ export namespace RouteMethods {
   };
   export type GetBalanceResponse = {
     freeBalanceOffChain?: string;
+    nodeFreeBalanceOffChain?: string;
     freeBalanceOnChain: string;
   };
 

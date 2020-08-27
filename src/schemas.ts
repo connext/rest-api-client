@@ -56,6 +56,7 @@ export const BalanceResponseSchema = {
   properties: {
     freeBalanceOffChain: { type: "string", nullable: true },
     freeBalanceOnChain: { type: "string" },
+    nodeFreeBalanceOffChain: { type: "string", nullable: true },
   },
 };
 
