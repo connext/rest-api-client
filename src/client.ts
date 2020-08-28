@@ -281,7 +281,7 @@ export default class Client {
     params: RouteMethods.PostRequestCollateralRequestParams,
   ): Promise<void> {
     const client = this.getClient();
-    await client.requestCollateral(params.assetId, params.assetId);
+    await client.requestCollateral(params.assetId, params.amount);
   }
 
   public async swap(
