@@ -1,0 +1,11 @@
+# Swap 0.01 ETH to token
+POST http://localhost:5040/swap
+Content-Type: application/json
+
+{
+  "amount": "10000000000000000",
+  "fromAssetId": "0x0000000000000000000000000000000000000000",
+  "swapRate": "123",
+  "toAssetId": "0x4E72770760c011647D4873f60A3CF6cDeA896CD8",
+  "publicIdentifier": "indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS"
+}
