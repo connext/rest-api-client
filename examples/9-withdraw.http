@@ -9,6 +9,8 @@ Content-Type: application/json
   "recipient": "0x098158D8B59327C5EcA50A299151D69182b36A4b"
 }
 
+###
+
 # Withdraw 10 test tokens from client at index 1
 POST http://localhost:5040/withdraw
 Content-Type: application/json

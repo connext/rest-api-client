@@ -195,7 +195,7 @@ export namespace RouteMethods {
   };
   export type PostRejectInstallResponse = MethodResults.Uninstall;
 
-  export type PostRequestCollateralRequestParams = MultiClientRequestParams & { assetId: string };
+  export type PostRequestCollateralRequestParams = MultiClientRequestParams & { assetId: string, amount?: string };
 
   export type PostSwapRequestParams = MultiClientRequestParams & PublicParams.Swap;
   export type PostSwapResponse = { fromAssetIdBalance: string; toAssetIdBalance: string };

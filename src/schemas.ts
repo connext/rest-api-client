@@ -1,4 +1,5 @@
 import { cleanDeep } from "./helpers";
+import { stringify } from "querystring";
 
 export function getSwaggerOptions(docsHost: string, version: string) {
   return {
@@ -742,6 +743,7 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
               type: "object",
               properties: {
                 assetId: { type: "string" },
+                amount: { type: "string", nullable: true },
               },
             },
             response: {

@@ -50,7 +50,8 @@ Content-Type: application/json
 
 {
   "assetId": "0x4E72770760c011647D4873f60A3CF6cDeA896CD8",
-  "publicIdentifier": "indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS"
+  "publicIdentifier": "indra53QJ6exujj3pQQ8BPuTDfQqBXvpyzkz8uS4fwbNMtMZKQZWuUS",
+  "amount": "50000000000000000000"
 }
 
 ###
