@@ -109,7 +109,7 @@ export async function transferEth(
 ): Promise<string> {
   const tx = await wallet.sendTransaction({
     to: recipient,
-    value: BigNumber.from(amount).toString(),
+    value: BigNumber.from(amount),
   });
   assertTxHash(tx);
   return tx.hash;
