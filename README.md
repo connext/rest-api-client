@@ -26,7 +26,7 @@ Make sure you have Docker installed globally then run using the environment file
 docker run --env-file .env -p 5040:5040 connextproject/rest-api-client
 ```
 
-## With NodeJS
+### With NodeJS
 
 Make sure you have NodeJS installed globally and install the required dependencies with the following command:
 ```sh
