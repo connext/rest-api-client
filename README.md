@@ -134,3 +134,6 @@ GET http://localhost:5040/balance/0x0000000000000000000000000000000000000000/ind
 
 There are more example requests on the `examples` directory in the format of `.http` files which can be executed using a VSCode Extension if you would like: [Rest Client Extension for VSCode](https://marketplace.visualstudio.com/items?itemName=humao.rest-client)
 
+# API Reference
+You can find Swagger docs on the interface here: http://18.223.112.148:5040/documentation/static/index.html#/
+
