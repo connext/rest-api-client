@@ -200,7 +200,9 @@ export default class Client {
     const paymentId = params.paymentId || getRandomBytes32();
     const preImage = params.preImage || getRandomBytes32();
     const response = await client.conditionalTransfer({
-      conditionType: ConditionalTransferTypes.LinkedTransfer,
+      conditionType: params.requireOnline
+        ? ConditionalTransferTypes.OnlineTransfer
+        : ConditionalTransferTypes.LinkedTransfer,
       amount: params.amount,
       recipient: params.recipient,
       preImage,

@@ -166,7 +166,7 @@ export namespace RouteMethods {
   export type PostHashLockResolveResponse = PublicResults.ResolveHashLockTransfer;
 
   export type PostLinkedTransferRequestParams = MultiClientRequestParams &
-    PublicParams.LinkedTransfer;
+    PublicParams.LinkedTransfer & { requireOnline?: boolean };
   export type PostLinkedTransferResponse = PublicResults.ConditionalTransfer &
     MethodResults.GetAppInstanceDetails;
 
@@ -195,7 +195,10 @@ export namespace RouteMethods {
   };
   export type PostRejectInstallResponse = MethodResults.Uninstall;
 
-  export type PostRequestCollateralRequestParams = MultiClientRequestParams & { assetId: string, amount?: string };
+  export type PostRequestCollateralRequestParams = MultiClientRequestParams & {
+    assetId: string;
+    amount?: string;
+  };
 
   export type PostSwapRequestParams = MultiClientRequestParams & PublicParams.Swap;
   export type PostSwapResponse = { fromAssetIdBalance: string; toAssetIdBalance: string };
