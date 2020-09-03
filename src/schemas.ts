@@ -306,6 +306,8 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
                 properties: {
                   senderIdentifier: { type: "string" },
                   receiverIdentifier: { type: "string" },
+                  senderAppIdentityHash: { type: "string", nullable: true },
+                  receiverAppIdentityHash: { type: "string", nullable: true },
                   assetId: { type: "string" },
                   amount: { type: "string" },
                   lockHash: { type: "string" },
@@ -588,6 +590,7 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
                 paymentId: { type: "string", nullable: true },
                 recipient: { type: "string", nullable: true },
                 publicIdentifier: !legacyMode ? { type: "string" } : undefined,
+                requireOnline: { type: "boolean", nullable: true },
               },
             },
             response: {
