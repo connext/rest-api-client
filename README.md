@@ -47,7 +47,8 @@ We will be using the following environment variables for this example:
 ```sh
 CONNEXT_MNEMONIC=rich awful vocal decade chaos horse cheese sadness just equip equip dismiss
 CONNEXT_ETH_PROVIDER_URL=https://staging.indra.connext.network/api/ethprovider
-CONNEXT_NODE_URL=https://staging.indra.connext.network/
+# note: don't include a trailing "/" in URL
+CONNEXT_NODE_URL=https://staging.indra.connext.network 
 ```
 1. Create account A
 
