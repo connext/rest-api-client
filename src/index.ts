@@ -583,7 +583,7 @@ app.after(() => {
           .add(req.body.assetId === AddressZero ? req.body.amount : 0);
         if (BigNumber.from(balances.freeBalanceOnChain).lt(totalEthRequired)) {
           return res.status(400).send<GenericErrorResponse>({
-            message: `Signer address balance ${balances.freeBalanceOnChain} is less than required amount ${totalEthRequired}`,
+            message: `Signer address Ether balance ${balances.freeBalanceOnChain} is less than required amount ${totalEthRequired}`,
           });
         }
         return res
