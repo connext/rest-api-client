@@ -5,7 +5,7 @@ import { RouteMethods, TransferOnChainParams } from "./types";
 
 const ETH_STANDARD_PATH = "m/44'/60'/0'/0";
 
-const tokenAbi = [
+export const tokenAbi = [
   "function mint(address _to, uint256 _value) returns (bool success)",
   "function transfer(address _to, uint256 _value) returns (bool success)",
   "function balanceOf(address account) view returns (uint256)",

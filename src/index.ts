@@ -2,6 +2,8 @@ import fastify, { RequestGenericInterface } from "fastify";
 import fastifyAuth from "fastify-auth";
 import fastifySwagger from "fastify-swagger";
 import fastifyHelmet from "fastify-helmet";
+import { constants, Contract, BigNumber } from "ethers";
+import { AddressZero } from "@ethersproject/constants";
 
 import config from "./config";
 import MultiClient from "./multiClient";
@@ -19,6 +21,7 @@ import {
   EventSubscriptionParams,
   BatchSubscriptionResponse,
   SubscriptionResponse,
+  tokenAbi,
 } from "./helpers";
 import Client from "./client";
 import Funder from "./funder";
@@ -557,10 +560,38 @@ app.after(() => {
           requireParam(req.body, "publicIdentifier");
         }
         const client = multiClient.getClient(req.body.publicIdentifier);
-        res.status(200).send<RouteMethods.PostDepositResponse>(await client.deposit(req.body));
+        const balances = await client.balance(constants.AddressZero);
+        let gas: BigNumber | undefined;
+        const gasPrice = await client.client?.ethProvider.getGasPrice();
+        if (req.body.assetId === constants.AddressZero) {
+          gas = await client.client?.ethProvider.estimateGas({
+            to: client.client.multisigAddress,
+            value: req.body.amount,
+          });
+        } else {
+          const contract = new Contract(req.body.assetId!, tokenAbi, client.client?.ethProvider);
+          gas = await contract.estimateGas.transfer(
+            client.client!.multisigAddress,
+            req.body.amount,
+          );
+        }
+        if (!gas || !gasPrice) {
+          return res.status(400).send<GenericErrorResponse>({ message: "Could not estimate gas." });
+        }
+        const totalEthRequired = gas!
+          .mul(gasPrice)
+          .add(req.body.assetId === AddressZero ? req.body.amount : 0);
+        if (BigNumber.from(balances.freeBalanceOnChain).lt(totalEthRequired)) {
+          return res.status(400).send<GenericErrorResponse>({
+            message: `Signer address Ether balance ${balances.freeBalanceOnChain} is less than required amount ${totalEthRequired}`,
+          });
+        }
+        return res
+          .status(200)
+          .send<RouteMethods.PostDepositResponse>(await client.deposit(req.body));
       } catch (error) {
         app.log.error(error);
-        res.status(500).send<GenericErrorResponse>({ message: error.message });
+        return res.status(500).send<GenericErrorResponse>({ message: error.message });
       }
     },
   );
