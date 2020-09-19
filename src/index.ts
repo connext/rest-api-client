@@ -563,28 +563,35 @@ app.after(() => {
         const balances = await client.balance(constants.AddressZero);
         let gas: BigNumber | undefined;
         const gasPrice = await client.client?.ethProvider.getGasPrice();
-        if (req.body.assetId === constants.AddressZero) {
-          gas = await client.client?.ethProvider.estimateGas({
-            to: client.client.multisigAddress,
-            value: req.body.amount,
-          });
-        } else {
-          const contract = new Contract(req.body.assetId!, tokenAbi, client.client?.ethProvider);
-          gas = await contract.estimateGas.transfer(
-            client.client!.multisigAddress,
-            req.body.amount,
-          );
-        }
-        if (!gas || !gasPrice) {
-          return res.status(400).send<GenericErrorResponse>({ message: "Could not estimate gas." });
-        }
-        const totalEthRequired = gas!
-          .mul(gasPrice)
-          .add(req.body.assetId === AddressZero ? req.body.amount : 0);
-        if (BigNumber.from(balances.freeBalanceOnChain).lt(totalEthRequired)) {
-          return res.status(400).send<GenericErrorResponse>({
-            message: `Signer address Ether balance ${balances.freeBalanceOnChain} is less than required amount ${totalEthRequired}`,
-          });
+        const estimateGas =
+          typeof req.body.estimateGas === "undefined" ? true : req.body.estimateGas;
+
+        if (estimateGas) {
+          if (req.body.assetId === constants.AddressZero) {
+            gas = await client.client?.ethProvider.estimateGas({
+              to: client.client.multisigAddress,
+              value: req.body.amount,
+            });
+          } else {
+            const contract = new Contract(req.body.assetId!, tokenAbi, client.client?.ethProvider);
+            gas = await contract.estimateGas.transfer(
+              client.client!.multisigAddress,
+              req.body.amount,
+            );
+          }
+          if (!gas || !gasPrice) {
+            return res
+              .status(400)
+              .send<GenericErrorResponse>({ message: "Could not estimate gas." });
+          }
+          const totalEthRequired = gas!
+            .mul(gasPrice)
+            .add(req.body.assetId === AddressZero ? req.body.amount : 0);
+          if (BigNumber.from(balances.freeBalanceOnChain).lt(totalEthRequired)) {
+            return res.status(400).send<GenericErrorResponse>({
+              message: `Signer address Ether balance ${balances.freeBalanceOnChain} is less than required amount ${totalEthRequired}`,
+            });
+          }
         }
         return res
           .status(200)

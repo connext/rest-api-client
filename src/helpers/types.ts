@@ -145,7 +145,10 @@ export namespace RouteMethods {
   };
   export type PostFundResponse = { txhash: string };
 
-  export type PostDepositRequestParams = MultiClientRequestParams & PublicParams.Deposit;
+  export type PostDepositRequestParams = MultiClientRequestParams &
+    PublicParams.Deposit & {
+      estimateGas?: boolean;
+    };
   export type PostDepositResponse = { txhash: string };
 
   export type PostRequestDepositRightsRequestParams = MultiClientRequestParams &
