@@ -568,23 +568,16 @@ app.after(() => {
 
         if (estimateGas) {
           if (req.body.assetId === constants.AddressZero) {
-            gas = await client.client?.ethProvider.estimateGas({
-              to: client.client.multisigAddress,
-              value: req.body.amount,
-            });
+            gas = BigNumber.from(21_000);
           } else {
-            const contract = new Contract(req.body.assetId!, tokenAbi, client.client?.ethProvider);
-            gas = await contract.estimateGas.transfer(
-              client.client!.multisigAddress,
-              req.body.amount,
-            );
+            gas = BigNumber.from(100_000);
           }
-          if (!gas || !gasPrice) {
+          if (!gasPrice) {
             return res
               .status(400)
               .send<GenericErrorResponse>({ message: "Could not estimate gas." });
           }
-          const totalEthRequired = gas!
+          const totalEthRequired = gas
             .mul(gasPrice)
             .add(req.body.assetId === AddressZero ? req.body.amount : 0);
           if (BigNumber.from(balances.freeBalanceOnChain).lt(totalEthRequired)) {

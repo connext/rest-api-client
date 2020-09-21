@@ -677,7 +677,7 @@ export const getRoutes = (authHandler: any, legacyMode: boolean): any =>
                 amount: { type: "string" },
                 assetId: { type: "string" },
                 publicIdentifier: !legacyMode ? { type: "string" } : undefined,
-                estimateGas: { type: "string" },
+                estimateGas: { type: "boolean" },
               },
             },
             response: {
